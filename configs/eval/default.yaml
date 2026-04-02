@@ -1,0 +1,18 @@
+# configs/eval/default.yaml
+# @package eval
+eval:
+  judge_model_id: openai/gpt-4o    # fixed across all runs for fairness
+  rubric_path: data/rubrics/itinerary_rubric_v1.md
+  rubric_dimensions:
+    - constraint_adherence
+    - logical_coherence
+    - activity_diversity
+    - budget_efficiency
+    - feasibility
+    - creativity
+  deterministic_only: false
+  output_format: json
+  ablation_components:
+    - compressor_type
+    - agent_mode
+    - reward_weights

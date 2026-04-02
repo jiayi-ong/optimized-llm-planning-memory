@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+*.env
+
+# Hydra / outputs
+outputs/
+multirun/
+.hydra/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb~
+
+# ML artifacts
+*.pt
+*.pth
+*.ckpt
+*.zip
+*.safetensors
+
+# Logs
+*.log
+runs/          # TensorBoard runs dir
+wandb/
+
+# Data (generated; keep templates and rubrics)
+data/user_requests/train/
+data/user_requests/val/
+data/user_requests/test/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/

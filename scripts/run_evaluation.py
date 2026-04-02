@@ -1,0 +1,141 @@
+"""
+scripts/run_evaluation.py
+==========================
+Evaluate a trained compressor (or baseline) on the test split.
+
+Usage
+-----
+    # Deterministic only (fast — no LLM judge)
+    python scripts/run_evaluation.py eval.deterministic_only=true agent.mode=raw
+
+    # Full evaluation with LLM judge
+    python scripts/run_evaluation.py agent.mode=compressor
+
+    # With a specific checkpoint
+    python scripts/run_evaluation.py \\
+        agent.mode=compressor \\
+        training.resume_from=outputs/checkpoints/final/ppo_model.zip
+
+Outputs
+-------
+- JSON file at ``outputs/eval_results/<run_name>.json`` with all EvalResult objects.
+- Aggregated metrics printed to stdout.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+import hydra
+from omegaconf import DictConfig
+
+from optimized_llm_planning_memory.utils.logging import configure_logging, get_logger
+from optimized_llm_planning_memory.utils.seed import set_seed
+
+
+@hydra.main(config_path="../configs", config_name="config", version_base="1.3")
+def main(cfg: DictConfig) -> None:
+    configure_logging(level=cfg.logging.level)
+    log = get_logger(__name__)
+    set_seed(cfg.project.seed)
+
+    log.info("evaluation.start", mode=cfg.agent.mode, deterministic_only=cfg.eval.deterministic_only)
+
+    # ── Load test requests ────────────────────────────────────────────────────
+    from optimized_llm_planning_memory.core.models import UserRequest
+
+    test_dir = Path("data/user_requests/test")
+    if not test_dir.exists() or not list(test_dir.glob("*.json")):
+        log.warning("no_test_requests", path=str(test_dir),
+                    hint="Run scripts/generate_user_requests.py first.")
+        template = Path("data/user_requests/templates/request_template.json")
+        user_requests = [UserRequest.model_validate(json.loads(template.read_text()))]
+    else:
+        user_requests = [
+            UserRequest.model_validate(json.loads(f.read_text()))
+            for f in sorted(test_dir.glob("*.json"))
+        ]
+    log.info("loaded_test_requests", n=len(user_requests))
+
+    # ── Build agent + run episodes ────────────────────────────────────────────
+    from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
+    from optimized_llm_planning_memory.tools.registry import ToolRegistry
+    from optimized_llm_planning_memory.tools.tracker import ToolCallTracker
+    from optimized_llm_planning_memory.tools.events import EventBus
+    from optimized_llm_planning_memory.agent.react_agent import ReActAgent
+    from optimized_llm_planning_memory.agent.modes import AgentMode
+    from optimized_llm_planning_memory.agent.context_builder import ContextBuilder
+    from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
+    from optimized_llm_planning_memory.core.config import AgentConfig
+    from optimized_llm_planning_memory.utils.episode_io import save_episode
+
+    compressor = LLMCompressor(model_id=cfg.compressor.model_name_or_path)
+    agent_config = AgentConfig(
+        mode=cfg.agent.mode,
+        llm_model_id=cfg.agent.llm_model_id,
+        max_steps=cfg.agent.max_steps,
+        compress_every_n_steps=cfg.agent.compress_every_n_steps,
+    )
+
+    episodes_dir = Path(cfg.project.output_dir) / "episodes"
+    episode_logs = []
+
+    for i, user_request in enumerate(user_requests):
+        sim = SimulatorAdapter(seed=cfg.project.seed + i)
+        tracker = ToolCallTracker()
+        event_bus = EventBus()
+        registry = ToolRegistry.from_config(simulator=sim, tracker=tracker, event_bus=event_bus)
+        agent = ReActAgent(
+            llm_model_id=cfg.agent.llm_model_id,
+            tool_registry=registry,
+            compressor=compressor,
+            context_builder=ContextBuilder(),
+            config=agent_config,
+            mode=AgentMode(cfg.agent.mode),
+        )
+        episode_log = agent.run_episode(request=user_request, simulator=sim)
+        episode_logs.append(episode_log)
+        save_episode(episode_log, episodes_dir)
+        log.info("episode.complete", i=i + 1, total=len(user_requests),
+                 success=episode_log.success, steps=episode_log.total_steps)
+
+    # ── Evaluate ──────────────────────────────────────────────────────────────
+    from optimized_llm_planning_memory.evaluation.evaluator import Evaluator
+    from optimized_llm_planning_memory.evaluation.deterministic import DeterministicEvaluator
+    from optimized_llm_planning_memory.evaluation.llm_judge import LLMJudge
+    from optimized_llm_planning_memory.core.config import EvalConfig
+    from omegaconf import OmegaConf
+
+    eval_cfg = EvalConfig(**OmegaConf.to_container(cfg.eval, resolve=True))
+    det_eval = DeterministicEvaluator()
+    judge = None if eval_cfg.deterministic_only else LLMJudge(
+        judge_model_id=eval_cfg.judge_model_id,
+        rubric_dimensions=eval_cfg.rubric_dimensions,
+    )
+
+    evaluator = Evaluator(deterministic_eval=det_eval, llm_judge=judge, config=eval_cfg)
+    results = evaluator.evaluate_dataset(episode_logs, user_requests)
+    agg = evaluator.aggregate(results)
+
+    # ── Save + print ──────────────────────────────────────────────────────────
+    output_dir = Path(cfg.project.output_dir) / "eval_results"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = output_dir / f"{cfg.project.run_name}.json"
+    out_path.write_text(
+        json.dumps([r.model_dump() for r in results], indent=2),
+        encoding="utf-8",
+    )
+
+    print("\n=== Aggregated Evaluation Results ===")
+    for key, val in sorted(agg.items()):
+        print(f"  {key:<45} {val:.4f}")
+
+    log.info("evaluation.complete", n_episodes=len(results), output=str(out_path))
+
+
+if __name__ == "__main__":
+    main()

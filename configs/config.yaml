@@ -1,0 +1,23 @@
+# configs/config.yaml
+# Root Hydra config — composes sub-configs via the defaults list.
+#
+# Override at the CLI:
+#   python scripts/run_training.py agent=react_baseline_raw compressor=llm_prompt
+#   python scripts/run_evaluation.py eval.deterministic_only=true
+
+defaults:
+  - _self_
+  - simulator: default
+  - agent: react_default
+  - compressor: transformer
+  - training: ppo_default
+  - reward: default
+  - eval: default
+  - logging: default
+
+project:
+  name: optimized-llm-planning-memory
+  version: "0.1.0"
+  seed: 42
+  output_dir: outputs
+  run_name: "run_${now:%Y%m%d_%H%M%S}"

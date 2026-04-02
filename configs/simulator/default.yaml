@@ -1,0 +1,10 @@
+# configs/simulator/default.yaml
+# @package simulator
+simulator:
+  seed_range: [0, 9999]
+  world_params:
+    num_cities: 20
+    num_hotels_per_city: 10
+    num_flights_per_route: 5
+    num_activities_per_city: 15
+    price_variance: 0.2

@@ -1,0 +1,53 @@
+{
+  "request_id": "TEMPLATE",
+  "raw_text": "Plan a 7-day trip from New York to Paris and Rome for 2 adults with a budget of $5000. We prefer boutique hotels, love art museums, and need vegetarian dining options.",
+  "origin_city": "New York",
+  "destination_cities": ["Paris", "Rome"],
+  "start_date": "2025-06-01",
+  "end_date": "2025-06-07",
+  "budget_usd": 5000.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": ["vegetarian"]
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc_budget",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $5000",
+      "value": 5000.0,
+      "unit": "USD"
+    },
+    {
+      "constraint_id": "hc_dates",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2025-06-01 and end on 2025-06-07",
+      "value": {"start": "2025-06-01", "end": "2025-06-07"},
+      "unit": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc_hotel",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Prefer boutique hotels over large chains",
+      "value": "boutique",
+      "unit": null
+    },
+    {
+      "constraint_id": "sc_food",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Vegetarian dining options at all meal stops",
+      "value": "vegetarian",
+      "unit": null
+    }
+  ],
+  "preferences": ["art museums", "walking tours", "local cuisine"],
+  "metadata": {"template_version": "1.0"}
+}

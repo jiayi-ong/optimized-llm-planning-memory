@@ -1,0 +1,34 @@
+[
+  {
+    "example_id": "fse_001",
+    "description": "Searching for flights and handling a not-found error",
+    "steps": [
+      {
+        "thought": "I need to find available flights from New York to Paris on June 1st for 2 passengers. Let me search for options.",
+        "action": {"tool_name": "search_flights", "arguments": {"origin": "New York", "destination": "Paris", "date": "2025-06-01", "num_passengers": 2}},
+        "observation": {"success": true, "result": [{"flight_id": "FL001", "airline": "Air France", "departure": "08:00", "arrival": "20:00", "price_per_person": 650.0, "stops": 0}]}
+      },
+      {
+        "thought": "Good, I found a direct flight at $650 per person ($1300 total). This fits within our $5000 budget. Let me book it.",
+        "action": {"tool_name": "book_flight", "arguments": {"flight_id": "FL001", "passenger_details": {"num_passengers": 2}}},
+        "observation": {"success": true, "result": {"booking_ref": "AF-2025-0601-001", "total_cost": 1300.0, "status": "confirmed"}}
+      }
+    ]
+  },
+  {
+    "example_id": "fse_002",
+    "description": "Hotel search with budget constraint and fallback",
+    "steps": [
+      {
+        "thought": "Now I need a hotel in Paris for June 1–4 (3 nights) for 2 guests. Budget remaining is about $3700.",
+        "action": {"tool_name": "search_hotels", "arguments": {"city": "Paris", "check_in": "2025-06-01", "check_out": "2025-06-04", "num_guests": 2}},
+        "observation": {"success": true, "result": [{"hotel_id": "HTL_PAR_001", "name": "Hôtel du Marais", "stars": 3, "price_per_night": 180.0, "total_cost": 540.0, "category": "boutique"}, {"hotel_id": "HTL_PAR_002", "name": "Grand Paris Hotel", "stars": 5, "price_per_night": 450.0, "total_cost": 1350.0, "category": "luxury"}]}
+      },
+      {
+        "thought": "Hôtel du Marais is a boutique hotel at $180/night ($540 total), which matches the preference and fits the budget. I'll book it.",
+        "action": {"tool_name": "book_hotel", "arguments": {"hotel_id": "HTL_PAR_001", "guest_details": {"num_guests": 2, "check_in": "2025-06-01", "check_out": "2025-06-04"}}},
+        "observation": {"success": true, "result": {"booking_ref": "HTL-MAR-2025-001", "total_cost": 540.0, "status": "confirmed"}}
+      }
+    ]
+  }
+]
