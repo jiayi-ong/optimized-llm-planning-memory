@@ -5,24 +5,20 @@ SimulatorProtocol — structural typing contract for the travel simulator.
 
 Design pattern: Protocol (structural subtyping)
 ------------------------------------------------
-``typing.Protocol`` with ``@runtime_checkable`` is used instead of an ABC
-because:
+typing.Protocol with @runtime_checkable is used instead of an ABC because:
 
-1. The external simulator library has its own class hierarchy. We cannot make
-   that class inherit from our ABC without monkey-patching.
+1. SimulatorAdapter calls the external travel_world library which has its own
+   class hierarchy. We cannot force that class to inherit from our ABC.
 
-2. Structural typing lets ``SimulatorAdapter`` satisfy the contract just by
-   implementing the required methods — no explicit ``class Foo(SimulatorProtocol)``
-   declaration needed.
+2. Structural typing lets SimulatorAdapter satisfy the contract just by
+   implementing the required methods — no explicit class declaration needed.
 
-3. ``MockSimulator`` in tests only needs to implement the methods called by
-   the specific test, without inheriting the full ABC.
+3. MockSimulator in tests only needs to implement the methods the test calls.
 
-4. ``isinstance(obj, SimulatorProtocol)`` runtime check works because of
-   ``@runtime_checkable``.
+4. isinstance(obj, SimulatorProtocol) runtime checks work via @runtime_checkable.
 
-All other modules type-hint simulator arguments as ``SimulatorProtocol``.
-They never import ``SimulatorAdapter`` directly.
+All other modules type-hint simulator arguments as SimulatorProtocol.
+They never import SimulatorAdapter directly.
 """
 
 from __future__ import annotations
@@ -38,142 +34,171 @@ class SimulatorProtocol(Protocol):
     Any object that implements all methods below satisfies this protocol,
     regardless of its inheritance hierarchy.
 
-    Method naming follows REST-style verb-noun patterns so that pydantic-ai
-    tool names align naturally with the protocol methods.
+    City IDs vs. city names
+    -----------------------
+    All search/booking methods use city_id (an opaque string identifier from
+    the simulator world), not human-readable city names. Use get_available_routes()
+    to discover which city IDs exist in a given world and their names.
     """
 
-    # ── Search (read-only) ────────────────────────────────────────────────────
+    # ── Flight methods ────────────────────────────────────────────────────────
 
     def search_flights(
         self,
-        origin: str,
-        destination: str,
-        date: str,
-        num_passengers: int = 1,
+        origin_city_id: str,
+        destination_city_id: str,
+        departure_date: str,
+        passengers: int = 1,
     ) -> list[dict]:
         """
         Return available flight options between two cities on a given date.
 
         Parameters
         ----------
-        origin, destination : City names recognised by the simulator world.
-        date                : ISO 8601 date string (e.g., '2025-06-01').
-        num_passengers      : Total number of passengers (adults + children).
+        origin_city_id      : City ID for departure.
+        destination_city_id : City ID for arrival.
+        departure_date      : ISO 8601 date ('YYYY-MM-DD').
+        passengers          : Number of passengers.
 
         Returns
         -------
-        list[dict]
-            Each dict matches ``schemas.FlightOption``.
+        list[dict] — each dict matches schemas.FlightOption.
         """
         ...
 
+    def get_available_routes(self) -> list[dict]:
+        """
+        Return all city-pair routes with at least one flight edge.
+
+        Primary city-discovery method. Each dict contains:
+            origin_city_id, origin_city_name,
+            destination_city_id, destination_city_name,
+            origin_hub_id, destination_hub_id
+        """
+        ...
+
+    # ── Hotel methods ─────────────────────────────────────────────────────────
+
     def search_hotels(
         self,
-        city: str,
+        city_id: str,
         check_in: str,
         check_out: str,
-        num_guests: int = 1,
+        guests: int = 1,
+        max_price: float | None = None,
+        min_stars: float | None = None,
     ) -> list[dict]:
         """
         Return available hotel options in a city for the given stay period.
 
         Returns
         -------
-        list[dict]
-            Each dict matches ``schemas.HotelOption``.
+        list[dict] — each dict matches schemas.HotelOption.
         """
         ...
 
-    def search_activities(
+    def book_hotel(
         self,
-        city: str,
-        date: str,
+        hotel_id: str,
+        check_in: str,
+        check_out: str,
+    ) -> dict:
+        """
+        Confirm a hotel booking (decrements availability).
+
+        Returns
+        -------
+        dict matching schemas.BookingConfirmation.
+        """
+        ...
+
+    def get_hotel_detail(self, hotel_id: str) -> dict:
+        """Full hotel record including 30-day availability calendar."""
+        ...
+
+    # ── Attraction methods ────────────────────────────────────────────────────
+
+    def search_attractions(
+        self,
+        city_id: str,
         category: str | None = None,
+        free_only: bool = False,
     ) -> list[dict]:
         """
-        Return available activities in a city on a given date.
-
-        Parameters
-        ----------
-        category : Optional filter (e.g., 'outdoor', 'museum', 'food').
+        Return attractions in a city, optionally filtered by category.
 
         Returns
         -------
-        list[dict]
-            Each dict matches ``schemas.ActivityOption``.
+        list[dict] — each dict matches schemas.AttractionOption.
         """
         ...
 
-    def get_city_info(self, city: str) -> dict:
-        """
-        Return city metadata: districts, landmark nodes, connectivity graph.
-
-        Returns
-        -------
-        dict
-            Matches ``schemas.CityInfo``.
-        """
+    def get_attraction_detail(self, attraction_id: str) -> dict:
+        """Full attraction record including opening hours and capacity."""
         ...
 
-    def get_location_details(self, location_id: str) -> dict:
-        """
-        Return detailed attributes for a specific location node (hotel, venue, etc.).
+    # ── Restaurant methods ────────────────────────────────────────────────────
 
-        Returns
-        -------
-        dict
-            Matches ``schemas.LocationDetails``.
-        """
-        ...
-
-    def get_events(
+    def search_restaurants(
         self,
-        city: str,
-        start_date: str,
-        end_date: str,
+        city_id: str,
+        cuisine: str | None = None,
+        max_avg_spend: float | None = None,
     ) -> list[dict]:
         """
-        Return special events occurring in a city within a date range.
+        Return restaurants in a city, optionally filtered by cuisine.
 
         Returns
         -------
-        list[dict]
-            Each dict matches ``schemas.EventOption``.
+        list[dict] — each dict matches schemas.RestaurantOption.
         """
         ...
 
-    # ── Booking (write) ───────────────────────────────────────────────────────
+    # ── Event methods ─────────────────────────────────────────────────────────
 
-    def book_flight(self, flight_id: str, passenger_details: dict) -> dict:
+    def search_events(
+        self,
+        city_id: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        category: str | None = None,
+        max_price: float | None = None,
+    ) -> list[dict]:
         """
-        Confirm a flight booking.
+        Return events in a city within a date range.
 
         Returns
         -------
-        dict
-            Matches ``schemas.BookingConfirmation``.
+        list[dict] — each dict matches schemas.EventOption.
         """
         ...
 
-    def book_hotel(self, hotel_id: str, guest_details: dict) -> dict:
+    def book_event(self, event_id: str, quantity: int = 1) -> dict:
         """
-        Confirm a hotel booking.
+        Book tickets for an event (decrements ticket count).
 
         Returns
         -------
-        dict
-            Matches ``schemas.BookingConfirmation``.
+        dict matching schemas.BookingConfirmation.
         """
         ...
 
-    def book_activity(self, activity_id: str, participant_details: dict) -> dict:
+    # ── Routing methods ───────────────────────────────────────────────────────
+
+    def plan_route(
+        self,
+        origin_location_id: str,
+        destination_location_id: str,
+        departure_datetime: str,
+        modes: list[str] | None = None,
+        optimize_for: str = "time",
+    ) -> list[dict]:
         """
-        Confirm an activity booking.
+        Plan routes between two locations for each available transport mode.
 
         Returns
         -------
-        dict
-            Matches ``schemas.BookingConfirmation``.
+        list[dict] — one per mode, each matching schemas.RouteOption.
         """
         ...
 
@@ -183,8 +208,8 @@ class SimulatorProtocol(Protocol):
         """
         Reset world state, optionally with a new seed.
 
-        After reset, all previously booked resources are cleared and the world
-        is re-initialised from scratch. Used at episode boundaries.
+        After reset all bookings are cleared and the world is re-initialised.
+        Used at episode boundaries in RL training.
         """
         ...
 
