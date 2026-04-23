@@ -1,0 +1,15 @@
+# configs/compressor/identity.yaml
+# @package compressor
+#
+# Identity compressor — passes the full trajectory to the agent context with
+# no distillation.  A single scalar nn.Parameter (_dummy_param) is trainable
+# by PPO so gradient infrastructure remains fully operational.
+#
+# The optional PySpark MLlib component (use_spark: true) learns to predict
+# episode rewards in local mode; it does NOT affect compress() output.
+
+compressor:
+  type: identity
+  use_spark: true
+  spark_master: "local[*]"
+  spark_fit_every_n_episodes: 50

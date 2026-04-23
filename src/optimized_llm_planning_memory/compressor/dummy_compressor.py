@@ -536,6 +536,15 @@ class DummyCompressor(TrainableCompressorBase):
                 f"Failed to load DummyCompressor checkpoint from {p}: {exc}"
             ) from exc
 
+    def get_metadata(self) -> dict:
+        n_params = sum(p.numel() for p in self._model.parameters())
+        return {
+            "type": "dummy",
+            "param_count": n_params,
+            "trainable": True,
+            "device": str(self._device),
+        }
+
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _encode_input(self, text: str) -> torch.Tensor:

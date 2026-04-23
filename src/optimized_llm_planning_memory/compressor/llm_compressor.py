@@ -138,6 +138,14 @@ class LLMCompressor(CompressorBase):
         self._template.validate(state)
         return state
 
+    def get_metadata(self) -> dict:
+        return {
+            "type": "llm",
+            "model_id": self._model_id,
+            "param_count": 0,
+            "trainable": False,
+        }
+
     def _build_prompt(
         self,
         trajectory: TrajectoryModel,

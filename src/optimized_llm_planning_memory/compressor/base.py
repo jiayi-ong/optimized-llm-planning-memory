@@ -26,6 +26,7 @@ compressor classes directly.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 from optimized_llm_planning_memory.core.exceptions import LogProbsNotSupportedError
 from optimized_llm_planning_memory.core.models import CompressedState, TrajectoryModel
@@ -108,3 +109,19 @@ class CompressorBase(ABC):
     def is_trainable(self) -> bool:
         """Return True if this compressor supports RL training (has trainable parameters)."""
         return len(self.get_trainable_parameters()) > 0
+
+    def get_metadata(self) -> dict[str, Any]:
+        """
+        Return a JSON-serialisable dict describing this compressor instance.
+
+        Used to populate EvalRunManifest.compressor_type and checkpoint logs.
+        Subclasses should override to add type-specific fields (model_id, etc.).
+
+        Minimum keys returned by the base implementation:
+            {"type": str, "param_count": int, "trainable": bool}
+        """
+        return {
+            "type": type(self).__name__.lower().replace("compressor", ""),
+            "param_count": len(self.get_trainable_parameters()),
+            "trainable": self.is_trainable(),
+        }
