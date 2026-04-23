@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 
 from optimized_llm_planning_memory.core.config import EvalConfig
 from optimized_llm_planning_memory.core.models import EpisodeLog, EvalResult, UserRequest
-from optimized_llm_planning_memory.evaluation.deterministic import DeterministicEvaluator
+from optimized_llm_planning_memory.evaluation.deterministic import DeterministicEvaluator, METRIC_VERSION
 from optimized_llm_planning_memory.evaluation.llm_judge import LLMJudge
 
 
@@ -78,6 +78,7 @@ class Evaluator:
         det_scores = self._det.score(episode_log, user_request)
 
         llm_scores: dict[str, float] = {}
+        rubric_breakdown: dict[str, dict] = {}
         judge_model = "none"
 
         use_judge = (
@@ -86,7 +87,7 @@ class Evaluator:
             and episode_log.final_itinerary is not None
         )
         if use_judge:
-            llm_scores = self._judge.score(  # type: ignore[union-attr]
+            llm_scores, rubric_breakdown = self._judge.score_detailed(  # type: ignore[union-attr]
                 episode_log.final_itinerary,  # type: ignore[arg-type]
                 user_request,
             )
@@ -101,8 +102,10 @@ class Evaluator:
             deterministic_scores=det_scores,
             llm_judge_scores=llm_scores,
             overall_score=max(0.0, min(1.0, overall)),
+            rubric_breakdown=rubric_breakdown,
             judge_model=judge_model,
             created_at=datetime.now(timezone.utc).isoformat(),
+            metric_version=METRIC_VERSION,
         )
 
     def evaluate_dataset(

@@ -28,6 +28,17 @@ from __future__ import annotations
 from optimized_llm_planning_memory.core.constraints import ConstraintSatisfactionEngine
 from optimized_llm_planning_memory.core.models import EpisodeLog, Itinerary, UserRequest
 
+METRIC_VERSION = "v1"
+
+METRIC_CHANGELOG: dict[str, str] = {
+    "v1": (
+        "Initial 8 metrics: hard_constraint_ratio, soft_constraint_score, "
+        "tool_efficiency, tool_failure_rate, avg_tool_latency_ms, "
+        "steps_per_episode, budget_adherence, logical_consistency. "
+        "Constraint evaluation via ConstraintSatisfactionEngine."
+    ),
+}
+
 
 class DeterministicEvaluator:
     """

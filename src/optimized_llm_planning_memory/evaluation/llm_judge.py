@@ -23,6 +23,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+
 from optimized_llm_planning_memory.core.config import LLMJudgeConfig
 from optimized_llm_planning_memory.core.models import Itinerary, UserRequest
 from optimized_llm_planning_memory.evaluation.rubrics import RUBRIC_DIMENSIONS, DEFAULT_RUBRIC_DIMENSIONS
@@ -81,14 +82,26 @@ class LLMJudge:
         """
         Score the itinerary on all rubric dimensions.
 
-        Parameters
-        ----------
-        itinerary    : Final itinerary from the episode.
-        user_request : Original user request (for context).
-
         Returns
         -------
         dict[str, float] — dimension name → score in [0.0, 1.0].
+        """
+        flat, _ = self.score_detailed(itinerary, user_request)
+        return flat
+
+    def score_detailed(
+        self,
+        itinerary: Itinerary,
+        user_request: UserRequest,
+    ) -> tuple[dict[str, float], dict[str, dict[str, Any]]]:
+        """
+        Score the itinerary and return both flat scores and per-dimension reasoning.
+
+        Returns
+        -------
+        (flat_scores, breakdown)
+            flat_scores : dimension → score in [0.0, 1.0]
+            breakdown   : dimension → {"score": float, "reasoning": str}
         """
         itinerary_text = self._render_itinerary(itinerary)
         request_text = self._render_request(user_request)
@@ -103,7 +116,12 @@ class LLMJudge:
             temperature=self._config.temperature,
             max_tokens=self._config.max_tokens,
         )
-        return result.as_dict()
+        flat = result.as_dict()
+        breakdown = {
+            s.dimension: {"score": s.score, "reasoning": s.reasoning}
+            for s in result.scores
+        }
+        return flat, breakdown
 
     # ── Private helpers ───────────────────────────────────────────────────────
 

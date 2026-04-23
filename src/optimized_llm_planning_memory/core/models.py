@@ -548,3 +548,7 @@ class EvalResult(BaseModel):
     rubric_breakdown: dict[str, Any] = Field(default_factory=dict)
     judge_model: str
     created_at: str
+    metric_version: str = Field(
+        default="v1",
+        description="Version tag of the metric schema that produced these scores.",
+    )
