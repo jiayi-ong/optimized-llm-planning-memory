@@ -9,7 +9,7 @@ defaults:
   - _self_
   - simulator: default
   - agent: react_default
-  - compressor: transformer
+  - compressor: identity
   - training: ppo_default
   - reward: default
   - eval: default

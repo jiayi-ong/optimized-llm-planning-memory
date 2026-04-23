@@ -10,7 +10,7 @@ eval:
     - budget_efficiency
     - feasibility
     - creativity
-  deterministic_only: false
+  deterministic_only: true
   output_format: json
   ablation_components:
     - compressor_type

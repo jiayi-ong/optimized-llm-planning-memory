@@ -34,6 +34,9 @@ dependencies = [
     # HTTP (optional simulator transport, utilities)
     "httpx>=0.27",
 
+    # PySpark — distributed training component (runs local[*] in Colab)
+    "pyspark>=3.5",
+
     # Configuration composition
     "hydra-core>=1.3",
     "omegaconf>=2.3",
@@ -78,3 +81,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"'); downloads HuggingFace weights",
+    "integration: marks tests that require a live API key",
+]
