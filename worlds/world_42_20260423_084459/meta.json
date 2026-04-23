@@ -1,0 +1,14 @@
+{
+  "world_id": "world_42_20260423_084459",
+  "seed": 42,
+  "created_at": "2026-04-23T08:44:59.665050",
+  "sim_date": "2026-04-23",
+  "layer_ids": [
+    "geo",
+    "weather",
+    "traffic",
+    "accommodation",
+    "event",
+    "economics"
+  ]
+}

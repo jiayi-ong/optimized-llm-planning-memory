@@ -1,0 +1,732 @@
+{
+  "layer_id": "weather",
+  "world_id": "world_42_20260423_084335",
+  "seed": 3638163920,
+  "schema_version": "1.0",
+  "generated_at": "2026-04-23T08:43:35.477334",
+  "frozen": false,
+  "data": {
+    "city_world_42_20260423_084335_0000": {
+      "2026-04-23": {
+        "temperature_c": 21.0,
+        "precipitation_mm": 0.4,
+        "wind_speed_kmh": 14.5,
+        "visibility_km": 23.7,
+        "condition": "sunny",
+        "humidity_pct": 40.7
+      },
+      "2026-04-24": {
+        "temperature_c": 17.6,
+        "precipitation_mm": 1.4,
+        "wind_speed_kmh": 17.9,
+        "visibility_km": 19.1,
+        "condition": "sunny",
+        "humidity_pct": 41.0
+      },
+      "2026-04-25": {
+        "temperature_c": 19.1,
+        "precipitation_mm": 0.3,
+        "wind_speed_kmh": 21.2,
+        "visibility_km": 18.8,
+        "condition": "sunny",
+        "humidity_pct": 85.0
+      },
+      "2026-04-26": {
+        "temperature_c": 21.3,
+        "precipitation_mm": 0.7,
+        "wind_speed_kmh": 24.1,
+        "visibility_km": 12.6,
+        "condition": "sunny",
+        "humidity_pct": 77.1
+      },
+      "2026-04-27": {
+        "temperature_c": 22.6,
+        "precipitation_mm": 1.7,
+        "wind_speed_kmh": 7.6,
+        "visibility_km": 26.0,
+        "condition": "sunny",
+        "humidity_pct": 49.1
+      },
+      "2026-04-28": {
+        "temperature_c": 18.3,
+        "precipitation_mm": 3.4,
+        "wind_speed_kmh": 15.4,
+        "visibility_km": 22.7,
+        "condition": "partly_cloudy",
+        "humidity_pct": 56.7
+      },
+      "2026-04-29": {
+        "temperature_c": 23.1,
+        "precipitation_mm": 0.9,
+        "wind_speed_kmh": 1.1,
+        "visibility_km": 17.1,
+        "condition": "sunny",
+        "humidity_pct": 67.8
+      },
+      "2026-04-30": {
+        "temperature_c": 21.7,
+        "precipitation_mm": 1.2,
+        "wind_speed_kmh": 16.8,
+        "visibility_km": 20.5,
+        "condition": "sunny",
+        "humidity_pct": 51.0
+      },
+      "2026-05-01": {
+        "temperature_c": 24.6,
+        "precipitation_mm": 2.8,
+        "wind_speed_kmh": 24.2,
+        "visibility_km": 10.6,
+        "condition": "sunny",
+        "humidity_pct": 56.1
+      },
+      "2026-05-02": {
+        "temperature_c": 23.6,
+        "precipitation_mm": 6.9,
+        "wind_speed_kmh": 11.6,
+        "visibility_km": 22.3,
+        "condition": "partly_cloudy",
+        "humidity_pct": 50.1
+      },
+      "2026-05-03": {
+        "temperature_c": 24.4,
+        "precipitation_mm": 0.3,
+        "wind_speed_kmh": 22.6,
+        "visibility_km": 15.6,
+        "condition": "sunny",
+        "humidity_pct": 47.4
+      },
+      "2026-05-04": {
+        "temperature_c": 20.9,
+        "precipitation_mm": 3.2,
+        "wind_speed_kmh": 16.0,
+        "visibility_km": 26.2,
+        "condition": "partly_cloudy",
+        "humidity_pct": 69.5
+      },
+      "2026-05-05": {
+        "temperature_c": 23.7,
+        "precipitation_mm": 3.9,
+        "wind_speed_kmh": 12.1,
+        "visibility_km": 12.4,
+        "condition": "partly_cloudy",
+        "humidity_pct": 45.4
+      },
+      "2026-05-06": {
+        "temperature_c": 24.4,
+        "precipitation_mm": 4.0,
+        "wind_speed_kmh": 24.1,
+        "visibility_km": 14.8,
+        "condition": "partly_cloudy",
+        "humidity_pct": 58.4
+      },
+      "2026-05-07": {
+        "temperature_c": 19.2,
+        "precipitation_mm": 0.2,
+        "wind_speed_kmh": 31.2,
+        "visibility_km": 24.3,
+        "condition": "sunny",
+        "humidity_pct": 54.2
+      },
+      "2026-05-08": {
+        "temperature_c": 24.3,
+        "precipitation_mm": 26.7,
+        "wind_speed_kmh": 13.5,
+        "visibility_km": 15.2,
+        "condition": "rainy",
+        "humidity_pct": 58.2
+      },
+      "2026-05-09": {
+        "temperature_c": 24.4,
+        "precipitation_mm": 1.8,
+        "wind_speed_kmh": 21.1,
+        "visibility_km": 28.5,
+        "condition": "sunny",
+        "humidity_pct": 90.3
+      },
+      "2026-05-10": {
+        "temperature_c": 21.0,
+        "precipitation_mm": 19.7,
+        "wind_speed_kmh": 2.8,
+        "visibility_km": 26.2,
+        "condition": "rainy",
+        "humidity_pct": 41.5
+      },
+      "2026-05-11": {
+        "temperature_c": 27.7,
+        "precipitation_mm": 3.3,
+        "wind_speed_kmh": 17.1,
+        "visibility_km": 27.4,
+        "condition": "partly_cloudy",
+        "humidity_pct": 82.4
+      },
+      "2026-05-12": {
+        "temperature_c": 26.1,
+        "precipitation_mm": 2.8,
+        "wind_speed_kmh": 7.4,
+        "visibility_km": 6.3,
+        "condition": "sunny",
+        "humidity_pct": 67.7
+      },
+      "2026-05-13": {
+        "temperature_c": 24.4,
+        "precipitation_mm": 0.1,
+        "wind_speed_kmh": 12.0,
+        "visibility_km": 14.5,
+        "condition": "stormy",
+        "humidity_pct": 82.6
+      },
+      "2026-05-14": {
+        "temperature_c": 22.7,
+        "precipitation_mm": 0.7,
+        "wind_speed_kmh": 16.5,
+        "visibility_km": 25.4,
+        "condition": "sunny",
+        "humidity_pct": 72.4
+      },
+      "2026-05-15": {
+        "temperature_c": 23.9,
+        "precipitation_mm": 13.4,
+        "wind_speed_kmh": 14.0,
+        "visibility_km": 9.6,
+        "condition": "rainy",
+        "humidity_pct": 59.0
+      },
+      "2026-05-16": {
+        "temperature_c": 24.1,
+        "precipitation_mm": 0.1,
+        "wind_speed_kmh": 11.1,
+        "visibility_km": 24.1,
+        "condition": "sunny",
+        "humidity_pct": 73.3
+      },
+      "2026-05-17": {
+        "temperature_c": 25.0,
+        "precipitation_mm": 1.4,
+        "wind_speed_kmh": 3.1,
+        "visibility_km": 22.1,
+        "condition": "sunny",
+        "humidity_pct": 83.9
+      },
+      "2026-05-18": {
+        "temperature_c": 23.3,
+        "precipitation_mm": 1.3,
+        "wind_speed_kmh": 13.2,
+        "visibility_km": 26.0,
+        "condition": "sunny",
+        "humidity_pct": 57.2
+      },
+      "2026-05-19": {
+        "temperature_c": 23.4,
+        "precipitation_mm": 6.5,
+        "wind_speed_kmh": 29.1,
+        "visibility_km": 14.8,
+        "condition": "partly_cloudy",
+        "humidity_pct": 67.4
+      },
+      "2026-05-20": {
+        "temperature_c": 25.9,
+        "precipitation_mm": 6.9,
+        "wind_speed_kmh": 3.3,
+        "visibility_km": 15.7,
+        "condition": "partly_cloudy",
+        "humidity_pct": 80.3
+      },
+      "2026-05-21": {
+        "temperature_c": 21.4,
+        "precipitation_mm": 0.7,
+        "wind_speed_kmh": 10.2,
+        "visibility_km": 16.7,
+        "condition": "sunny",
+        "humidity_pct": 53.6
+      },
+      "2026-05-22": {
+        "temperature_c": 25.0,
+        "precipitation_mm": 1.4,
+        "wind_speed_kmh": 17.5,
+        "visibility_km": 24.4,
+        "condition": "sunny",
+        "humidity_pct": 52.2
+      },
+      "2026-05-23": {
+        "temperature_c": 24.3,
+        "precipitation_mm": 1.1,
+        "wind_speed_kmh": 14.6,
+        "visibility_km": 10.9,
+        "condition": "sunny",
+        "humidity_pct": 83.6
+      },
+      "2026-05-24": {
+        "temperature_c": 25.4,
+        "precipitation_mm": 2.8,
+        "wind_speed_kmh": 10.1,
+        "visibility_km": 19.7,
+        "condition": "sunny",
+        "humidity_pct": 79.4
+      },
+      "2026-05-25": {
+        "temperature_c": 26.1,
+        "precipitation_mm": 3.2,
+        "wind_speed_kmh": 27.4,
+        "visibility_km": 24.8,
+        "condition": "partly_cloudy",
+        "humidity_pct": 76.1
+      },
+      "2026-05-26": {
+        "temperature_c": 20.8,
+        "precipitation_mm": 2.7,
+        "wind_speed_kmh": 5.3,
+        "visibility_km": 17.2,
+        "condition": "sunny",
+        "humidity_pct": 55.3
+      },
+      "2026-05-27": {
+        "temperature_c": 23.4,
+        "precipitation_mm": 2.2,
+        "wind_speed_kmh": 18.7,
+        "visibility_km": 6.3,
+        "condition": "sunny",
+        "humidity_pct": 54.9
+      },
+      "2026-05-28": {
+        "temperature_c": 26.8,
+        "precipitation_mm": 3.6,
+        "wind_speed_kmh": 1.1,
+        "visibility_km": 10.4,
+        "condition": "partly_cloudy",
+        "humidity_pct": 65.5
+      },
+      "2026-05-29": {
+        "temperature_c": 23.4,
+        "precipitation_mm": 19.0,
+        "wind_speed_kmh": 13.8,
+        "visibility_km": 16.7,
+        "condition": "rainy",
+        "humidity_pct": 55.2
+      },
+      "2026-05-30": {
+        "temperature_c": 24.5,
+        "precipitation_mm": 2.7,
+        "wind_speed_kmh": 10.4,
+        "visibility_km": 26.6,
+        "condition": "sunny",
+        "humidity_pct": 34.1
+      },
+      "2026-05-31": {
+        "temperature_c": 24.6,
+        "precipitation_mm": 6.3,
+        "wind_speed_kmh": 18.9,
+        "visibility_km": 9.9,
+        "condition": "partly_cloudy",
+        "humidity_pct": 54.9
+      },
+      "2026-06-01": {
+        "temperature_c": 23.9,
+        "precipitation_mm": 5.2,
+        "wind_speed_kmh": 30.8,
+        "visibility_km": 15.7,
+        "condition": "partly_cloudy",
+        "humidity_pct": 42.9
+      },
+      "2026-06-02": {
+        "temperature_c": 27.3,
+        "precipitation_mm": 1.0,
+        "wind_speed_kmh": 9.0,
+        "visibility_km": 20.7,
+        "condition": "sunny",
+        "humidity_pct": 61.5
+      },
+      "2026-06-03": {
+        "temperature_c": 24.1,
+        "precipitation_mm": 0.5,
+        "wind_speed_kmh": 22.4,
+        "visibility_km": 15.9,
+        "condition": "sunny",
+        "humidity_pct": 62.4
+      },
+      "2026-06-04": {
+        "temperature_c": 24.5,
+        "precipitation_mm": 1.0,
+        "wind_speed_kmh": 10.0,
+        "visibility_km": 21.2,
+        "condition": "sunny",
+        "humidity_pct": 77.7
+      },
+      "2026-06-05": {
+        "temperature_c": 28.2,
+        "precipitation_mm": 0.3,
+        "wind_speed_kmh": 18.0,
+        "visibility_km": 29.5,
+        "condition": "sunny",
+        "humidity_pct": 69.1
+      },
+      "2026-06-06": {
+        "temperature_c": 24.7,
+        "precipitation_mm": 0.1,
+        "wind_speed_kmh": 27.0,
+        "visibility_km": 10.6,
+        "condition": "sunny",
+        "humidity_pct": 66.4
+      },
+      "2026-06-07": {
+        "temperature_c": 26.9,
+        "precipitation_mm": 2.0,
+        "wind_speed_kmh": 18.9,
+        "visibility_km": 19.2,
+        "condition": "stormy",
+        "humidity_pct": 81.1
+      },
+      "2026-06-08": {
+        "temperature_c": 25.2,
+        "precipitation_mm": 1.3,
+        "wind_speed_kmh": 21.0,
+        "visibility_km": 17.3,
+        "condition": "sunny",
+        "humidity_pct": 68.1
+      },
+      "2026-06-09": {
+        "temperature_c": 24.8,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 5.1,
+        "visibility_km": 24.8,
+        "condition": "sunny",
+        "humidity_pct": 38.6
+      },
+      "2026-06-10": {
+        "temperature_c": 30.2,
+        "precipitation_mm": 0.7,
+        "wind_speed_kmh": 17.9,
+        "visibility_km": 23.6,
+        "condition": "stormy",
+        "humidity_pct": 41.5
+      },
+      "2026-06-11": {
+        "temperature_c": 28.7,
+        "precipitation_mm": 1.4,
+        "wind_speed_kmh": 24.0,
+        "visibility_km": 22.1,
+        "condition": "sunny",
+        "humidity_pct": 64.2
+      },
+      "2026-06-12": {
+        "temperature_c": 28.0,
+        "precipitation_mm": 2.5,
+        "wind_speed_kmh": 18.2,
+        "visibility_km": 19.8,
+        "condition": "sunny",
+        "humidity_pct": 35.0
+      },
+      "2026-06-13": {
+        "temperature_c": 26.4,
+        "precipitation_mm": 5.6,
+        "wind_speed_kmh": 6.5,
+        "visibility_km": 11.0,
+        "condition": "partly_cloudy",
+        "humidity_pct": 57.7
+      },
+      "2026-06-14": {
+        "temperature_c": 23.4,
+        "precipitation_mm": 3.4,
+        "wind_speed_kmh": 14.0,
+        "visibility_km": 14.5,
+        "condition": "partly_cloudy",
+        "humidity_pct": 82.8
+      },
+      "2026-06-15": {
+        "temperature_c": 27.0,
+        "precipitation_mm": 0.2,
+        "wind_speed_kmh": 19.3,
+        "visibility_km": 29.2,
+        "condition": "sunny",
+        "humidity_pct": 49.6
+      },
+      "2026-06-16": {
+        "temperature_c": 25.2,
+        "precipitation_mm": 10.6,
+        "wind_speed_kmh": 14.8,
+        "visibility_km": 26.3,
+        "condition": "rainy",
+        "humidity_pct": 87.8
+      },
+      "2026-06-17": {
+        "temperature_c": 26.8,
+        "precipitation_mm": 1.3,
+        "wind_speed_kmh": 16.5,
+        "visibility_km": 16.0,
+        "condition": "sunny",
+        "humidity_pct": 88.6
+      },
+      "2026-06-18": {
+        "temperature_c": 23.6,
+        "precipitation_mm": 0.1,
+        "wind_speed_kmh": 1.6,
+        "visibility_km": 10.8,
+        "condition": "sunny",
+        "humidity_pct": 35.9
+      },
+      "2026-06-19": {
+        "temperature_c": 25.8,
+        "precipitation_mm": 1.0,
+        "wind_speed_kmh": 22.3,
+        "visibility_km": 15.7,
+        "condition": "sunny",
+        "humidity_pct": 52.7
+      },
+      "2026-06-20": {
+        "temperature_c": 28.4,
+        "precipitation_mm": 3.1,
+        "wind_speed_kmh": 17.8,
+        "visibility_km": 23.7,
+        "condition": "partly_cloudy",
+        "humidity_pct": 46.1
+      },
+      "2026-06-21": {
+        "temperature_c": 25.8,
+        "precipitation_mm": 1.9,
+        "wind_speed_kmh": 21.9,
+        "visibility_km": 12.1,
+        "condition": "sunny",
+        "humidity_pct": 79.1
+      },
+      "2026-06-22": {
+        "temperature_c": 25.3,
+        "precipitation_mm": 3.0,
+        "wind_speed_kmh": 18.9,
+        "visibility_km": 27.8,
+        "condition": "partly_cloudy",
+        "humidity_pct": 50.6
+      },
+      "2026-06-23": {
+        "temperature_c": 28.9,
+        "precipitation_mm": 6.6,
+        "wind_speed_kmh": 23.0,
+        "visibility_km": 28.9,
+        "condition": "partly_cloudy",
+        "humidity_pct": 70.9
+      },
+      "2026-06-24": {
+        "temperature_c": 26.1,
+        "precipitation_mm": 4.0,
+        "wind_speed_kmh": 2.1,
+        "visibility_km": 13.2,
+        "condition": "partly_cloudy",
+        "humidity_pct": 85.9
+      },
+      "2026-06-25": {
+        "temperature_c": 32.6,
+        "precipitation_mm": 3.8,
+        "wind_speed_kmh": 32.8,
+        "visibility_km": 12.1,
+        "condition": "partly_cloudy",
+        "humidity_pct": 82.5
+      },
+      "2026-06-26": {
+        "temperature_c": 23.8,
+        "precipitation_mm": 3.8,
+        "wind_speed_kmh": 14.5,
+        "visibility_km": 23.8,
+        "condition": "partly_cloudy",
+        "humidity_pct": 93.8
+      },
+      "2026-06-27": {
+        "temperature_c": 26.6,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 8.2,
+        "visibility_km": 29.3,
+        "condition": "sunny",
+        "humidity_pct": 74.0
+      },
+      "2026-06-28": {
+        "temperature_c": 27.4,
+        "precipitation_mm": 0.3,
+        "wind_speed_kmh": 14.5,
+        "visibility_km": 24.6,
+        "condition": "sunny",
+        "humidity_pct": 89.2
+      },
+      "2026-06-29": {
+        "temperature_c": 29.3,
+        "precipitation_mm": 1.5,
+        "wind_speed_kmh": 8.3,
+        "visibility_km": 24.7,
+        "condition": "sunny",
+        "humidity_pct": 87.9
+      },
+      "2026-06-30": {
+        "temperature_c": 26.3,
+        "precipitation_mm": 2.6,
+        "wind_speed_kmh": 7.1,
+        "visibility_km": 22.7,
+        "condition": "sunny",
+        "humidity_pct": 85.6
+      },
+      "2026-07-01": {
+        "temperature_c": 25.0,
+        "precipitation_mm": 4.7,
+        "wind_speed_kmh": 5.0,
+        "visibility_km": 27.7,
+        "condition": "partly_cloudy",
+        "humidity_pct": 91.0
+      },
+      "2026-07-02": {
+        "temperature_c": 25.2,
+        "precipitation_mm": 0.2,
+        "wind_speed_kmh": 15.1,
+        "visibility_km": 25.0,
+        "condition": "sunny",
+        "humidity_pct": 67.0
+      },
+      "2026-07-03": {
+        "temperature_c": 24.0,
+        "precipitation_mm": 3.5,
+        "wind_speed_kmh": 5.5,
+        "visibility_km": 22.5,
+        "condition": "partly_cloudy",
+        "humidity_pct": 58.1
+      },
+      "2026-07-04": {
+        "temperature_c": 27.9,
+        "precipitation_mm": 1.8,
+        "wind_speed_kmh": 17.9,
+        "visibility_km": 22.2,
+        "condition": "sunny",
+        "humidity_pct": 44.8
+      },
+      "2026-07-05": {
+        "temperature_c": 21.4,
+        "precipitation_mm": 4.5,
+        "wind_speed_kmh": 19.2,
+        "visibility_km": 18.0,
+        "condition": "partly_cloudy",
+        "humidity_pct": 54.4
+      },
+      "2026-07-06": {
+        "temperature_c": 25.5,
+        "precipitation_mm": 1.8,
+        "wind_speed_kmh": 14.8,
+        "visibility_km": 12.2,
+        "condition": "sunny",
+        "humidity_pct": 85.2
+      },
+      "2026-07-07": {
+        "temperature_c": 24.5,
+        "precipitation_mm": 0.9,
+        "wind_speed_kmh": 12.7,
+        "visibility_km": 30.0,
+        "condition": "sunny",
+        "humidity_pct": 58.0
+      },
+      "2026-07-08": {
+        "temperature_c": 26.6,
+        "precipitation_mm": 0.5,
+        "wind_speed_kmh": 21.6,
+        "visibility_km": 29.1,
+        "condition": "sunny",
+        "humidity_pct": 72.5
+      },
+      "2026-07-09": {
+        "temperature_c": 25.2,
+        "precipitation_mm": 0.9,
+        "wind_speed_kmh": 20.4,
+        "visibility_km": 9.8,
+        "condition": "sunny",
+        "humidity_pct": 33.8
+      },
+      "2026-07-10": {
+        "temperature_c": 28.1,
+        "precipitation_mm": 0.4,
+        "wind_speed_kmh": 12.5,
+        "visibility_km": 15.8,
+        "condition": "sunny",
+        "humidity_pct": 49.5
+      },
+      "2026-07-11": {
+        "temperature_c": 24.0,
+        "precipitation_mm": 4.2,
+        "wind_speed_kmh": 11.5,
+        "visibility_km": 7.6,
+        "condition": "partly_cloudy",
+        "humidity_pct": 51.4
+      },
+      "2026-07-12": {
+        "temperature_c": 29.1,
+        "precipitation_mm": 6.0,
+        "wind_speed_kmh": 21.1,
+        "visibility_km": 6.0,
+        "condition": "partly_cloudy",
+        "humidity_pct": 54.2
+      },
+      "2026-07-13": {
+        "temperature_c": 23.7,
+        "precipitation_mm": 0.1,
+        "wind_speed_kmh": 7.8,
+        "visibility_km": 11.3,
+        "condition": "sunny",
+        "humidity_pct": 91.2
+      },
+      "2026-07-14": {
+        "temperature_c": 25.0,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 16.1,
+        "visibility_km": 26.3,
+        "condition": "sunny",
+        "humidity_pct": 58.3
+      },
+      "2026-07-15": {
+        "temperature_c": 23.7,
+        "precipitation_mm": 3.3,
+        "wind_speed_kmh": 3.8,
+        "visibility_km": 15.1,
+        "condition": "partly_cloudy",
+        "humidity_pct": 87.2
+      },
+      "2026-07-16": {
+        "temperature_c": 24.6,
+        "precipitation_mm": 7.8,
+        "wind_speed_kmh": 24.5,
+        "visibility_km": 19.5,
+        "condition": "partly_cloudy",
+        "humidity_pct": 44.5
+      },
+      "2026-07-17": {
+        "temperature_c": 24.1,
+        "precipitation_mm": 0.2,
+        "wind_speed_kmh": 6.1,
+        "visibility_km": 9.1,
+        "condition": "sunny",
+        "humidity_pct": 75.8
+      },
+      "2026-07-18": {
+        "temperature_c": 27.7,
+        "precipitation_mm": 0.5,
+        "wind_speed_kmh": 2.7,
+        "visibility_km": 14.1,
+        "condition": "sunny",
+        "humidity_pct": 35.2
+      },
+      "2026-07-19": {
+        "temperature_c": 24.8,
+        "precipitation_mm": 3.9,
+        "wind_speed_kmh": 6.6,
+        "visibility_km": 21.5,
+        "condition": "partly_cloudy",
+        "humidity_pct": 88.0
+      },
+      "2026-07-20": {
+        "temperature_c": 25.3,
+        "precipitation_mm": 1.2,
+        "wind_speed_kmh": 13.9,
+        "visibility_km": 7.2,
+        "condition": "sunny",
+        "humidity_pct": 68.3
+      },
+      "2026-07-21": {
+        "temperature_c": 21.5,
+        "precipitation_mm": 6.9,
+        "wind_speed_kmh": 7.8,
+        "visibility_km": 7.4,
+        "condition": "partly_cloudy",
+        "humidity_pct": 93.5
+      }
+    }
+  }
+}

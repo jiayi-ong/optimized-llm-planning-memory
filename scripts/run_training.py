@@ -57,17 +57,34 @@ def main(cfg: DictConfig) -> None:
     log.info("loaded_requests", n=len(user_requests))
 
     # ── Build compressor ──────────────────────────────────────────────────────
-    from optimized_llm_planning_memory.compressor.transformer_compressor import TransformerCompressor
-    compressor = TransformerCompressor(
-        model_name_or_path=cfg.compressor.model_name_or_path,
-        device=cfg.compressor.device or "auto",
-    )
-    if cfg.compressor.use_lora:
-        from optimized_llm_planning_memory.core.config import LoRAConfig
-        lora_cfg = LoRAConfig(**cfg.compressor.lora)
-        compressor.apply_lora(lora_cfg)
-    if cfg.compressor.freeze_base_layers:
-        compressor.freeze_base_layers(freeze=True)
+    from omegaconf import OmegaConf
+
+    compressor_type = cfg.compressor.type
+    spark_component = None
+
+    if compressor_type == "identity":
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        use_spark = OmegaConf.select(cfg, "compressor.use_spark", default=False)
+        if use_spark:
+            from optimized_llm_planning_memory.compressor.spark_component import SparkWeightComponent
+            spark_master = OmegaConf.select(cfg, "compressor.spark_master", default="local[*]")
+            spark_component = SparkWeightComponent(master=spark_master)
+        compressor = IdentityCompressor(spark_component=spark_component)
+    elif compressor_type == "transformer":
+        from optimized_llm_planning_memory.compressor.transformer_compressor import TransformerCompressor
+        compressor = TransformerCompressor(
+            model_name_or_path=cfg.compressor.model_name_or_path,
+            device=cfg.compressor.device or "auto",
+        )
+        if OmegaConf.select(cfg, "compressor.use_lora", default=False):
+            from optimized_llm_planning_memory.core.config import LoRAConfig
+            lora_cfg = LoRAConfig(**cfg.compressor.lora)
+            compressor.apply_lora(lora_cfg)
+        if OmegaConf.select(cfg, "compressor.freeze_base_layers", default=False):
+            compressor.freeze_base_layers(freeze=True)
+    else:
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        compressor = IdentityCompressor()
 
     # ── Build factories ───────────────────────────────────────────────────────
     from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
@@ -86,8 +103,10 @@ def main(cfg: DictConfig) -> None:
         compress_every_n_steps=cfg.agent.compress_every_n_steps,
     )
 
+    worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
+
     def simulator_factory(seed: int) -> SimulatorAdapter:
-        return SimulatorAdapter(seed=seed)
+        return SimulatorAdapter(seed=seed, worlds_dir=worlds_dir)
 
     def agent_factory() -> ReActAgent:
         sim = SimulatorAdapter(seed=0)  # placeholder; env overrides with fresh sim
@@ -113,6 +132,7 @@ def main(cfg: DictConfig) -> None:
     reward_cfg = RewardConfig(**OmegaConf.to_container(cfg.reward, resolve=True))
 
     output_dir = Path(cfg.project.output_dir)
+    spark_fit_every = int(OmegaConf.select(cfg, "compressor.spark_fit_every_n_episodes", default=50))
     trainer = RLTrainer(
         compressor=compressor,
         agent_factory=agent_factory,
@@ -123,6 +143,8 @@ def main(cfg: DictConfig) -> None:
         reward_config=reward_cfg,
         tensorboard_log=output_dir / "logs" / cfg.project.run_name,
         checkpoint_dir=output_dir / "checkpoints",
+        spark_component=spark_component,
+        spark_fit_every=spark_fit_every,
     )
 
     trainer.train()

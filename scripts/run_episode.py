@@ -50,10 +50,11 @@ def main(cfg: DictConfig) -> None:
     from optimized_llm_planning_memory.agent.modes import AgentMode
     from optimized_llm_planning_memory.agent.context_builder import ContextBuilder
     from optimized_llm_planning_memory.agent.prompts import get_system_prompt
-    from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
     from optimized_llm_planning_memory.core.config import AgentConfig
+    from omegaconf import OmegaConf
 
-    simulator = SimulatorAdapter(seed=cfg.project.seed)
+    worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
+    simulator = SimulatorAdapter(seed=cfg.project.seed, worlds_dir=worlds_dir)
     tracker = ToolCallTracker()
     event_bus = EventBus()
 
@@ -64,7 +65,17 @@ def main(cfg: DictConfig) -> None:
     )
 
     compressor_type = cfg.compressor.type
-    if compressor_type == "llm":
+    if compressor_type == "identity":
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        use_spark = OmegaConf.select(cfg, "compressor.use_spark", default=False)
+        spark_component = None
+        if use_spark:
+            from optimized_llm_planning_memory.compressor.spark_component import SparkWeightComponent
+            spark_master = OmegaConf.select(cfg, "compressor.spark_master", default="local[*]")
+            spark_component = SparkWeightComponent(master=spark_master)
+        compressor = IdentityCompressor(spark_component=spark_component)
+    elif compressor_type == "llm":
+        from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
         compressor = LLMCompressor(model_id=cfg.compressor.model_name_or_path)
     elif compressor_type == "transformer":
         from optimized_llm_planning_memory.compressor.transformer_compressor import TransformerCompressor
@@ -76,7 +87,8 @@ def main(cfg: DictConfig) -> None:
         from optimized_llm_planning_memory.compressor.dummy_compressor import DummyCompressor
         compressor = DummyCompressor()
     else:
-        compressor = LLMCompressor(model_id="openai/gpt-4o-mini")
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        compressor = IdentityCompressor()
 
     agent_config = AgentConfig(
         mode=cfg.agent.mode,
@@ -102,9 +114,16 @@ def main(cfg: DictConfig) -> None:
 
     # ── Load a user request ───────────────────────────────────────────────────
     import json
-    template_path = Path("data/user_requests/templates/request_template.json")
     from optimized_llm_planning_memory.core.models import UserRequest
-    user_request = UserRequest.model_validate(json.loads(template_path.read_text()))
+
+    # Prefer real generated requests over the placeholder template
+    train_dir = Path("data/user_requests/train")
+    train_files = sorted(train_dir.glob("*.json")) if train_dir.exists() else []
+    if train_files:
+        user_request = UserRequest.model_validate(json.loads(train_files[0].read_text()))
+    else:
+        template_path = Path("data/user_requests/templates/request_template.json")
+        user_request = UserRequest.model_validate(json.loads(template_path.read_text()))
 
     # ── Run episode ───────────────────────────────────────────────────────────
     log.info("episode.start", request_id=user_request.request_id)
