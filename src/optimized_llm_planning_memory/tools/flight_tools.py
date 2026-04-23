@@ -1,18 +1,21 @@
 """
 tools/flight_tools.py
 =====================
-SearchFlights and BookFlight tool implementations.
+SearchFlights and SelectFlight tool implementations.
 
-Each tool subclasses BaseTool. The only responsibility here is:
-  1. Define the Pydantic input schema.
-  2. Implement ``_execute()`` by calling the appropriate simulator method.
-
-All validation, tracking, event emission, and error handling are handled
-by ``BaseTool.call()`` — the Template Method base.
+Note on SelectFlight
+---------------------
+travel_world has no FlightService.book() method — flights are scheduled
+routes, not bookable inventory. SelectFlight is therefore a *pseudo-booking*:
+it validates the edge_id format and returns a synthetic BookingConfirmation
+that the agent can use to record the flight in its itinerary. No simulator
+state is mutated.
 """
 
 from __future__ import annotations
 
+import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -23,17 +26,47 @@ from optimized_llm_planning_memory.tools.base import BaseTool
 # ── Input schemas ─────────────────────────────────────────────────────────────
 
 class SearchFlightsInput(BaseModel):
-    origin: str = Field(description="Departure city name (must exist in the simulated world).")
-    destination: str = Field(description="Arrival city name.")
-    date: str = Field(description="Travel date in ISO 8601 format (YYYY-MM-DD).")
-    num_passengers: int = Field(default=1, ge=1, le=20, description="Total number of passengers.")
+    origin_city_id: str = Field(
+        description="City ID for departure. Obtain from get_available_routes."
+    )
+    destination_city_id: str = Field(
+        description="City ID for arrival. Obtain from get_available_routes."
+    )
+    departure_date: str = Field(
+        description="Travel date in ISO 8601 format (YYYY-MM-DD)."
+    )
+    passengers: int = Field(
+        default=1, ge=1, le=20,
+        description="Total number of passengers."
+    )
 
 
-class BookFlightInput(BaseModel):
-    flight_id: str = Field(description="The flight_id from a prior SearchFlights result.")
-    passenger_details: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Dict of passenger info (name, passport_no, etc.) for the booking.",
+class SelectFlightInput(BaseModel):
+    edge_id: str = Field(
+        description=(
+            "The edge_id from a prior search_flights result. "
+            "This records the agent's flight selection in the itinerary."
+        )
+    )
+    origin_city_name: str = Field(
+        default="",
+        description="Human-readable origin city name (for itinerary display)."
+    )
+    destination_city_name: str = Field(
+        default="",
+        description="Human-readable destination city name (for itinerary display)."
+    )
+    departure_datetime: str = Field(
+        default="",
+        description="Departure datetime string from the search result."
+    )
+    arrival_datetime: str = Field(
+        default="",
+        description="Arrival datetime string from the search result."
+    )
+    total_price: float = Field(
+        default=0.0, ge=0.0,
+        description="Total flight price in USD from the search result."
     )
 
 
@@ -45,48 +78,68 @@ class SearchFlights(BaseTool):
     tool_name = "search_flights"
     tool_description = (
         "Search for available flights between two cities on a specific date. "
-        "Returns a list of flight options with prices, schedules, and availability. "
-        "Use this before BookFlight to find valid flight_ids."
+        "Requires city IDs — call get_available_routes first to discover them. "
+        "Returns a list of flight options with edge_id, price, schedule, and availability. "
+        "Use the edge_id with select_flight to record your choice."
     )
     input_schema = SearchFlightsInput
 
     def _execute(self, validated_input: SearchFlightsInput) -> Any:
         return self._simulator.search_flights(
-            origin=validated_input.origin,
-            destination=validated_input.destination,
-            date=validated_input.date,
-            num_passengers=validated_input.num_passengers,
+            origin_city_id=validated_input.origin_city_id,
+            destination_city_id=validated_input.destination_city_id,
+            departure_date=validated_input.departure_date,
+            passengers=validated_input.passengers,
         )
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (
             f"Tool 'search_flights' failed: {error}. "
-            f"Try: verify that origin='{arguments.get('origin')}' and "
-            f"destination='{arguments.get('destination')}' are valid city names "
-            f"in this world (use get_city_info to check), and that date is in YYYY-MM-DD format."
+            f"Check that origin_city_id='{arguments.get('origin_city_id')}' and "
+            f"destination_city_id='{arguments.get('destination_city_id')}' are valid "
+            f"(use get_available_routes to list valid city IDs), and that "
+            f"departure_date is in YYYY-MM-DD format."
         )
 
 
-class BookFlight(BaseTool):
-    """Confirm a flight booking using a flight_id from a prior search."""
+class SelectFlight(BaseTool):
+    """
+    Record a flight selection in the trip plan.
 
-    tool_name = "book_flight"
+    travel_world flights are scheduled routes, not bookable inventory.
+    SelectFlight validates the edge_id and creates a booking record without
+    mutating simulator state. Always call this after search_flights to
+    confirm which flight you are choosing for the itinerary.
+    """
+
+    tool_name = "select_flight"
     tool_description = (
-        "Book a specific flight using its flight_id from a prior search_flights call. "
-        "Returns a booking confirmation with a booking_ref. "
-        "WARNING: bookings are final — do not book without confirming the flight is correct."
+        "Confirm a flight selection using an edge_id from a prior search_flights call. "
+        "Returns a booking confirmation for itinerary tracking. "
+        "NOTE: Flights in this world are scheduled routes — call select_flight to "
+        "record your choice; no seats are decremented."
     )
-    input_schema = BookFlightInput
+    input_schema = SelectFlightInput
 
-    def _execute(self, validated_input: BookFlightInput) -> Any:
-        return self._simulator.book_flight(
-            flight_id=validated_input.flight_id,
-            passenger_details=validated_input.passenger_details,
-        )
+    def _execute(self, validated_input: SelectFlightInput) -> Any:
+        # Pseudo-booking: validate format and return synthetic confirmation
+        if not validated_input.edge_id:
+            raise ValueError("edge_id must not be empty.")
+        return {
+            "booking_id": f"FLT-{str(uuid.uuid4())[:8].upper()}",
+            "edge_id": validated_input.edge_id,
+            "origin_city_name": validated_input.origin_city_name,
+            "destination_city_name": validated_input.destination_city_name,
+            "departure_datetime": validated_input.departure_datetime,
+            "arrival_datetime": validated_input.arrival_datetime,
+            "total_price": validated_input.total_price,
+            "status": "selected",
+            "confirmation_datetime": datetime.now(tz=timezone.utc).isoformat(),
+        }
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (
-            f"Tool 'book_flight' failed: {error}. "
-            f"Try: confirm flight_id='{arguments.get('flight_id')}' exists in a prior "
-            f"search_flights result. The flight may no longer be available."
+            f"Tool 'select_flight' failed: {error}. "
+            f"Ensure edge_id='{arguments.get('edge_id')}' was returned by a recent "
+            f"search_flights call."
         )

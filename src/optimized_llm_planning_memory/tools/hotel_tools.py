@@ -1,4 +1,4 @@
-"""tools/hotel_tools.py — SearchHotels and BookHotel tool implementations."""
+"""tools/hotel_tools.py — SearchHotels, BookHotel, and GetHotelDetail tool implementations."""
 
 from __future__ import annotations
 
@@ -10,15 +10,30 @@ from optimized_llm_planning_memory.tools.base import BaseTool
 
 
 class SearchHotelsInput(BaseModel):
-    city: str = Field(description="City in which to search for hotels.")
+    city_id: str = Field(
+        description="City ID in which to search for hotels. Use get_available_routes to find city IDs."
+    )
     check_in: str = Field(description="Check-in date (YYYY-MM-DD).")
     check_out: str = Field(description="Check-out date (YYYY-MM-DD).")
-    num_guests: int = Field(default=1, ge=1, le=20)
+    guests: int = Field(default=1, ge=1, le=20, description="Number of guests.")
+    max_price_per_night: float | None = Field(
+        default=None, ge=0.0,
+        description="Optional maximum price per night in USD."
+    )
+    min_stars: float | None = Field(
+        default=None, ge=0.0, le=5.0,
+        description="Optional minimum star rating (0.0–5.0)."
+    )
 
 
 class BookHotelInput(BaseModel):
-    hotel_id: str = Field(description="The hotel_id from a prior SearchHotels result.")
-    guest_details: dict[str, Any] = Field(default_factory=dict)
+    hotel_id: str = Field(description="The hotel_id from a prior search_hotels result.")
+    check_in: str = Field(description="Check-in date (YYYY-MM-DD).")
+    check_out: str = Field(description="Check-out date (YYYY-MM-DD).")
+
+
+class GetHotelDetailInput(BaseModel):
+    hotel_id: str = Field(description="The hotel_id to retrieve full details for.")
 
 
 class SearchHotels(BaseTool):
@@ -27,23 +42,27 @@ class SearchHotels(BaseTool):
     tool_name = "search_hotels"
     tool_description = (
         "Search for available hotels in a city for a given check-in/check-out period. "
-        "Returns price per night, star rating, district, and amenities."
+        "Requires a city_id — use get_available_routes to discover city IDs. "
+        "Returns hotel name, price per night, star rating, district, and amenities. "
+        "Optionally filter by max_price_per_night or min_stars."
     )
     input_schema = SearchHotelsInput
 
     def _execute(self, validated_input: SearchHotelsInput) -> Any:
         return self._simulator.search_hotels(
-            city=validated_input.city,
+            city_id=validated_input.city_id,
             check_in=validated_input.check_in,
             check_out=validated_input.check_out,
-            num_guests=validated_input.num_guests,
+            guests=validated_input.guests,
+            max_price=validated_input.max_price_per_night,
+            min_stars=validated_input.min_stars,
         )
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (
             f"Tool 'search_hotels' failed: {error}. "
-            f"Try: verify city='{arguments.get('city')}' is valid and that "
-            f"check_in < check_out (both YYYY-MM-DD)."
+            f"Check that city_id='{arguments.get('city_id')}' is valid "
+            f"and that check_in < check_out (both YYYY-MM-DD)."
         )
 
 
@@ -53,12 +72,37 @@ class BookHotel(BaseTool):
     tool_name = "book_hotel"
     tool_description = (
         "Book a specific hotel using its hotel_id from a prior search_hotels call. "
-        "Returns a booking confirmation with a booking_ref."
+        "Returns a booking confirmation with total cost. "
+        "WARNING: bookings are final and reduce room availability — "
+        "only book after confirming the hotel fits the itinerary."
     )
     input_schema = BookHotelInput
 
     def _execute(self, validated_input: BookHotelInput) -> Any:
         return self._simulator.book_hotel(
             hotel_id=validated_input.hotel_id,
-            guest_details=validated_input.guest_details,
+            check_in=validated_input.check_in,
+            check_out=validated_input.check_out,
         )
+
+    def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
+        return (
+            f"Tool 'book_hotel' failed: {error}. "
+            f"Check that hotel_id='{arguments.get('hotel_id')}' is from a recent "
+            f"search_hotels result and that the hotel has availability for "
+            f"{arguments.get('check_in')} to {arguments.get('check_out')}."
+        )
+
+
+class GetHotelDetail(BaseTool):
+    """Retrieve full details for a specific hotel including availability."""
+
+    tool_name = "get_hotel_detail"
+    tool_description = (
+        "Get full details for a specific hotel: room types, availability calendar, "
+        "reviews, and nearby attractions. Requires a valid hotel_id from search_hotels."
+    )
+    input_schema = GetHotelDetailInput
+
+    def _execute(self, validated_input: GetHotelDetailInput) -> Any:
+        return self._simulator.get_hotel_detail(hotel_id=validated_input.hotel_id)

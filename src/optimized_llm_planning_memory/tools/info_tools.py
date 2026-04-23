@@ -1,4 +1,4 @@
-"""tools/info_tools.py — Read-only world information tools (no bookings)."""
+"""tools/info_tools.py — GetAvailableRoutes: primary world-discovery tool."""
 
 from __future__ import annotations
 
@@ -9,64 +9,29 @@ from pydantic import BaseModel, Field
 from optimized_llm_planning_memory.tools.base import BaseTool
 
 
-class GetCityInfoInput(BaseModel):
-    city: str = Field(description="Name of the city to retrieve information for.")
+class GetAvailableRoutesInput(BaseModel):
+    """No parameters needed — returns all routes in the current world."""
+    pass
 
 
-class GetLocationDetailsInput(BaseModel):
-    location_id: str = Field(description="The location_id of a specific node in the city graph.")
+class GetAvailableRoutes(BaseTool):
+    """
+    Discover which cities exist in this world and which routes connect them.
 
+    This is the FIRST tool to call at the start of any planning episode.
+    It returns all flight-connected city pairs with their city IDs and names.
+    Use the city IDs with search_flights, search_hotels, search_attractions, etc.
+    """
 
-class GetEventsInput(BaseModel):
-    city: str = Field(description="City in which to look for events.")
-    start_date: str = Field(description="Start of the date range (YYYY-MM-DD, inclusive).")
-    end_date: str = Field(description="End of the date range (YYYY-MM-DD, inclusive).")
-
-
-class GetCityInfo(BaseTool):
-    """Retrieve city metadata: districts, landmarks, transport hubs, connectivity."""
-
-    tool_name = "get_city_info"
+    tool_name = "get_available_routes"
     tool_description = (
-        "Get general information about a city: its districts, landmark locations, "
-        "airport hubs, and the location graph. Use this to understand city layout "
-        "before searching for hotels or activities."
+        "Return all available flight routes in this world. "
+        "ALWAYS call this first to discover valid city IDs and names. "
+        "Each result includes: origin_city_id, origin_city_name, "
+        "destination_city_id, destination_city_name. "
+        "Use city_id values with other search tools."
     )
-    input_schema = GetCityInfoInput
+    input_schema = GetAvailableRoutesInput
 
-    def _execute(self, validated_input: GetCityInfoInput) -> Any:
-        return self._simulator.get_city_info(city=validated_input.city)
-
-
-class GetLocationDetails(BaseTool):
-    """Retrieve detailed attributes for a specific location node."""
-
-    tool_name = "get_location_details"
-    tool_description = (
-        "Get detailed attributes for a specific location node (hotel, venue, transport hub, etc.). "
-        "Includes accessibility features, nearby nodes, and tags. "
-        "Requires a valid location_id from a prior get_city_info or search result."
-    )
-    input_schema = GetLocationDetailsInput
-
-    def _execute(self, validated_input: GetLocationDetailsInput) -> Any:
-        return self._simulator.get_location_details(location_id=validated_input.location_id)
-
-
-class GetEvents(BaseTool):
-    """Retrieve special events occurring in a city within a date range."""
-
-    tool_name = "get_events"
-    tool_description = (
-        "Get special events (festivals, concerts, exhibitions) in a city "
-        "within a start–end date range. Use this to find event-based activities "
-        "and plan around them."
-    )
-    input_schema = GetEventsInput
-
-    def _execute(self, validated_input: GetEventsInput) -> Any:
-        return self._simulator.get_events(
-            city=validated_input.city,
-            start_date=validated_input.start_date,
-            end_date=validated_input.end_date,
-        )
+    def _execute(self, validated_input: GetAvailableRoutesInput) -> Any:
+        return self._simulator.get_available_routes()
