@@ -1,0 +1,264 @@
+{
+  "description": "Mid-episode: 6 steps. Hotel booked. One failed restaurant search (wrong argument), corrected search succeeds. Agent has open work (attractions, events) and a partial itinerary snapshot.",
+  "request_summary": "2 adults, 4 nights in Aeloria, $1,200 budget. Hard constraints: budget, dates (Jun 1-5 2026), 3+ star hotel. Soft: Mediterranean food preferred, interested in museums.",
+  "compression_challenge": "Context is growing. A good compressor must distinguish committed decisions (hotel booked at $356 total) from exploratory results (restaurants listed, not reserved), record the corrected failed call without cluttering the ledger, and flag the remaining open questions (attractions, events not yet searched).",
+  "trajectory": {
+    "trajectory_id": "dev-traj-002",
+    "request_id": "req-aeloria-4day-v001",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "I need to start by discovering which city IDs are available in this world.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "call_id": "call-001"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_42_aeloria_0000",
+              "city_name": "Aeloria",
+              "description": "A vibrant mid-sized city known for its historic old quarter, thriving arts scene, and renowned local cuisine.",
+              "vibe_summary": "Cultural, walkable, lively evenings",
+              "dominant_cuisines": ["mediterranean", "local_fusion"],
+              "dominant_attraction_categories": ["museum", "historic_site", "park"],
+              "dominant_event_categories": ["music", "theater", "food_festival"]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 42.0
+        },
+        "itinerary_snapshot": null
+      },
+      {
+        "step_index": 1,
+        "thought": "City is Aeloria, city_id=city_world_42_aeloria_0000. I'll search for 3+ star hotels for Jun 1-5 (4 nights, 2 guests).",
+        "action": {
+          "tool_name": "search_hotels",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "check_in": "2026-06-01",
+            "check_out": "2026-06-05",
+            "guests": 2,
+            "min_stars": 3.0
+          },
+          "call_id": "call-002"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "hotel_id": "hotel_aeloria_001",
+              "name": "Grand Aeloria Hotel",
+              "city_id": "city_world_42_aeloria_0000",
+              "star_rating": 4.0,
+              "price_per_night": 125.0,
+              "total_cost": 500.0,
+              "num_nights": 4,
+              "description": "Centrally located 4-star hotel near the old quarter."
+            },
+            {
+              "hotel_id": "hotel_aeloria_002",
+              "name": "Aeloria Boutique Inn",
+              "city_id": "city_world_42_aeloria_0000",
+              "star_rating": 3.0,
+              "price_per_night": 89.0,
+              "total_cost": 356.0,
+              "num_nights": 4,
+              "description": "Cosy 3-star boutique hotel, 10 min walk from main attractions."
+            },
+            {
+              "hotel_id": "hotel_aeloria_003",
+              "name": "The Heritage Aeloria",
+              "city_id": "city_world_42_aeloria_0000",
+              "star_rating": 5.0,
+              "price_per_night": 210.0,
+              "total_cost": 840.0,
+              "num_nights": 4,
+              "description": "Luxury 5-star hotel with rooftop terrace and spa."
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 88.0
+        },
+        "itinerary_snapshot": null
+      },
+      {
+        "step_index": 2,
+        "thought": "Grand Aeloria (4★, $500) leaves $700 for food/activities. Boutique Inn (3★, $356) leaves $844. Heritage (5★, $840) leaves only $360 — tight. I'll book Boutique Inn to maximize remaining budget for experiences, which the travellers seem to value (arts, cuisine mentioned).",
+        "action": {
+          "tool_name": "book_hotel",
+          "arguments": {
+            "hotel_id": "hotel_aeloria_002",
+            "city_id": "city_world_42_aeloria_0000",
+            "check_in": "2026-06-01",
+            "check_out": "2026-06-05",
+            "guests": 2
+          },
+          "call_id": "call-003"
+        },
+        "observation": {
+          "success": true,
+          "result": {
+            "booking_id": "bkg-hotel-0042",
+            "hotel_id": "hotel_aeloria_002",
+            "hotel_name": "Aeloria Boutique Inn",
+            "check_in": "2026-06-01",
+            "check_out": "2026-06-05",
+            "total_cost": 356.0,
+            "confirmation_code": "AELINN-20260601-2G"
+          },
+          "error_message": null,
+          "latency_ms": 61.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {
+              "type": "hotel",
+              "booking_id": "bkg-hotel-0042",
+              "name": "Aeloria Boutique Inn",
+              "cost": 356.0
+            }
+          ],
+          "total_committed_cost": 356.0,
+          "remaining_budget": 844.0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "Hotel confirmed. Now I need to find restaurants — the travellers prefer Mediterranean. I'll search by cuisine.",
+        "action": {
+          "tool_name": "search_restaurants",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "cuisine": "mediteranean"
+          },
+          "call_id": "call-004"
+        },
+        "observation": {
+          "success": false,
+          "result": null,
+          "error_message": "Invalid cuisine value 'mediteranean'. Accepted values: ['mediterranean', 'local_fusion', 'asian', 'american', 'vegetarian']. Did you mean 'mediterranean'?",
+          "latency_ms": 12.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {
+              "type": "hotel",
+              "booking_id": "bkg-hotel-0042",
+              "name": "Aeloria Boutique Inn",
+              "cost": 356.0
+            }
+          ],
+          "total_committed_cost": 356.0,
+          "remaining_budget": 844.0
+        }
+      },
+      {
+        "step_index": 4,
+        "thought": "Typo in cuisine value — the API returned a helpful suggestion. Retry with correct spelling 'mediterranean'.",
+        "action": {
+          "tool_name": "search_restaurants",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "cuisine": "mediterranean"
+          },
+          "call_id": "call-005"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "restaurant_id": "rest_aeloria_001",
+              "name": "Oliva Terrace",
+              "cuisine": "mediterranean",
+              "price_per_person": 38.0,
+              "rating": 4.6,
+              "description": "Rooftop terrace with panoramic city views, seasonal mezze menu."
+            },
+            {
+              "restaurant_id": "rest_aeloria_002",
+              "name": "Mare Nostrum",
+              "cuisine": "mediterranean",
+              "price_per_person": 24.0,
+              "rating": 4.3,
+              "description": "Casual fish and tapas restaurant in the old quarter."
+            },
+            {
+              "restaurant_id": "rest_aeloria_003",
+              "name": "The Agora",
+              "cuisine": "mediterranean",
+              "price_per_person": 52.0,
+              "rating": 4.8,
+              "description": "Upscale tasting menu, locally sourced ingredients, reservation recommended."
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 74.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {
+              "type": "hotel",
+              "booking_id": "bkg-hotel-0042",
+              "name": "Aeloria Boutique Inn",
+              "cost": 356.0
+            }
+          ],
+          "total_committed_cost": 356.0,
+          "remaining_budget": 844.0
+        }
+      },
+      {
+        "step_index": 5,
+        "thought": "Good — 3 Mediterranean restaurants found. Oliva Terrace ($38 pp = $76/meal) and Mare Nostrum ($24 pp = $48/meal) fit the budget well. The Agora ($52 pp = $104/meal) is for a special occasion. I have restaurant options but haven't booked or searched attractions or events yet. Next I should find museums and attractions for daytime activities across 4 days.",
+        "action": {
+          "tool_name": "search_attractions",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "category": "museum"
+          },
+          "call_id": "call-006"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "attraction_id": "attr_aeloria_m001",
+              "name": "Aeloria Heritage Museum",
+              "category": "museum",
+              "admission_fee": 15.0,
+              "duration_hours": 2.5,
+              "description": "City history from ancient times to the industrial era, including the old quarter founding story."
+            },
+            {
+              "attraction_id": "attr_aeloria_m002",
+              "name": "Contemporary Arts Pavilion",
+              "category": "museum",
+              "admission_fee": 12.0,
+              "duration_hours": 1.5,
+              "description": "Rotating exhibitions of regional artists; free on Sundays."
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 56.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {
+              "type": "hotel",
+              "booking_id": "bkg-hotel-0042",
+              "name": "Aeloria Boutique Inn",
+              "cost": 356.0
+            }
+          ],
+          "total_committed_cost": 356.0,
+          "remaining_budget": 844.0
+        }
+      }
+    ],
+    "total_steps": 6
+  }
+}

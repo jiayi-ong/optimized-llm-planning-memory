@@ -1,0 +1,309 @@
+{
+  "description": "Late-episode: 8 steps. Hotel booked, 2 museum visits added, 1 restaurant reserved, 1 evening event booked. Remaining budget is tight. Agent is near-complete with only evening of day 4 unplanned.",
+  "request_summary": "2 adults, 4 nights in Aeloria, $1,200 budget. Hard constraints: budget, dates (Jun 1-5 2026), 3+ star hotel. Soft: Mediterranean food preferred, museums, at least one live music or cultural event.",
+  "compression_challenge": "High-information context. A good compressor must faithfully reflect the committed itinerary (hotel + 2 museums + 1 restaurant reservation + 1 event) in DECISIONS_MADE, accurately compute remaining budget ($357.50), and identify exactly what is still open (day 4 evening only). The CURRENT_ITINERARY_SKETCH must be structured and complete.",
+  "trajectory": {
+    "trajectory_id": "dev-traj-003",
+    "request_id": "req-aeloria-4day-v001",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "Discover available cities.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "call_id": "call-001"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_42_aeloria_0000",
+              "city_name": "Aeloria",
+              "description": "A vibrant mid-sized city known for its historic old quarter, thriving arts scene, and renowned local cuisine.",
+              "vibe_summary": "Cultural, walkable, lively evenings",
+              "dominant_cuisines": ["mediterranean", "local_fusion"],
+              "dominant_attraction_categories": ["museum", "historic_site", "park"],
+              "dominant_event_categories": ["music", "theater", "food_festival"]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 42.0
+        },
+        "itinerary_snapshot": null
+      },
+      {
+        "step_index": 1,
+        "thought": "Search hotels for 2 guests, 4 nights, 3+ stars.",
+        "action": {
+          "tool_name": "search_hotels",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "check_in": "2026-06-01",
+            "check_out": "2026-06-05",
+            "guests": 2,
+            "min_stars": 3.0
+          },
+          "call_id": "call-002"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "hotel_id": "hotel_aeloria_001",
+              "name": "Grand Aeloria Hotel",
+              "star_rating": 4.0,
+              "price_per_night": 125.0,
+              "total_cost": 500.0,
+              "num_nights": 4
+            },
+            {
+              "hotel_id": "hotel_aeloria_002",
+              "name": "Aeloria Boutique Inn",
+              "star_rating": 3.0,
+              "price_per_night": 89.0,
+              "total_cost": 356.0,
+              "num_nights": 4
+            },
+            {
+              "hotel_id": "hotel_aeloria_003",
+              "name": "The Heritage Aeloria",
+              "star_rating": 5.0,
+              "price_per_night": 210.0,
+              "total_cost": 840.0,
+              "num_nights": 4
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 88.0
+        },
+        "itinerary_snapshot": null
+      },
+      {
+        "step_index": 2,
+        "thought": "Book Boutique Inn (3★, $356 total) to preserve budget for activities.",
+        "action": {
+          "tool_name": "book_hotel",
+          "arguments": {
+            "hotel_id": "hotel_aeloria_002",
+            "city_id": "city_world_42_aeloria_0000",
+            "check_in": "2026-06-01",
+            "check_out": "2026-06-05",
+            "guests": 2
+          },
+          "call_id": "call-003"
+        },
+        "observation": {
+          "success": true,
+          "result": {
+            "booking_id": "bkg-hotel-0042",
+            "hotel_name": "Aeloria Boutique Inn",
+            "total_cost": 356.0,
+            "confirmation_code": "AELINN-20260601-2G"
+          },
+          "error_message": null,
+          "latency_ms": 61.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [{"type": "hotel", "booking_id": "bkg-hotel-0042", "name": "Aeloria Boutique Inn", "cost": 356.0}],
+          "total_committed_cost": 356.0,
+          "remaining_budget": 844.0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "Search museums — travellers expressed interest in cultural sites.",
+        "action": {
+          "tool_name": "search_attractions",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "category": "museum"
+          },
+          "call_id": "call-004"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "attraction_id": "attr_aeloria_m001",
+              "name": "Aeloria Heritage Museum",
+              "category": "museum",
+              "admission_fee": 15.0,
+              "duration_hours": 2.5,
+              "description": "City history from ancient times to the industrial era."
+            },
+            {
+              "attraction_id": "attr_aeloria_m002",
+              "name": "Contemporary Arts Pavilion",
+              "category": "museum",
+              "admission_fee": 12.0,
+              "duration_hours": 1.5,
+              "description": "Rotating exhibitions of regional artists; free on Sundays."
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 56.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [{"type": "hotel", "booking_id": "bkg-hotel-0042", "name": "Aeloria Boutique Inn", "cost": 356.0}],
+          "total_committed_cost": 356.0,
+          "remaining_budget": 844.0
+        }
+      },
+      {
+        "step_index": 4,
+        "thought": "Add Heritage Museum (day 1 morning, $15 pp = $30 total) and Arts Pavilion (day 2 afternoon, $12 pp = $24 total). Both fit schedule and budget.",
+        "action": {
+          "tool_name": "add_attraction",
+          "arguments": {
+            "attraction_id": "attr_aeloria_m001",
+            "visit_date": "2026-06-01",
+            "num_visitors": 2
+          },
+          "call_id": "call-005"
+        },
+        "observation": {
+          "success": true,
+          "result": {
+            "booking_id": "bkg-attr-0081",
+            "attraction_name": "Aeloria Heritage Museum",
+            "visit_date": "2026-06-01",
+            "total_cost": 30.0,
+            "confirmation_code": "AHMUS-20260601-2V"
+          },
+          "error_message": null,
+          "latency_ms": 34.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {"type": "hotel", "booking_id": "bkg-hotel-0042", "name": "Aeloria Boutique Inn", "cost": 356.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0081", "name": "Aeloria Heritage Museum", "date": "2026-06-01", "cost": 30.0}
+          ],
+          "total_committed_cost": 386.0,
+          "remaining_budget": 814.0
+        }
+      },
+      {
+        "step_index": 5,
+        "thought": "Add Arts Pavilion on day 2.",
+        "action": {
+          "tool_name": "add_attraction",
+          "arguments": {
+            "attraction_id": "attr_aeloria_m002",
+            "visit_date": "2026-06-02",
+            "num_visitors": 2
+          },
+          "call_id": "call-006"
+        },
+        "observation": {
+          "success": true,
+          "result": {
+            "booking_id": "bkg-attr-0082",
+            "attraction_name": "Contemporary Arts Pavilion",
+            "visit_date": "2026-06-02",
+            "total_cost": 24.0,
+            "confirmation_code": "CAPAV-20260602-2V"
+          },
+          "error_message": null,
+          "latency_ms": 38.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {"type": "hotel", "booking_id": "bkg-hotel-0042", "name": "Aeloria Boutique Inn", "cost": 356.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0081", "name": "Aeloria Heritage Museum", "date": "2026-06-01", "cost": 30.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0082", "name": "Contemporary Arts Pavilion", "date": "2026-06-02", "cost": 24.0}
+          ],
+          "total_committed_cost": 410.0,
+          "remaining_budget": 790.0
+        }
+      },
+      {
+        "step_index": 6,
+        "thought": "Now handle dining. Mediterranean preference. Search and pick Oliva Terrace for a dinner reservation — rooftop suits the occasion.",
+        "action": {
+          "tool_name": "book_restaurant",
+          "arguments": {
+            "restaurant_id": "rest_aeloria_001",
+            "city_id": "city_world_42_aeloria_0000",
+            "reservation_date": "2026-06-03",
+            "party_size": 2
+          },
+          "call_id": "call-007"
+        },
+        "observation": {
+          "success": true,
+          "result": {
+            "booking_id": "bkg-rest-0055",
+            "restaurant_name": "Oliva Terrace",
+            "reservation_date": "2026-06-03",
+            "party_size": 2,
+            "estimated_cost": 76.0,
+            "confirmation_code": "OLTERR-20260603-2P"
+          },
+          "error_message": null,
+          "latency_ms": 47.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {"type": "hotel", "booking_id": "bkg-hotel-0042", "name": "Aeloria Boutique Inn", "cost": 356.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0081", "name": "Aeloria Heritage Museum", "date": "2026-06-01", "cost": 30.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0082", "name": "Contemporary Arts Pavilion", "date": "2026-06-02", "cost": 24.0},
+            {"type": "restaurant", "booking_id": "bkg-rest-0055", "name": "Oliva Terrace", "date": "2026-06-03", "cost": 76.0}
+          ],
+          "total_committed_cost": 486.0,
+          "remaining_budget": 714.0
+        }
+      },
+      {
+        "step_index": 7,
+        "thought": "One soft constraint remains: a live music or cultural event. Remaining budget $714 is comfortable. Search events in Aeloria for the trip dates.",
+        "action": {
+          "tool_name": "search_events",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "date_from": "2026-06-01",
+            "date_to": "2026-06-05",
+            "category": "music"
+          },
+          "call_id": "call-008"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "event_id": "evt_aeloria_e001",
+              "name": "Aeloria Summer Jazz Night",
+              "category": "music",
+              "date": "2026-06-02",
+              "venue": "Old Quarter Amphitheatre",
+              "ticket_price": 45.0,
+              "description": "Annual outdoor jazz festival featuring regional and international artists. Duration ~3 hours."
+            },
+            {
+              "event_id": "evt_aeloria_e002",
+              "name": "Chamber Music at the Pavilion",
+              "category": "music",
+              "date": "2026-06-04",
+              "venue": "Contemporary Arts Pavilion",
+              "ticket_price": 30.0,
+              "description": "Intimate string quartet concert. Doors open 7 pm."
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 67.0
+        },
+        "itinerary_snapshot": {
+          "bookings": [
+            {"type": "hotel", "booking_id": "bkg-hotel-0042", "name": "Aeloria Boutique Inn", "cost": 356.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0081", "name": "Aeloria Heritage Museum", "date": "2026-06-01", "cost": 30.0},
+            {"type": "attraction", "booking_id": "bkg-attr-0082", "name": "Contemporary Arts Pavilion", "date": "2026-06-02", "cost": 24.0},
+            {"type": "restaurant", "booking_id": "bkg-rest-0055", "name": "Oliva Terrace", "date": "2026-06-03", "cost": 76.0}
+          ],
+          "total_committed_cost": 486.0,
+          "remaining_budget": 714.0
+        }
+      }
+    ],
+    "total_steps": 8
+  }
+}

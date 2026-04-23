@@ -1,0 +1,91 @@
+{
+  "description": "Early-stage episode: 2 steps, city discovered, hotels listed. No bookings made yet. Agent has a clear next action (book a hotel).",
+  "request_summary": "2 adults, 4 nights in Aeloria, $1,200 budget. Hard constraints: budget, dates (Jun 1-5 2026), 3+ star hotel.",
+  "compression_challenge": "Very little context. A good compressor should identify the open constraint (hotel not yet booked) and preserve the single key discovery (available hotels + prices).",
+  "trajectory": {
+    "trajectory_id": "dev-traj-001",
+    "request_id": "req-aeloria-4day-v001",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "I need to start by discovering which city IDs are available in this world, since I need a city_id to search for hotels and attractions. I'll call get_available_routes first.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "call_id": "call-001"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_42_aeloria_0000",
+              "city_name": "Aeloria",
+              "description": "A vibrant mid-sized city known for its historic old quarter, thriving arts scene, and renowned local cuisine.",
+              "vibe_summary": "Cultural, walkable, lively evenings",
+              "dominant_cuisines": ["mediterranean", "local_fusion"],
+              "dominant_attraction_categories": ["museum", "historic_site", "park"],
+              "dominant_event_categories": ["music", "theater", "food_festival"]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 42.0
+        },
+        "itinerary_snapshot": null
+      },
+      {
+        "step_index": 1,
+        "thought": "Good — the city is called Aeloria with city_id city_world_42_aeloria_0000. The travellers need a 3+ star hotel for 4 nights (June 1-5). Budget for hotel should leave room for activities and dining within the $1,200 total. I'll search for available hotels now.",
+        "action": {
+          "tool_name": "search_hotels",
+          "arguments": {
+            "city_id": "city_world_42_aeloria_0000",
+            "check_in": "2026-06-01",
+            "check_out": "2026-06-05",
+            "guests": 2,
+            "min_stars": 3.0
+          },
+          "call_id": "call-002"
+        },
+        "observation": {
+          "success": true,
+          "result": [
+            {
+              "hotel_id": "hotel_aeloria_001",
+              "name": "Grand Aeloria Hotel",
+              "city_id": "city_world_42_aeloria_0000",
+              "star_rating": 4.0,
+              "price_per_night": 125.0,
+              "total_cost": 500.0,
+              "num_nights": 4,
+              "description": "Centrally located 4-star hotel near the old quarter."
+            },
+            {
+              "hotel_id": "hotel_aeloria_002",
+              "name": "Aeloria Boutique Inn",
+              "city_id": "city_world_42_aeloria_0000",
+              "star_rating": 3.0,
+              "price_per_night": 89.0,
+              "total_cost": 356.0,
+              "num_nights": 4,
+              "description": "Cosy 3-star boutique hotel, 10 min walk from main attractions."
+            },
+            {
+              "hotel_id": "hotel_aeloria_003",
+              "name": "The Heritage Aeloria",
+              "city_id": "city_world_42_aeloria_0000",
+              "star_rating": 5.0,
+              "price_per_night": 210.0,
+              "total_cost": 840.0,
+              "num_nights": 4,
+              "description": "Luxury 5-star hotel with rooftop terrace and spa."
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 88.0
+        },
+        "itinerary_snapshot": null
+      }
+    ],
+    "total_steps": 2
+  }
+}
