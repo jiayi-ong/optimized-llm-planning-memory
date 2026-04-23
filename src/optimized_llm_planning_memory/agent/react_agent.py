@@ -57,6 +57,8 @@ from optimized_llm_planning_memory.compressor.base import CompressorBase
 from optimized_llm_planning_memory.core.config import AgentConfig
 from optimized_llm_planning_memory.core.exceptions import AgentMaxStepsError, AgentParseError
 from optimized_llm_planning_memory.core.models import (
+    AccommodationBooking,
+    ActivityBooking,
     CompressedState,
     EpisodeLog,
     Itinerary,
@@ -66,6 +68,7 @@ from optimized_llm_planning_memory.core.models import (
     ToolCall,
     ToolResult,
     TrajectoryModel,
+    TransportSegment,
     UserRequest,
 )
 from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
@@ -185,9 +188,9 @@ class ReActAgent:
                 # Execute the tool call
                 tool_result = self._execute_tool(fresh_registry, tool_call)
 
-                # Extract partial itinerary from thought (if agent updated it)
+                # Extract partial itinerary from booking tool results
                 itinerary_snapshot = self._try_extract_itinerary(
-                    thought, tool_result, request.request_id
+                    thought, tool_result, request.request_id, final_itinerary, tool_call
                 )
                 if itinerary_snapshot is not None:
                     final_itinerary = itinerary_snapshot
@@ -361,15 +364,129 @@ class ReActAgent:
         thought: str,
         observation: ToolResult,
         request_id: str,
+        current_itinerary: Itinerary | None,
+        tool_call: ToolCall | None,
     ) -> Itinerary | None:
         """
-        Attempt to extract a partial itinerary from the current step.
+        Build or update the partial Itinerary from a successful booking tool call.
 
-        Currently returns None (placeholder). A full implementation would
-        parse the thought text or booking confirmations to update the partial
-        itinerary model. Concrete tracking is left for Phase 2 implementation.
+        Handles three tool names:
+        - ``book_hotel``   → creates AccommodationBooking on the check_in day.
+        - ``book_event``   → creates ActivityBooking on the event date.
+        - ``select_flight``→ creates TransportSegment on the departure day.
+
+        For all other tools (search calls, info tools, etc.) or failed calls,
+        returns ``current_itinerary`` unchanged.
         """
-        return None
+        if tool_call is None or not observation.success:
+            return current_itinerary
+
+        result = observation.result
+        if result is None:
+            return current_itinerary
+
+        # Normalise result to dict
+        if not isinstance(result, dict):
+            try:
+                result = result.model_dump()
+            except Exception:
+                try:
+                    result = dict(result)
+                except Exception:
+                    return current_itinerary
+
+        itinerary = current_itinerary or Itinerary(
+            itinerary_id=request_id,
+            request_id=request_id,
+        )
+
+        tool_name = tool_call.tool_name.lower()
+
+        if tool_name == "book_hotel":
+            hotel_id = result.get("hotel_id", "")
+            hotel_name = result.get("hotel_name", hotel_id)
+            check_in = result.get("check_in", "")
+            check_out = result.get("check_out", "")
+            price_per_night = float(result.get("price_per_night") or 0.0)
+            total_cost = float(result.get("total_cost") or 0.0)
+            booking_ref = result.get("booking_id")
+            city = tool_call.arguments.get("city_id", "")
+
+            booking = AccommodationBooking(
+                hotel_id=hotel_id,
+                hotel_name=hotel_name,
+                city=city,
+                check_in=check_in,
+                check_out=check_out,
+                cost_per_night_usd=price_per_night,
+                total_cost_usd=total_cost,
+                booking_ref=booking_ref,
+            )
+            day = self._find_or_create_day(itinerary, check_in, city)
+            day.accommodation = booking
+
+        elif tool_name == "book_event":
+            event_id = result.get("event_id", "")
+            event_name = result.get("event_name", event_id)
+            total_cost = float(result.get("total_cost") or 0.0)
+            booking_ref = result.get("booking_id")
+            venue = result.get("venue_name", "")
+            city = tool_call.arguments.get("city_id", "")
+            # Prefer a date embedded in the result; fall back to today
+            start_dt = result.get("start_datetime") or _now()[:10]
+
+            activity = ActivityBooking(
+                activity_id=event_id,
+                activity_name=event_name,
+                location=venue,
+                city=city,
+                start_datetime=start_dt,
+                duration_hours=1.0,
+                cost_usd=total_cost,
+                category="event",
+                booking_ref=booking_ref,
+            )
+            event_date = start_dt[:10] if len(start_dt) >= 10 else start_dt
+            day = self._find_or_create_day(itinerary, event_date, city)
+            day.activities.append(activity)
+
+        elif tool_name == "select_flight":
+            origin = result.get("origin_city_name", "")
+            dest = result.get("destination_city_name", "")
+            departure_dt = result.get("departure_datetime", "")
+            arrival_dt = result.get("arrival_datetime", "")
+            total_price = float(result.get("total_price") or 0.0)
+            booking_ref = result.get("booking_id")
+
+            segment = TransportSegment(
+                mode="flight",
+                from_location=origin,
+                to_location=dest,
+                departure_datetime=departure_dt,
+                arrival_datetime=arrival_dt,
+                cost_usd=total_price,
+                booking_ref=booking_ref,
+            )
+            dep_date = departure_dt[:10] if len(departure_dt) >= 10 else departure_dt
+            day = self._find_or_create_day(itinerary, dep_date, origin)
+            day.transport_segments.append(segment)
+
+        else:
+            return current_itinerary
+
+        itinerary.recompute_total_cost()
+        return itinerary
+
+    def _find_or_create_day(
+        self, itinerary: Itinerary, date: str, city: str
+    ) -> ItineraryDay:
+        """Return the ItineraryDay for ``date``, creating it if absent."""
+        for day in itinerary.days:
+            if day.date == date:
+                return day
+        new_day = ItineraryDay(date=date, city=city)
+        itinerary.days.append(new_day)
+        return new_day
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
