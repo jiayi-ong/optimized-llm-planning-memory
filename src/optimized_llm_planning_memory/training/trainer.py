@@ -130,6 +130,68 @@ class CompressorCheckpointCallback(BaseCallback):
 # ── RLTrainer ─────────────────────────────────────────────────────────────────
 
 
+class SparkWeightCallback(BaseCallback):
+    """
+    SB3 callback that feeds completed-episode data into a SparkWeightComponent.
+
+    After each step, it scans the ``infos`` list for terminated episodes.
+    For each terminated episode, it extracts five scalar features from the
+    ``reward_components`` dict and calls ``spark_component.add_episode()``.
+    Every ``fit_every_n_episodes`` episodes it triggers ``spark_component.fit()``.
+
+    Parameters
+    ----------
+    spark_component      : SparkWeightComponent to update.
+    fit_every_n_episodes : How often (in completed episodes) to call fit().
+    verbose              : SB3 verbosity level.
+    """
+
+    def __init__(
+        self,
+        spark_component: Any,
+        fit_every_n_episodes: int = 50,
+        verbose: int = 0,
+    ) -> None:
+        super().__init__(verbose=verbose)
+        self._spark = spark_component
+        self._fit_every = fit_every_n_episodes
+        self._episode_count = 0
+
+    def _on_step(self) -> bool:
+        infos = self.locals.get("infos", [])
+        dones = self.locals.get("dones", [])
+
+        for info, done in zip(infos, dones):
+            if not done:
+                continue
+            rc = info.get("reward_components")
+            if rc is None:
+                continue
+
+            # Build feature dict from RewardComponents fields
+            features = {
+                "hard_constraint_score": float(getattr(rc, "hard_constraint_score", 0.0)),
+                "soft_constraint_score": float(getattr(rc, "soft_constraint_score", 0.0)),
+                "tool_efficiency_score": float(getattr(rc, "tool_efficiency_score", 0.0)),
+                "steps_per_episode": float(info.get("steps_per_episode_normalized", 0.0)),
+                "budget_adherence": float(info.get("budget_adherence", 0.0)),
+            }
+            reward = float(getattr(rc, "total_reward", 0.0))
+            self._spark.add_episode(features=features, reward=reward)
+            self._episode_count += 1
+
+            if self._episode_count % self._fit_every == 0:
+                fitted = self._spark.fit()
+                if self.verbose >= 1:
+                    status = "OK" if fitted else "skipped (insufficient data)"
+                    print(
+                        f"[SparkWeightCallback] fit() at episode "
+                        f"{self._episode_count}: {status}"
+                    )
+
+        return True
+
+
 class RLTrainer:
     """
     Wires SB3 PPO with the custom ``CompressorPolicy`` and ``CompressionEnv``.
@@ -146,6 +208,10 @@ class RLTrainer:
     tokenizer         : HF tokenizer (or None to use char-level fallback in CompressionEnv).
     tensorboard_log   : Directory for TensorBoard logs. Defaults to ``outputs/logs``.
     checkpoint_dir    : Directory for SB3 + compressor checkpoints. Defaults to ``outputs/checkpoints``.
+    spark_component   : Optional SparkWeightComponent. When provided, a
+                        SparkWeightCallback is added to the callback list so that
+                        PySpark MLlib trains on episode rewards during PPO.
+    spark_fit_every   : How often (in episodes) the SparkWeightCallback triggers fit().
     """
 
     def __init__(
@@ -160,6 +226,8 @@ class RLTrainer:
         tokenizer: Any = None,
         tensorboard_log: str | Path = "outputs/logs",
         checkpoint_dir: str | Path = "outputs/checkpoints",
+        spark_component: Any = None,
+        spark_fit_every: int = 50,
     ) -> None:
         self._compressor = compressor
         self._agent_factory = agent_factory
@@ -171,6 +239,8 @@ class RLTrainer:
         self._tokenizer = tokenizer
         self._tensorboard_log = Path(tensorboard_log)
         self._checkpoint_dir = Path(checkpoint_dir)
+        self._spark_component = spark_component
+        self._spark_fit_every = spark_fit_every
 
         self._ppo: PPO | None = None
 
@@ -371,4 +441,14 @@ class RLTrainer:
 
         episode_log = EpisodeLogCallback(verbose=0)
 
-        return CallbackList([sb3_ckpt, compressor_ckpt, episode_log])
+        callbacks: list[BaseCallback] = [sb3_ckpt, compressor_ckpt, episode_log]
+
+        if self._spark_component is not None:
+            spark_cb = SparkWeightCallback(
+                spark_component=self._spark_component,
+                fit_every_n_episodes=self._spark_fit_every,
+                verbose=1,
+            )
+            callbacks.append(spark_cb)
+
+        return CallbackList(callbacks)
