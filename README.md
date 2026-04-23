@@ -122,28 +122,126 @@ optimized-llm-planning-memory/
 
 ---
 
-## Installation
+## Local Setup
+
+### Prerequisites
+
+- Python 3.11+
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) — install once with `pip install uv` or via the standalone installer
+- The `travel_world` simulator is a **sibling package**. Both repos must live inside the same parent directory:
+
+```
+your-workspace/
+├── optimized-llm-planning-memory/   ← this repo
+└── my-travel-world/                 ← simulator repo
+```
 
 ```bash
-# Clone and create a virtual environment
-git clone <repo-url>
+# Clone both repos side by side
+git clone <simulator-repo-url> my-travel-world
+git clone <this-repo-url> optimized-llm-planning-memory
+```
+
+---
+
+### Install
+
+```bash
 cd optimized-llm-planning-memory
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Install in editable mode
-pip install -e ".[dev]"
+# Create venv + install core deps + dev tools + notebook deps
+# uv reads uv.lock so every developer gets identical package versions
+uv sync --extra dev --extra notebook
 
-# Copy and fill in API keys
+# Copy and fill in your API keys (at minimum ANTHROPIC_API_KEY or OPENAI_API_KEY)
 cp .env.example .env
 ```
 
-### Requirements
+`uv sync` creates `.venv/` in the project root, installs `travel-world` as an
+editable local path dependency (no manual `pip install -e ../my-travel-world` needed),
+and pins every transitive dependency to the versions in `uv.lock`.
 
-- Python 3.11+
-- PyTorch 2.3+
-- `pydantic-ai`, `litellm`, `instructor` for LLM orchestration
-- `gymnasium`, `stable-baselines3` for RL training
-- `hydra-core` for config management
+**Optional extras:**
+
+| Extra | When to add | Command |
+|---|---|---|
+| `dev` | Always — linting, tests | `--extra dev` |
+| `notebook` | Local notebook development | `--extra notebook` |
+| `spark` | RL training with SparkWeightComponent (requires Java 11+) | `--extra spark` |
+| `wandb` | Weights & Biases experiment tracking | `--extra wandb` |
+
+---
+
+### Run the notebooks locally
+
+```bash
+# Register the project venv as a Jupyter kernel (one-time setup)
+uv run python -m ipykernel install --user --name optllm --display-name "OptLLM (Python 3.11)"
+
+# Launch JupyterLab
+uv run jupyter lab notebooks/
+```
+
+Open **`06_evaluation.ipynb`** or **`07_compressor_dev.ipynb`** and select the
+`OptLLM (Python 3.11)` kernel from the kernel picker (top-right).
+
+> **No API key needed** for deterministic-only evaluation (`JUDGE_MODEL_ID = None`)
+> or for the compressor dev notebook. Set `ANTHROPIC_API_KEY` in `.env` only if
+> you want to run the LLM judge cells.
+
+---
+
+### Run the tests
+
+```bash
+# Full fast test suite
+uv run pytest tests/ -q -m "not slow and not integration"
+
+# Compressor tests only
+uv run pytest tests/test_compressor/ -v -m "not slow"
+
+# Slow tests (downloads flan-t5-small ~300 MB — needs internet)
+uv run pytest tests/test_compressor/ -v -m slow
+```
+
+---
+
+### Environment variables
+
+`.env` is loaded automatically by `pydantic-settings`. The minimum required key
+for live LLM calls is one of:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...   # for claude-* models
+OPENAI_API_KEY=sk-...          # for gpt-* models
+```
+
+All other keys in `.env.example` are optional depending on which provider and
+features you use.
+
+---
+
+### Dependency management
+
+```bash
+# Add a new runtime dependency
+uv add some-package
+
+# Add to a specific extra (e.g. dev)
+uv add --optional dev some-dev-tool
+
+# Re-generate lock after manually editing pyproject.toml
+uv lock
+
+# Upgrade a single package
+uv lock --upgrade-package some-package
+
+# Sync after pulling new lock from git
+uv sync --extra dev --extra notebook
+```
+
+The `uv.lock` file is committed to git. After pulling, always run
+`uv sync` to ensure your environment matches the lock exactly.
 
 ---
 

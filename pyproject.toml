@@ -12,6 +12,9 @@ license = { text = "MIT" }
 authors = [{ name = "Columbia MSDS STATGR5293 Team" }]
 
 dependencies = [
+    # Travel simulator (local sibling package — resolved via [tool.uv.sources])
+    "travel-world",
+
     # Core data modelling
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
@@ -34,9 +37,6 @@ dependencies = [
     # HTTP (optional simulator transport, utilities)
     "httpx>=0.27",
 
-    # PySpark — distributed training component (runs local[*] in Colab)
-    "pyspark>=3.5",
-
     # Configuration composition
     "hydra-core>=1.3",
     "omegaconf>=2.3",
@@ -48,6 +48,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+spark = [
+    # PySpark — required for SparkWeightComponent in RL training.
+    # Not needed for local notebook development. Requires Java 11+ at runtime.
+    # Install with: uv sync --extra spark
+    "pyspark>=3.5",
+]
 wandb = ["wandb>=0.17"]
 dev = [
     "pytest>=8.2",
@@ -57,6 +63,21 @@ dev = [
     "mypy>=1.10",
     "pre-commit>=3.7",
 ]
+notebook = [
+    # Jupyter environment
+    "jupyterlab>=4.2",
+    "ipykernel>=6.29",
+    # Notebook-only data / viz dependencies (not required by core package)
+    "pandas>=2.2",
+    "matplotlib>=3.9",
+    "tqdm>=4.66",
+]
+
+[tool.uv.sources]
+# travel-world lives in a sibling directory; uv resolves it as an editable
+# local install so changes to the simulator are immediately visible.
+# Both repos must be cloned into the same parent directory (see README).
+travel-world = { path = "../my-travel-world", editable = true }
 
 [project.scripts]
 run-episode    = "optimized_llm_planning_memory.scripts.run_episode:main"
