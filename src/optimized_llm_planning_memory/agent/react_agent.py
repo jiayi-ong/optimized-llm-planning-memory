@@ -46,7 +46,7 @@ import json
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import litellm
 
@@ -78,6 +78,12 @@ from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
 from optimized_llm_planning_memory.tools.events import EventBus
 from optimized_llm_planning_memory.tools.registry import ToolRegistry
 from optimized_llm_planning_memory.tools.tracker import ToolCallTracker
+from optimized_llm_planning_memory.utils.logging import get_logger
+
+if TYPE_CHECKING:
+    from optimized_llm_planning_memory.utils.live_writer import LiveEpisodeWriter
+
+log = get_logger(__name__)
 
 
 class ReActAgent:
@@ -128,6 +134,8 @@ class ReActAgent:
         self,
         request: UserRequest,
         simulator: SimulatorProtocol,
+        live_writer: "LiveEpisodeWriter | None" = None,
+        episode_id: str | None = None,
     ) -> EpisodeLog:
         """
         Run a complete planning episode for ``request``.
@@ -139,18 +147,27 @@ class ReActAgent:
 
         Parameters
         ----------
-        request   : The travel planning request to fulfil.
-        simulator : A simulator adapter instance for this episode world.
+        request     : The travel planning request to fulfil.
+        simulator   : A simulator adapter instance for this episode world.
+        live_writer : Optional :class:`~optimized_llm_planning_memory.utils.live_writer.LiveEpisodeWriter`.
+                      When provided, incremental events are streamed to a JSONL
+                      file so the developer UI can display live progress.
+        episode_id  : Optional pre-generated episode ID.  When provided, the
+                      caller is responsible for creating a ``LiveEpisodeWriter``
+                      with the same ID so the live file is named consistently.
+                      If None, a fresh UUID is generated.
 
         Returns
         -------
         EpisodeLog
             Complete structured log of the episode.
         """
-        episode_id = str(uuid.uuid4())
+        episode_id = episode_id or str(uuid.uuid4())
         # Store on self so _run_compression() can access them without threading issues
         self._current_request = request
         self._last_mcts_stats = None
+
+        log.info("episode.start", episode_id=episode_id, request_id=request.request_id, mode=self._mode.value)
 
         trajectory = Trajectory(request_id=request.request_id)
         tracker = ToolCallTracker()
@@ -171,6 +188,8 @@ class ReActAgent:
 
         try:
             for step_index in range(self._config.max_steps):
+                log.info("react.step.start", episode_id=episode_id, step=step_index)
+
                 # Build context for this step
                 context = self._context_builder.build(
                     trajectory=trajectory,
@@ -185,10 +204,18 @@ class ReActAgent:
                 # Parse thought and action
                 thought, tool_call = self._parse_response(llm_response)
 
+                log.info(
+                    "react.step.thought",
+                    episode_id=episode_id,
+                    step=step_index,
+                    thought_preview=thought[:200],
+                )
+
                 # Check for DONE signal
                 if tool_call is None or (
                     tool_call.tool_name.upper() == "DONE"
                 ):
+                    log.info("react.step.done", episode_id=episode_id, step=step_index)
                     step = ReActStep(
                         step_index=step_index,
                         thought=thought,
@@ -198,10 +225,29 @@ class ReActAgent:
                         timestamp=_now(),
                     )
                     trajectory.add_step(step)
+                    if live_writer is not None:
+                        live_writer.write_step(step)
                     break
+
+                log.info(
+                    "react.step.action",
+                    episode_id=episode_id,
+                    step=step_index,
+                    tool_name=tool_call.tool_name,
+                    args_summary=str(tool_call.arguments)[:120],
+                )
 
                 # Execute the tool call
                 tool_result = self._execute_tool(fresh_registry, tool_call)
+
+                log.info(
+                    "react.step.observation",
+                    episode_id=episode_id,
+                    step=step_index,
+                    success=tool_result.success,
+                    latency_ms=tool_result.latency_ms,
+                    error=tool_result.error_message,
+                )
 
                 # Extract partial itinerary from booking tool results
                 itinerary_snapshot = self._try_extract_itinerary(
@@ -220,13 +266,34 @@ class ReActAgent:
                 )
                 trajectory.add_step(step)
 
+                if live_writer is not None:
+                    live_writer.write_step(step)
+                    if itinerary_snapshot is not None:
+                        live_writer.write_itinerary_update(itinerary_snapshot)
+
                 # Compression check
                 if self._should_compress(trajectory, step_index):
+                    steps_since = step_index - trajectory.last_compressed_step
+                    log.info(
+                        "react.compress.start",
+                        episode_id=episode_id,
+                        step=step_index,
+                        steps_since_last=steps_since,
+                    )
                     compressed = self._run_compression(trajectory, current_compressed)
                     if compressed is not None:
                         current_compressed = compressed
                         compressed_states.append(compressed)
                         trajectory.mark_compression()
+                        log.info(
+                            "react.compress.complete",
+                            episode_id=episode_id,
+                            step=step_index,
+                            method=compressed.compression_method,
+                            token_count=compressed.token_count,
+                        )
+                        if live_writer is not None:
+                            live_writer.write_compression(compressed)
             else:
                 # Loop exhausted without DONE → max_steps reached
                 success = False
@@ -244,7 +311,7 @@ class ReActAgent:
         # Build placeholder reward (will be overwritten by RewardFunction in training)
         reward_components = _zero_reward()
 
-        return EpisodeLog(
+        episode_log = EpisodeLog(
             episode_id=episode_id,
             request_id=request.request_id,
             agent_mode=self._mode.value,
@@ -260,6 +327,19 @@ class ReActAgent:
             config_hash=self._compute_config_hash(),
             created_at=_now(),
         )
+
+        log.info(
+            "episode.complete",
+            episode_id=episode_id,
+            total_steps=episode_log.total_steps,
+            success=episode_log.success,
+            error=episode_log.error,
+        )
+
+        if live_writer is not None:
+            live_writer.write_episode_complete(episode_id)
+
+        return episode_log
 
     # ── LLM call ──────────────────────────────────────────────────────────────
 
@@ -392,10 +472,18 @@ class ReActAgent:
                 )
                 # Store most recent MCTS stats for EpisodeLog (last compression wins)
                 self._last_mcts_stats = tree_repr.stats
+                log.info(
+                    "react.mcts.search_complete",
+                    nodes_explored=tree_repr.stats.nodes_explored,
+                    root_value=tree_repr.stats.root_value,
+                    num_simulations=tree_repr.stats.num_simulations,
+                    max_depth_reached=tree_repr.stats.max_depth_reached,
+                )
                 return self._compressor.compress_with_tree(tree_repr, previous_state)
             else:
                 return self._compressor.compress(trajectory.to_model(), previous_state)
         except Exception:
+            log.warning("react.compress.failed", exc_info=True)
             return None
 
     # ── Itinerary extraction ──────────────────────────────────────────────────
