@@ -1,0 +1,2182 @@
+{
+  "timestamp": "2026-04-24T20:16:48.485190+00:00",
+  "aggregate": {
+    "total": 308,
+    "passed": 308,
+    "failed": 0,
+    "errors": 0,
+    "pass_rate": 1.0
+  },
+  "runs": [
+    {
+      "level": "all",
+      "component": "all",
+      "timestamp": "2026-04-24T20:16:48.473180+00:00",
+      "summary": {
+        "total": 308,
+        "passed": 308,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "tests": [
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderSections::test_build_contains_system_section",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderSections::test_build_contains_user_request_section",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderSections::test_build_contains_available_tools_section",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderSections::test_build_contains_context_section",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderRawMode::test_empty_trajectory_does_not_raise",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderRawMode::test_empty_trajectory_has_begin_planning_hint",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderRawMode::test_raw_mode_includes_trajectory_text",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderCompressorMode::test_compressor_mode_no_state_falls_back_to_raw",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderCompressorMode::test_compressor_mode_with_state_injects_headers",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderCompressorMode::test_compressor_mode_with_recent_steps_shows_recent_section",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderLLMSummaryMode::test_llm_summary_no_state_falls_back_to_raw",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_context_builder_unit.py::TestContextBuilderLLMSummaryMode::test_llm_summary_with_state_calls_llm",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_raw_value",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_llm_summary_value",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_compressor_value",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_mcts_compressor_value",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_all_four_modes_importable",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_from_string_raw",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_from_string_compressor",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_unknown_string_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_is_str_subclass",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_modes_unit.py::TestAgentModeValues::test_str_representation",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryAccumulation::test_empty_trajectory_total_steps_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryAccumulation::test_add_step_increments_total_steps",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryAccumulation::test_len_matches_total_steps",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectorySnapshot::test_to_model_step_count_matches",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectorySnapshot::test_to_model_is_frozen_trajectory_model",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectorySnapshot::test_to_model_does_not_mutate_trajectory",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryCompression::test_mark_compression_sets_last_compressed_step",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryCompression::test_steps_since_last_compression_returns_recent",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryCompression::test_mark_compression_defaults_to_current_length",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryToText::test_to_text_empty_returns_empty_string",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_agent/test_trajectory_unit.py::TestTrajectoryToText::test_to_text_with_thought_contains_thought",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseAbstract::test_cannot_instantiate_abstract_base",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseAbstract::test_concrete_subclass_instantiates",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseDefaults::test_get_log_probs_raises_not_supported",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseDefaults::test_get_trainable_parameters_returns_empty_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseDefaults::test_is_trainable_returns_false",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseDefaults::test_get_metadata_has_type_key",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseDefaults::test_get_metadata_has_param_count",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_base_compressor_unit.py::TestCompressorBaseDefaults::test_get_metadata_has_trainable_key",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCompress::test_compress_returns_compressed_state",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCompress::test_compress_trajectory_id_matches",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCompress::test_compress_state_id_is_string",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCompress::test_compress_method_is_identity",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCompress::test_compress_different_calls_have_unique_state_ids",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCompress::test_compress_empty_trajectory_ok",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorLogProbs::test_get_log_probs_returns_tensor",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorLogProbs::test_get_log_probs_shape_matches_token_count",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorLogProbs::test_get_log_probs_has_grad_fn",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorLogProbs::test_get_log_probs_single_token",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorTrainability::test_is_trainable_true",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorTrainability::test_get_trainable_parameters_has_one_param",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorTrainability::test_get_metadata_trainable_true",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCheckpoint::test_save_and_load_roundtrip",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_compressor/test_identity_compressor_unit.py::TestIdentityCompressorCheckpoint::test_load_missing_checkpoint_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_default_values",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_max_steps_ge_one",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_mode_string_raw",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_compress_every_n_steps_ge_one",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_step_penalty_le_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_step_penalty_negative_ok",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_weights_accessible",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_tool_failure_weight_le_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestEnvConfig::test_defaults",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestEnvConfig::test_custom_values",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestPPOHyperparams::test_defaults",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestPPOHyperparams::test_learning_rate_gt_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestEvalConfig::test_deterministic_only_default_false",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_config_unit.py::TestEvalConfig::test_rubric_dimensions_populated",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_all_inherit_project_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_tool_not_found_includes_tool_name",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_tool_not_found_has_tool_name_attribute",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_log_probs_not_supported_is_compressor_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_simulator_errors_inherit_simulator_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_agent_errors_inherit_agent_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_training_error_hierarchy",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_evaluation_error_hierarchy",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_mcts_error_hierarchy",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_constraint_frozen",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_constraint_satisfied_defaults_none",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_constraint_type_hard_soft",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_all_constraint_categories_defined",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestTravelerProfile::test_total_travelers_property",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestTravelerProfile::test_defaults_one_adult",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestUserRequest::test_frozen",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestUserRequest::test_destination_cities_min_length",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestUserRequest::test_budget_gt_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestItineraryDay::test_total_cost_sums_transport_hotel_activities",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestItineraryDay::test_total_cost_no_accommodation",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestItinerary::test_recompute_total_cost",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestItinerary::test_cities_visited_unique_ordered",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestTrajectoryModel::test_total_steps_validator_mismatch_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestTrajectoryModel::test_to_text_empty_steps",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestTrajectoryModel::test_slice_since_filters_by_step_index",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestHardConstraintLedger::test_satisfaction_ratio_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestHardConstraintLedger::test_satisfaction_ratio_partial",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestRewardComponents::test_tool_failure_penalty_must_be_le_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_core/test_models_unit.py::TestRewardComponents::test_hard_constraint_score_must_be_in_range",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerSingleAxis::test_single_axis_two_values_returns_two_results",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerSingleAxis::test_single_axis_results_are_ablation_result",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerSingleAxis::test_result_overrides_contain_axis_key",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerTwoAxes::test_two_axes_cartesian_product",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerTwoAxes::test_all_combinations_present",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerEmpty::test_axis_with_no_values_returns_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationRunnerEmpty::test_empty_axes_runs_single_default_combo",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationResultLabel::test_label_auto_generated",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_evaluation/test_ablation_unit.py::TestAblationResultLabel::test_custom_label_preserved",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeQValue::test_unvisited_node_q_value_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeQValue::test_q_value_is_mean",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeQValue::test_q_value_single_visit",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeUCB1::test_unvisited_node_ucb1_is_inf",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeUCB1::test_visited_node_ucb1_is_finite",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeUCB1::test_higher_q_value_gives_higher_ucb",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeChildren::test_children_defaults_to_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeChildren::test_children_can_be_appended",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSNodeChildren::test_make_root_classmethod_creates_root_node",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSStatsFrozen::test_mcts_stats_is_frozen",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSStatsFrozen::test_mcts_stats_fields_correct",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSStatsFrozen::test_nodes_explored_must_be_nonneg",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSTreeRepresentation::test_tree_repr_is_frozen",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_mcts/test_node_extras_unit.py::TestMCTSTreeRepresentation::test_tree_repr_defaults",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_search_flights_returns_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_search_flights_result_has_required_keys",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_search_hotels_returns_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_search_hotels_has_hotel_id_and_city",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_search_activities_returns_three",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_get_city_info_returns_dict",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorSearchMethods::test_get_events_returns_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorBookMethods::test_book_flight_returns_confirmed",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorBookMethods::test_book_hotel_returns_confirmed",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorBookMethods::test_book_activity_returns_confirmed",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorWorldManagement::test_get_world_seed_returns_seed",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorWorldManagement::test_reset_changes_seed",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_simulator/test_mock_simulator_unit.py::TestMockSimulatorWorldManagement::test_reset_without_seed_preserves_current",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallSuccess::test_valid_args_returns_success_result",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallSuccess::test_result_has_correct_tool_name",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallSuccess::test_latency_is_nonnegative",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallSuccess::test_tracker_records_success",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallSuccess::test_event_bus_receives_event",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallValidationFailure::test_missing_required_field_returns_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallValidationFailure::test_error_message_mentions_field",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallValidationFailure::test_tracker_records_failure",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallExecutionFailure::test_execute_raises_tool_execution_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolCallExecutionFailure::test_execute_raises_unexpected_exception",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolGetSchema::test_get_schema_has_name",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolGetSchema::test_get_schema_has_description",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_base_tool_unit.py::TestBaseToolGetSchema::test_get_schema_has_parameters",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestConcreteToolInstantiation::test_all_tools_have_tool_name",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestConcreteToolInstantiation::test_all_tools_have_description",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestConcreteToolInstantiation::test_all_tools_have_input_schema",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSearchFlightsSchema::test_valid_input_passes",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSearchFlightsSchema::test_missing_required_field_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSearchFlightsSchema::test_passengers_default_is_one",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSelectFlightSchema::test_valid_edge_id",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSelectFlightSchema::test_missing_edge_id_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSearchHotelsSchema::test_valid_input",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestSearchHotelsSchema::test_missing_city_id_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestBookEventSchema::test_quantity_ge_one",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestBookEventSchema::test_valid_input",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_concrete_tools_unit.py::TestPlanRouteSchema::test_optimize_for_default",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestToolEvent::test_frozen",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestToolEvent::test_timestamp_auto_set",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_subscribe_and_emit",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_wildcard_receives_all",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_specific_handler_not_called_for_other_type",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_unsubscribe_removes_handler",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_handler_exception_does_not_propagate",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_clear_removes_all_subscriptions",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_events_unit.py::TestEventBus::test_multiple_handlers_all_called",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryRegister::test_register_and_get",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryRegister::test_duplicate_name_raises_value_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryRegister::test_deregister_removes_tool",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryRegister::test_len_increases_on_register",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryRegister::test_contains_true_for_registered",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryRegister::test_contains_false_for_unregistered",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryGet::test_get_unknown_raises_tool_not_found_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryGet::test_list_tools_returns_all_schemas",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryGet::test_tool_names_sorted",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryFromConfig::test_from_config_registers_all_tools",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryFromConfig::test_from_config_subset",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_tools/test_registry_unit.py::TestToolRegistryFromConfig::test_from_config_tool_names_correct",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvSpaces::test_observation_space_shape",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvSpaces::test_action_space_shape",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvSpaces::test_observation_space_dtype_int32",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvSpaces::test_action_space_dtype_int32",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvSpaces::test_custom_dimensions_respected",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvReset::test_reset_returns_tuple",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvReset::test_reset_obs_is_ndarray",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvReset::test_reset_obs_is_zero_padded",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvReset::test_reset_info_has_request_id",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_env_spaces_unit.py::TestCompressionEnvReset::test_reset_seed_accepted",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferAddAndLen::test_empty_buffer_len_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferAddAndLen::test_empty_buffer_is_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferAddAndLen::test_add_increments_len",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferAddAndLen::test_not_empty_after_add",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferFillAdvantages::test_fill_advantages_wrong_length_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferFillAdvantages::test_fill_advantages_empty_list_for_empty_buffer",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferFillAdvantages::test_fill_advantages_sets_correctly",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferMinibatches::test_minibatches_covers_all_transitions",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferMinibatches::test_minibatches_batch_size_respected",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferMinibatches::test_minibatches_yields_all_items",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferClear::test_clear_empties_buffer",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_training/test_episode_buffer_unit.py::TestEpisodeBufferClear::test_can_add_after_clear",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestSaveAndLoadEpisode::test_save_creates_file",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestSaveAndLoadEpisode::test_load_roundtrip",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestSaveAndLoadEpisode::test_save_creates_directory_if_missing",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEpisodes::test_empty_directory_returns_empty_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEpisodes::test_nonexistent_directory_returns_empty_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEpisodes::test_list_returns_all_episodes",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEpisodes::test_corrupted_file_skipped_silently",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestSaveAndLoadEvalRun::test_save_creates_manifest_and_results",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestSaveAndLoadEvalRun::test_load_eval_run_roundtrip",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestSaveAndLoadEvalRun::test_load_missing_run_raises",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEvalRuns::test_empty_directory_returns_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEvalRuns::test_nonexistent_directory_returns_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEvalRuns::test_multiple_runs_returned",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_episode_io_unit.py::TestListEvalRuns::test_runs_sorted_newest_first",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_seed_unit.py::TestSetSeedPython::test_same_seed_produces_same_sequence",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_seed_unit.py::TestSetSeedPython::test_different_seeds_produce_different_sequences",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_seed_unit.py::TestSetSeedPython::test_set_seed_does_not_raise",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_seed_unit.py::TestSetSeedPython::test_set_seed_called_twice_same_result",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_seed_unit.py::TestSetSeedNumpy::test_numpy_seeded_deterministically",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/unit/test_utils/test_seed_unit.py::TestSetSeedTorch::test_torch_seeded_deterministically",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_ablation_module.py::TestAblationRunnerModule::test_two_value_axis_produces_two_results",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_ablation_module.py::TestAblationRunnerModule::test_all_results_have_readable_labels",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_ablation_module.py::TestAblationRunnerModule::test_four_combo_cartesian_product",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_agent_module.py::TestReActAgentEpisode::test_one_step_done_episode_succeeds",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_agent_module.py::TestReActAgentEpisode::test_two_step_search_then_done",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_agent_module.py::TestReActAgentEpisode::test_max_steps_exceeded_stops_episode",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_agent_module.py::TestReActAgentEpisode::test_trajectory_accumulates_steps",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_agent_module.py::TestReActAgentCompressorMode::test_compressor_mode_fires_at_threshold",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestDummyCompressorCompress::test_compress_returns_compressed_state",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestDummyCompressorCompress::test_compress_state_id_is_nonempty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestDummyCompressorCompress::test_multiple_compressions_have_unique_state_ids",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestDummyCompressorCompress::test_compress_with_previous_state",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestDummyCompressorLogProbs::test_get_log_probs_correct_shape",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestDummyCompressorLogProbs::test_get_log_probs_requires_grad",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestCompressedStateTemplate::test_template_render_produces_string",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_compressor_module.py::TestCompressedStateTemplate::test_template_validate_passes_on_valid_state",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_core_module.py::TestConstraintSatisfactionEngineIntegration::test_budget_constraint_satisfied",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_core_module.py::TestConstraintSatisfactionEngineIntegration::test_city_constraint_satisfied_when_city_visited",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_core_module.py::TestConstraintSatisfactionEngineIntegration::test_city_constraint_violated_when_city_not_visited",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_core_module.py::TestConstraintSatisfactionEngineIntegration::test_no_constraints_returns_empty",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_core_module.py::TestConstraintSatisfactionEngineIntegration::test_satisfaction_ratio_all_satisfied",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_core_module.py::TestConstraintSatisfactionEngineIntegration::test_mixed_hard_and_soft_constraints",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestDeterministicEvaluatorScore::test_score_returns_dict_with_keys",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestDeterministicEvaluatorScore::test_score_values_in_zero_one_range",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestEvaluatorEpisode::test_evaluate_episode_returns_eval_result",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestEvaluatorEpisode::test_eval_result_has_deterministic_scores",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestEvaluatorEpisode::test_overall_score_bounded",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestEvaluatorEpisode::test_no_llm_judge_calls_when_deterministic_only",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestEvaluatorAggregate::test_aggregate_returns_mean_and_std_keys",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_evaluation_module.py::TestEvaluatorAggregate::test_aggregate_overall_score_mean_present",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_mcts_module.py::TestMCTSNodeTreeStructure::test_root_node_created_with_make_root",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_mcts_module.py::TestMCTSNodeTreeStructure::test_child_node_depth_increments",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_mcts_module.py::TestMCTSNodeTreeStructure::test_q_value_after_backpropagation",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_mcts_module.py::TestMCTSNodeTreeStructure::test_ucb1_unvisited_returns_inf",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_mcts_module.py::TestMCTSStatsRepresentation::test_stats_and_tree_repr_fields",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_mcts_module.py::TestMCTSStatsRepresentation::test_best_path_trajectory_is_present",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorFlightWorkflow::test_search_flights_returns_results",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorFlightWorkflow::test_search_then_book_flight",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorFlightWorkflow::test_search_two_passengers",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorHotelWorkflow::test_search_hotels_returns_results",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorHotelWorkflow::test_search_then_book_hotel",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorReset::test_reset_changes_world_seed",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorReset::test_reset_does_not_raise",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorReset::test_get_world_seed_returns_integer",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorActivitiesSearch::test_search_activities_returns_list",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_simulator_module.py::TestSimulatorActivitiesSearch::test_city_info_has_expected_keys",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryWithConcreteTools::test_search_flights_call_succeeds",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryWithConcreteTools::test_invalid_call_returns_structured_error",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryWithConcreteTools::test_all_expected_tool_names_present",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryWithConcreteTools::test_redundant_calls_tracked",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryWithConcreteTools::test_event_bus_subscriber_receives_events",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryFromConfig::test_from_config_subset_enabled_tools",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_tools_module.py::TestToolRegistryFromConfig::test_tool_schemas_are_complete",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_training_module.py::TestEpisodeBufferMinibackBatch::test_twenty_items_batch_four_gives_five_batches",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_training_module.py::TestEpisodeBufferMinibackBatch::test_clear_then_refill",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_training_module.py::TestRewardFunctionCompute::test_compute_returns_reward_components",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_training_module.py::TestRewardFunctionCompute::test_changing_weights_changes_total",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_training_module.py::TestCompressionEnvResetStep::test_reset_returns_zero_obs",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_utils_module.py::TestEpisodeSaveLoadListWorkflow::test_save_three_episodes_list_returns_three",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_utils_module.py::TestEpisodeSaveLoadListWorkflow::test_episode_log_json_roundtrip_preserves_fields",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_utils_module.py::TestEvalRunSaveLoadWorkflow::test_save_eval_run_creates_manifest_and_results",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_utils_module.py::TestEvalRunSaveLoadWorkflow::test_load_eval_run_roundtrip",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/module/test_utils_module.py::TestEvalRunSaveLoadWorkflow::test_multiple_eval_runs_sorted_newest_first",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_evaluation_pipeline_system.py::TestFullEvaluationPipeline::test_single_episode_eval_result_has_required_keys",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_evaluation_pipeline_system.py::TestFullEvaluationPipeline::test_three_episodes_aggregate_returns_overall_score_mean",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_evaluation_pipeline_system.py::TestFullEvaluationPipeline::test_all_deterministic_scores_bounded",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_evaluation_pipeline_system.py::TestFullEvaluationPipeline::test_save_reload_episode_gives_same_scores",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestRAWModeEpisode::test_one_step_done_success",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestRAWModeEpisode::test_two_step_search_then_done",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestRAWModeEpisode::test_max_steps_exceeded_stops_episode",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestRAWModeEpisode::test_tool_validation_failure_episode_continues",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestRAWModeEpisode::test_episode_log_serialisable_to_json",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestCompressorModeEpisode::test_compression_fires_at_threshold",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_full_episode_system.py::TestCompressorModeEpisode::test_context_after_compression_contains_headers",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_reset_returns_obs_and_info",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_observation_space_contains_reset_obs",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_reset_obs_is_zero",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_reset_info_has_request_id",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_step_returns_five_tuple",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_step_reward_is_float",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressionEnvGymnasiumAPI::test_step_info_has_episode_log",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestEpisodeBufferCycle::test_add_fill_advantages_minibatch_clear_cycle",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressorPolicyCPU::test_identity_compressor_evaluate_actions",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        },
+        {
+          "name": "tests/system/test_rl_lite_system.py::TestCompressorPolicyCPU::test_dummy_compressor_is_trainable",
+          "status": "passed",
+          "duration_ms": 0.0,
+          "failure_message": null,
+          "error_traceback": null
+        }
+      ]
+    }
+  ]
+}
