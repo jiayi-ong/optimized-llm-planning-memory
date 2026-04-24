@@ -104,6 +104,16 @@ class LLMJudgeError(EvaluationError):
     """Raised when the LLM judge fails to produce a parseable score."""
 
 
+# ── MCTS ──────────────────────────────────────────────────────────────────────
+
+class MCTSError(ProjectError):
+    """Base for Monte Carlo Tree Search errors."""
+
+
+class MCTSSearchTimeoutError(MCTSError):
+    """Raised when MCTS search exceeds the configured simulation or time budget."""
+
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 class ConfigError(ProjectError):

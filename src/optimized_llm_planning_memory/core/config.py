@@ -47,12 +47,35 @@ class SimulatorConfig(BaseModel):
     )
 
 
+# ── MCTS ──────────────────────────────────────────────────────────────────────
+
+class MCTSSearchConfig(BaseModel):
+    """
+    MCTS hyperparameters embedded in AgentConfig.
+
+    Mirrors ``mcts.config.MCTSConfig`` to avoid a circular import between
+    ``core.config`` and ``mcts.config``. When constructing ``MCTSController``
+    in scripts, convert this to ``MCTSConfig`` via::
+
+        from optimized_llm_planning_memory.mcts import MCTSConfig
+        mcts_cfg = MCTSConfig(**agent_config.mcts.model_dump())
+    """
+    num_simulations: int = Field(default=50, ge=1)
+    max_depth: int = Field(default=10, ge=1)
+    exploration_constant: float = Field(default=1.414, gt=0.0)
+    branching_factor: int = Field(default=3, ge=1)
+    rollout_steps: int = Field(default=5, ge=1)
+    evaluator_model_id: str = "openai/gpt-4o-mini"
+    use_cached_evaluations: bool = True
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+
+
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
 class AgentConfig(BaseModel):
     mode: str = Field(
         default="compressor",
-        description="'raw' | 'llm_summary' | 'compressor'",
+        description="'raw' | 'llm_summary' | 'compressor' | 'mcts_compressor'",
     )
     llm_model_id: str = Field(
         default="openai/gpt-4o-mini",
@@ -76,6 +99,10 @@ class AgentConfig(BaseModel):
     system_prompt_version: str = Field(default="v1")
     few_shot_examples_path: str = Field(
         default="data/few_shot_examples/react_tool_use.json",
+    )
+    mcts: MCTSSearchConfig | None = Field(
+        default=None,
+        description="MCTS search config. Required when mode='mcts_compressor'.",
     )
 
 

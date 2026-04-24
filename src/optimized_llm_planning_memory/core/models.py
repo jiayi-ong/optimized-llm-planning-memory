@@ -34,9 +34,14 @@ Model hierarchy (read top-to-bottom)
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+if TYPE_CHECKING:
+    # Avoid a circular import at runtime: MCTSStats is only referenced in
+    # EpisodeLog's type annotation, which Pydantic resolves lazily.
+    from optimized_llm_planning_memory.mcts.node import MCTSStats
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -423,9 +428,21 @@ class CompressedState(BaseModel):
                                        description="Important world facts learned (prices, availability).")
     current_itinerary_sketch: str = Field(description="Compact text summary of the partial itinerary.")
 
-    compression_method: str = Field(description="'llm' | 'transformer' | 'hybrid'")
+    compression_method: str = Field(description="'llm' | 'transformer' | 'hybrid' | 'llm_mcts'")
     token_count: int | None = None
     created_at: str = Field(description="ISO 8601 datetime.")
+
+    # MCTS-specific fields — None for all non-MCTS compressors.
+    # Populated by MCTSAwareCompressor.compress_with_tree() and injected
+    # into the agent context by ContextBuilder._history_mcts_compressor().
+    top_candidates: list[str] | None = Field(
+        default=None,
+        description="Top-K candidate plans from MCTS search. None when not using MCTS.",
+    )
+    tradeoffs: str | None = Field(
+        default=None,
+        description="Free-form tradeoffs summary from MCTS tree. None when not using MCTS.",
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -486,7 +503,7 @@ class EpisodeLog(BaseModel):
 
     episode_id: str
     request_id: str
-    agent_mode: str = Field(description="'raw' | 'llm_summary' | 'compressor'")
+    agent_mode: str = Field(description="'raw' | 'llm_summary' | 'compressor' | 'mcts_compressor'")
     trajectory: TrajectoryModel
     compressed_states: tuple[CompressedState, ...] = Field(default_factory=tuple)
     final_itinerary: Itinerary | None = None
@@ -494,6 +511,10 @@ class EpisodeLog(BaseModel):
     tool_stats: tuple[ToolCallStats, ...] = Field(default_factory=tuple)
     total_steps: int = Field(ge=0)
     total_tokens_used: int | None = None
+    mcts_stats: "MCTSStats | None" = Field(
+        default=None,
+        description="MCTS search statistics per episode. None for non-MCTS episodes.",
+    )
     success: bool
     error: str | None = None
     config_hash: str
