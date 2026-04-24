@@ -29,7 +29,9 @@ dependencies = [
     "stable-baselines3>=2.3",
 
     # ML / compressor model
-    "torch>=2.3",
+    # torch dropped Intel Mac (x86_64) wheels starting from 2.3; 2.2.x is the last compatible release
+    "torch>=2.3; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "transformers>=4.44",
     "peft>=0.11",        # LoRA adapters via HuggingFace PEFT
     "accelerate>=0.33",
@@ -65,6 +67,11 @@ notebook = [
     "pandas>=2.2",
     "matplotlib>=3.9",
     "tqdm>=4.66",
+]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [tool.uv.sources]
