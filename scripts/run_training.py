@@ -60,16 +60,15 @@ def main(cfg: DictConfig) -> None:
     from omegaconf import OmegaConf
 
     compressor_type = cfg.compressor.type
-    spark_component = None
+    reward_predictor = None
 
     if compressor_type == "identity":
         from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
-        use_spark = OmegaConf.select(cfg, "compressor.use_spark", default=False)
-        if use_spark:
-            from optimized_llm_planning_memory.compressor.spark_component import SparkWeightComponent
-            spark_master = OmegaConf.select(cfg, "compressor.spark_master", default="local[*]")
-            spark_component = SparkWeightComponent(master=spark_master)
-        compressor = IdentityCompressor(spark_component=spark_component)
+        use_reward_predictor = OmegaConf.select(cfg, "compressor.use_reward_predictor", default=False)
+        if use_reward_predictor:
+            from optimized_llm_planning_memory.compressor.reward_predictor import RewardPredictorComponent
+            reward_predictor = RewardPredictorComponent()
+        compressor = IdentityCompressor(reward_predictor=reward_predictor)
     elif compressor_type == "transformer":
         from optimized_llm_planning_memory.compressor.transformer_compressor import TransformerCompressor
         compressor = TransformerCompressor(
@@ -132,7 +131,7 @@ def main(cfg: DictConfig) -> None:
     reward_cfg = RewardConfig(**OmegaConf.to_container(cfg.reward, resolve=True))
 
     output_dir = Path(cfg.project.output_dir)
-    spark_fit_every = int(OmegaConf.select(cfg, "compressor.spark_fit_every_n_episodes", default=50))
+    rp_fit_every = int(OmegaConf.select(cfg, "compressor.reward_predictor_fit_every", default=50))
     trainer = RLTrainer(
         compressor=compressor,
         agent_factory=agent_factory,
@@ -143,8 +142,8 @@ def main(cfg: DictConfig) -> None:
         reward_config=reward_cfg,
         tensorboard_log=output_dir / "logs" / cfg.project.run_name,
         checkpoint_dir=output_dir / "checkpoints",
-        spark_component=spark_component,
-        spark_fit_every=spark_fit_every,
+        reward_predictor=reward_predictor,
+        reward_predictor_fit_every=rp_fit_every,
     )
 
     trainer.train()

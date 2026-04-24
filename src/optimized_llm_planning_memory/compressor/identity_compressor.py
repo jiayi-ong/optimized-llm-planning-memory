@@ -19,20 +19,20 @@ IdentityCompressor satisfies this contract with a single scalar nn.Parameter
 RL infrastructure fully operational. _dummy_param does NOT affect compress()
 output — the identity behaviour is preserved regardless of its value.
 
-PySpark integration
---------------------
-An optional SparkWeightComponent can be attached at construction time. The
-RL trainer's SparkWeightCallback populates and fits this component after each
+Reward predictor integration
+-----------------------------
+An optional RewardPredictorComponent can be attached at construction time. The
+RL trainer's RewardPredictorCallback populates and fits this component after each
 batch of episodes. Like _dummy_param, it does not affect compress() output;
-it is a trainable artefact that demonstrates the distributed-training path.
+it is a diagnostic artefact that tracks which episode features predict reward.
 
 Usage
 -----
     from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
-    from optimized_llm_planning_memory.compressor.spark_component import SparkWeightComponent
+    from optimized_llm_planning_memory.compressor.reward_predictor import RewardPredictorComponent
 
-    spark = SparkWeightComponent()
-    compressor = IdentityCompressor(spark_component=spark)
+    rp = RewardPredictorComponent()
+    compressor = IdentityCompressor(reward_predictor=rp)
     state = compressor.compress(trajectory_model)
 """
 
@@ -67,15 +67,15 @@ class IdentityCompressor(TrainableCompressorBase):
 
     Parameters
     ----------
-    spark_component : Optional SparkWeightComponent for RL reward prediction.
-                      Not used in compress(); updated by SparkWeightCallback.
+    reward_predictor : Optional RewardPredictorComponent for RL reward prediction.
+                       Not used in compress(); updated by RewardPredictorCallback.
     """
 
-    def __init__(self, spark_component: object | None = None) -> None:
+    def __init__(self, reward_predictor: object | None = None) -> None:
         # Single scalar trainable parameter — satisfies PPO's need for a
         # differentiable action distribution without changing compress() output.
         self._dummy_param = nn.Parameter(torch.zeros(1))
-        self._spark_component = spark_component  # reference only
+        self._reward_predictor = reward_predictor  # reference only
 
     # ── CompressorBase interface ───────────────────────────────────────────────
 
@@ -173,7 +173,7 @@ class IdentityCompressor(TrainableCompressorBase):
         """
         Save _dummy_param to {path}/identity_compressor.pt.
 
-        Also delegates to spark_component.save() if one is attached.
+        Also delegates to reward_predictor.save() if one is attached.
         """
         save_dir = Path(path)
         save_dir.mkdir(parents=True, exist_ok=True)
@@ -181,8 +181,8 @@ class IdentityCompressor(TrainableCompressorBase):
             {"dummy_param": self._dummy_param.data},
             save_dir / "identity_compressor.pt",
         )
-        if self._spark_component is not None and hasattr(self._spark_component, "save"):
-            self._spark_component.save(str(save_dir / "spark"))
+        if self._reward_predictor is not None and hasattr(self._reward_predictor, "save"):
+            self._reward_predictor.save(str(save_dir / "reward_predictor"))
 
     def load_checkpoint(self, path: str) -> None:
         """
@@ -208,18 +208,18 @@ class IdentityCompressor(TrainableCompressorBase):
                 f"Failed to load IdentityCompressor checkpoint from {p}: {exc}"
             ) from exc
 
-        spark_path = Path(path) / "spark"
+        rp_path = Path(path) / "reward_predictor"
         if (
-            spark_path.exists()
-            and self._spark_component is not None
-            and hasattr(self._spark_component, "load")
+            rp_path.exists()
+            and self._reward_predictor is not None
+            and hasattr(self._reward_predictor, "load")
         ):
-            self._spark_component.load(str(spark_path))
+            self._reward_predictor.load(str(rp_path))
 
     def get_metadata(self) -> dict:
         return {
             "type": "identity",
             "param_count": 1,
             "trainable": True,
-            "has_spark_component": self._spark_component is not None,
+            "has_reward_predictor": self._reward_predictor is not None,
         }

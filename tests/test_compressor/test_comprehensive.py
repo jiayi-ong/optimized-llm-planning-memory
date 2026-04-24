@@ -260,14 +260,14 @@ class TestIdentityCompressor:
     def test_dummy_param_initial_value_zero(self, compressor):
         assert compressor._dummy_param.item() == pytest.approx(0.0)
 
-    def test_init_no_spark_by_default(self, compressor):
-        assert compressor._spark_component is None
+    def test_init_no_reward_predictor_by_default(self, compressor):
+        assert compressor._reward_predictor is None
 
-    def test_init_with_spark_component(self):
-        """A custom object can be attached as a spark component."""
-        mock_spark = object()
-        c = IdentityCompressor(spark_component=mock_spark)
-        assert c._spark_component is mock_spark
+    def test_init_with_reward_predictor(self):
+        """A custom object can be attached as a reward predictor."""
+        mock_rp = object()
+        c = IdentityCompressor(reward_predictor=mock_rp)
+        assert c._reward_predictor is mock_rp
 
     # ── compress() ─────────────────────────────────────────────────────────────
 
@@ -412,12 +412,12 @@ class TestIdentityCompressor:
     def test_get_metadata_trainable_true(self, compressor):
         assert compressor.get_metadata()["trainable"] is True
 
-    def test_get_metadata_spark_flag_false(self, compressor):
-        assert compressor.get_metadata()["has_spark_component"] is False
+    def test_get_metadata_reward_predictor_flag_false(self, compressor):
+        assert compressor.get_metadata()["has_reward_predictor"] is False
 
-    def test_get_metadata_spark_flag_true_when_attached(self):
-        c = IdentityCompressor(spark_component=object())
-        assert c.get_metadata()["has_spark_component"] is True
+    def test_get_metadata_reward_predictor_flag_true_when_attached(self):
+        c = IdentityCompressor(reward_predictor=object())
+        assert c.get_metadata()["has_reward_predictor"] is True
 
     def test_get_metadata_is_json_serialisable(self, compressor):
         import json

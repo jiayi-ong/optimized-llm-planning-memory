@@ -48,12 +48,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-spark = [
-    # PySpark — required for SparkWeightComponent in RL training.
-    # Not needed for local notebook development. Requires Java 11+ at runtime.
-    # Install with: uv sync --extra spark
-    "pyspark>=3.5",
-]
 wandb = ["wandb>=0.17"]
 dev = [
     "pytest>=8.2",

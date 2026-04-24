@@ -67,13 +67,12 @@ def main(cfg: DictConfig) -> None:
     compressor_type = cfg.compressor.type
     if compressor_type == "identity":
         from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
-        use_spark = OmegaConf.select(cfg, "compressor.use_spark", default=False)
-        spark_component = None
-        if use_spark:
-            from optimized_llm_planning_memory.compressor.spark_component import SparkWeightComponent
-            spark_master = OmegaConf.select(cfg, "compressor.spark_master", default="local[*]")
-            spark_component = SparkWeightComponent(master=spark_master)
-        compressor = IdentityCompressor(spark_component=spark_component)
+        use_reward_predictor = OmegaConf.select(cfg, "compressor.use_reward_predictor", default=False)
+        reward_predictor = None
+        if use_reward_predictor:
+            from optimized_llm_planning_memory.compressor.reward_predictor import RewardPredictorComponent
+            reward_predictor = RewardPredictorComponent()
+        compressor = IdentityCompressor(reward_predictor=reward_predictor)
     elif compressor_type == "llm":
         from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
         compressor = LLMCompressor(model_id=cfg.compressor.model_name_or_path)
