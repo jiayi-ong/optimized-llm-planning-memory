@@ -35,3 +35,18 @@ class AgentMode(str, Enum):
 
     COMPRESSOR = "compressor"
     """Our method: use the trained compressor to produce a CompressedState."""
+
+    MCTS_COMPRESSOR = "mcts_compressor"
+    """
+    MCTS + tree-aware distillation.
+
+    At each compression trigger, ``MCTSController.search()`` explores multiple
+    candidate action branches from the current trajectory. The resulting
+    ``MCTSTreeRepresentation`` is then passed to an ``MCTSAwareCompressor``
+    which distills the tree (not just the linear trajectory) into a
+    ``CompressedState`` that captures top candidates and tradeoffs.
+
+    Requires:
+      - ``ReActAgent._mcts_controller`` is not None.
+      - ``isinstance(compressor, MCTSAwareCompressor)`` is True.
+    """

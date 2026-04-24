@@ -43,7 +43,7 @@ class EvalRunManifest(BaseModel):
     run_id            : Short unique identifier (e.g. first 8 chars of uuid4).
     created_at        : ISO 8601 UTC timestamp.
     compressor_type   : "identity" | "llm" | "transformer" | "dummy" | "hybrid"
-    agent_mode        : "raw" | "llm_summary" | "compressor"
+    agent_mode        : "raw" | "llm_summary" | "compressor" | "mcts_compressor"
     judge_model_id    : litellm model string used for LLMJudge, or "none".
     checkpoint_path   : Path to the compressor checkpoint loaded, if any.
     config_hash       : MD5/SHA of the Hydra config for exact reproducibility.
@@ -54,6 +54,8 @@ class EvalRunManifest(BaseModel):
     deterministic_only: True if LLMJudge was skipped.
     world_seeds       : List of random seeds used for world generation.
                         Empty list means the default seed was used.
+    mcts_enabled      : True when this run used AgentMode.MCTS_COMPRESSOR.
+    mcts_config_hash  : Short hash of the MCTSSearchConfig used. None for non-MCTS runs.
     notes             : Free-form developer notes.
     """
     model_config = ConfigDict(frozen=True)
@@ -70,4 +72,12 @@ class EvalRunManifest(BaseModel):
     n_episodes: int = Field(ge=0)
     deterministic_only: bool
     world_seeds: list[int] = Field(default_factory=list)
+    mcts_enabled: bool = Field(
+        default=False,
+        description="True when this evaluation run used AgentMode.MCTS_COMPRESSOR.",
+    )
+    mcts_config_hash: str | None = Field(
+        default=None,
+        description="Short hash of MCTSSearchConfig. None for non-MCTS runs.",
+    )
     notes: str | None = None

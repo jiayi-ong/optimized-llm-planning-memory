@@ -54,6 +54,7 @@ from optimized_llm_planning_memory.agent.context_builder import ContextBuilder
 from optimized_llm_planning_memory.agent.modes import AgentMode
 from optimized_llm_planning_memory.agent.trajectory import Trajectory
 from optimized_llm_planning_memory.compressor.base import CompressorBase
+from optimized_llm_planning_memory.compressor.mcts_aware import MCTSAwareCompressor
 from optimized_llm_planning_memory.core.config import AgentConfig
 from optimized_llm_planning_memory.core.exceptions import AgentMaxStepsError, AgentParseError
 from optimized_llm_planning_memory.core.models import (
@@ -71,6 +72,8 @@ from optimized_llm_planning_memory.core.models import (
     TransportSegment,
     UserRequest,
 )
+from optimized_llm_planning_memory.mcts.controller import MCTSController
+from optimized_llm_planning_memory.mcts.node import MCTSStats
 from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
 from optimized_llm_planning_memory.tools.events import EventBus
 from optimized_llm_planning_memory.tools.registry import ToolRegistry
@@ -93,6 +96,9 @@ class ReActAgent:
     context_builder : Assembles LLM context strings from trajectory + state.
     config          : Agent configuration (max_steps, compress_every_n_steps, etc.).
     mode            : Which context-assembly strategy to use.
+    mcts_controller : Optional MCTSController. Required when mode=MCTS_COMPRESSOR.
+                      If None and mode=MCTS_COMPRESSOR, compression silently falls
+                      back to the standard linear compress() path.
     """
 
     def __init__(
@@ -103,6 +109,7 @@ class ReActAgent:
         context_builder: ContextBuilder,
         config: AgentConfig,
         mode: AgentMode = AgentMode.COMPRESSOR,
+        mcts_controller: MCTSController | None = None,
     ) -> None:
         self._llm_model_id = llm_model_id
         self._tool_registry = tool_registry
@@ -110,6 +117,10 @@ class ReActAgent:
         self._context_builder = context_builder
         self._config = config
         self._mode = mode
+        self._mcts_controller = mcts_controller
+        # Per-episode state reset in run_episode()
+        self._current_request: UserRequest | None = None
+        self._last_mcts_stats: MCTSStats | None = None
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -137,6 +148,10 @@ class ReActAgent:
             Complete structured log of the episode.
         """
         episode_id = str(uuid.uuid4())
+        # Store on self so _run_compression() can access them without threading issues
+        self._current_request = request
+        self._last_mcts_stats = None
+
         trajectory = Trajectory(request_id=request.request_id)
         tracker = ToolCallTracker()
         event_bus = EventBus()
@@ -239,6 +254,7 @@ class ReActAgent:
             reward_components=reward_components,
             tool_stats=tuple(tracker.get_stats()),
             total_steps=trajectory.total_steps,
+            mcts_stats=self._last_mcts_stats,
             success=success,
             error=error_msg,
             config_hash=self._compute_config_hash(),
@@ -337,7 +353,11 @@ class ReActAgent:
 
     def _should_compress(self, trajectory: Trajectory, step_index: int) -> bool:
         """Return True if a compression event should fire at this step."""
-        if self._mode not in (AgentMode.LLM_SUMMARY, AgentMode.COMPRESSOR):
+        if self._mode not in (
+            AgentMode.LLM_SUMMARY,
+            AgentMode.COMPRESSOR,
+            AgentMode.MCTS_COMPRESSOR,
+        ):
             return False
         if self._compressor is None:
             return False
@@ -349,11 +369,32 @@ class ReActAgent:
         trajectory: Trajectory,
         previous_state: CompressedState | None,
     ) -> CompressedState | None:
-        """Invoke the compressor; return None on failure (logged but not raised)."""
+        """
+        Invoke the compressor; return None on failure (logged but not raised).
+
+        When mode is MCTS_COMPRESSOR and an MCTSController + MCTSAwareCompressor
+        are available, runs MCTS search first and distills the resulting tree.
+        Otherwise falls back to the standard linear compress() path.
+        """
         if self._compressor is None:
             return None
         try:
-            return self._compressor.compress(trajectory.to_model(), previous_state)
+            if (
+                self._mode == AgentMode.MCTS_COMPRESSOR
+                and self._mcts_controller is not None
+                and isinstance(self._compressor, MCTSAwareCompressor)
+                and self._current_request is not None
+            ):
+                tree_repr = self._mcts_controller.search(
+                    trajectory=trajectory.to_model(),
+                    compressed_state=previous_state,
+                    request=self._current_request,
+                )
+                # Store most recent MCTS stats for EpisodeLog (last compression wins)
+                self._last_mcts_stats = tree_repr.stats
+                return self._compressor.compress_with_tree(tree_repr, previous_state)
+            else:
+                return self._compressor.compress(trajectory.to_model(), previous_state)
         except Exception:
             return None
 

@@ -123,6 +123,8 @@ class ContextBuilder:
             return self._history_llm_summary(trajectory, compressed_state)
         elif mode == AgentMode.COMPRESSOR:
             return self._history_compressor(trajectory, compressed_state)
+        elif mode == AgentMode.MCTS_COMPRESSOR:
+            return self._history_mcts_compressor(trajectory, compressed_state)
         else:
             raise ValueError(f"Unknown AgentMode: {mode}")
 
@@ -174,6 +176,42 @@ class ContextBuilder:
         parts = ["[COMPRESSED MEMORY STATE]", compressed_text]
         if recent_text:
             parts += ["", "[RECENT STEPS (NOT YET COMPRESSED)]", recent_text]
+        return "\n".join(parts)
+
+    def _history_mcts_compressor(
+        self,
+        trajectory: Trajectory,
+        compressed_state: CompressedState | None,
+    ) -> str:
+        """
+        MCTS_COMPRESSOR mode: inject the CompressedState (same as COMPRESSOR mode)
+        plus optional [TOP CANDIDATE PLANS FROM SEARCH] and [TRADEOFFS] sections
+        that carry the multi-hypothesis information from the MCTS tree.
+
+        Falls back to raw mode if no compressed state exists yet.
+        """
+        if compressed_state is None:
+            return self._history_raw(trajectory)
+
+        compressed_text = self._template.render(compressed_state)
+        recent_steps = trajectory.steps_since_last_compression()
+        recent_text = _steps_to_text(recent_steps) if recent_steps else ""
+
+        parts = ["[COMPRESSED MEMORY STATE (MCTS)]", compressed_text]
+
+        if compressed_state.top_candidates:
+            candidates_text = "\n".join(
+                f"  {i + 1}. {cand}"
+                for i, cand in enumerate(compressed_state.top_candidates)
+            )
+            parts += ["", "[TOP CANDIDATE PLANS FROM SEARCH]", candidates_text]
+
+        if compressed_state.tradeoffs:
+            parts += ["", "[TRADEOFFS]", compressed_state.tradeoffs]
+
+        if recent_text:
+            parts += ["", "[RECENT STEPS (NOT YET COMPRESSED)]", recent_text]
+
         return "\n".join(parts)
 
     def _llm_summarise(self, trajectory: Trajectory) -> str:

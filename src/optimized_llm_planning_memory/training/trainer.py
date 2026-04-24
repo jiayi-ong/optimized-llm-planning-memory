@@ -192,6 +192,44 @@ class RewardPredictorCallback(BaseCallback):
         return True
 
 
+class MCTSMetricsCallback(BaseCallback):
+    """
+    SB3 callback that logs MCTS-specific metrics to TensorBoard.
+
+    Reads ``mcts_stats`` from the ``episode_log`` embedded in the ``info``
+    dict returned by ``CompressionEnv.step()``. Silently no-ops for non-MCTS
+    episodes where ``mcts_stats`` is None, so this callback is safe to attach
+    unconditionally regardless of agent mode.
+
+    TensorBoard keys written (prefixed by ``tb_log_prefix``):
+      - ``mcts/nodes_explored``
+      - ``mcts/max_depth_reached``
+      - ``mcts/num_simulations``
+      - ``mcts/root_value``
+      - ``mcts/avg_branching_factor``
+    """
+
+    def __init__(self, tb_log_prefix: str = "mcts", verbose: int = 0) -> None:
+        super().__init__(verbose=verbose)
+        self._prefix = tb_log_prefix
+
+    def _on_step(self) -> bool:
+        infos = self.locals.get("infos", [])
+        for info in infos:
+            episode_log = info.get("episode_log")
+            if episode_log is None:
+                continue
+            stats = getattr(episode_log, "mcts_stats", None)
+            if stats is None:
+                continue
+            self.logger.record(f"{self._prefix}/nodes_explored", stats.nodes_explored)
+            self.logger.record(f"{self._prefix}/max_depth_reached", stats.max_depth_reached)
+            self.logger.record(f"{self._prefix}/num_simulations", stats.num_simulations)
+            self.logger.record(f"{self._prefix}/root_value", stats.root_value)
+            self.logger.record(f"{self._prefix}/avg_branching_factor", stats.avg_branching_factor)
+        return True
+
+
 class RLTrainer:
     """
     Wires SB3 PPO with the custom ``CompressorPolicy`` and ``CompressionEnv``.
@@ -440,8 +478,9 @@ class RLTrainer:
         )
 
         episode_log = EpisodeLogCallback(verbose=0)
+        mcts_metrics = MCTSMetricsCallback(verbose=0)  # no-op for non-MCTS runs
 
-        callbacks: list[BaseCallback] = [sb3_ckpt, compressor_ckpt, episode_log]
+        callbacks: list[BaseCallback] = [sb3_ckpt, compressor_ckpt, episode_log, mcts_metrics]
 
         if self._reward_predictor is not None:
             rp_cb = RewardPredictorCallback(
