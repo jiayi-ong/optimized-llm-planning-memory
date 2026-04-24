@@ -25,7 +25,7 @@ Or use as a context manager:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from optimized_llm_planning_memory.core.models import EvalResult, RewardComponents
 
@@ -96,3 +96,35 @@ class TBLogger:
         """Write multiple scalars with a shared tag prefix."""
         for key, val in scalars.items():
             self.log_scalar(f"{tag_prefix}/{key}", val, step)
+
+    def log_ppo_update(self, metrics: Any, step: int) -> None:
+        """
+        Write all per-update PPO diagnostics to TensorBoard.
+
+        Accepts a ``PPOUpdateMetrics`` instance (duck-typed to avoid a
+        cross-package import in this utils module).
+
+        Scalars written (under the ``train/`` prefix unless already prefixed):
+          - policy_loss, value_loss, entropy_loss, total_loss
+          - clip_fraction, approx_kl, explained_variance
+          - learning_rate
+          - grad_norm (if not None)
+          - advantages_mean / advantages_std (if not None)
+        """
+        self.log_scalar("train/policy_loss", getattr(metrics, "policy_loss", 0.0), step)
+        self.log_scalar("train/value_loss", getattr(metrics, "value_loss", 0.0), step)
+        self.log_scalar("train/entropy_loss", getattr(metrics, "entropy_loss", 0.0), step)
+        self.log_scalar("train/total_loss", getattr(metrics, "total_loss", 0.0), step)
+        self.log_scalar("train/clip_fraction", getattr(metrics, "clip_fraction", 0.0), step)
+        self.log_scalar("train/approx_kl", getattr(metrics, "approx_kl", 0.0), step)
+        self.log_scalar("train/explained_variance", getattr(metrics, "explained_variance", 0.0), step)
+        self.log_scalar("train/learning_rate", getattr(metrics, "learning_rate", 0.0), step)
+        grad_norm = getattr(metrics, "grad_norm", None)
+        if grad_norm is not None:
+            self.log_scalar("train/grad_norm", grad_norm, step)
+        advantages_mean = getattr(metrics, "advantages_mean", None)
+        if advantages_mean is not None:
+            self.log_scalar("train/advantages_mean", advantages_mean, step)
+        advantages_std = getattr(metrics, "advantages_std", None)
+        if advantages_std is not None:
+            self.log_scalar("train/advantages_std", advantages_std, step)

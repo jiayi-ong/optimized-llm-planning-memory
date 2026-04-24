@@ -28,6 +28,8 @@ Custom policies must be passed as a class (not an instance).
 from __future__ import annotations
 
 import os
+from collections import deque
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -48,6 +50,11 @@ from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
 from optimized_llm_planning_memory.training.env import CompressionEnv
 from optimized_llm_planning_memory.training.policy import CompressorPolicy
 from optimized_llm_planning_memory.training.reward import RewardFunction
+from optimized_llm_planning_memory.training.run_logger import (
+    EpisodeMetricsSummary,
+    PPOUpdateMetrics,
+    RLRunLogger,
+)
 
 
 # ── Custom callbacks ───────────────────────────────────────────────────────────
@@ -56,17 +63,37 @@ from optimized_llm_planning_memory.training.reward import RewardFunction
 class EpisodeLogCallback(BaseCallback):
     """
     SB3 callback that extracts per-episode reward components from the ``info``
-    dict returned by ``CompressionEnv.step()`` and writes them to TensorBoard.
+    dict returned by ``CompressionEnv.step()`` and writes them to TensorBoard
+    and (optionally) to the ``RLRunLogger`` JSONL store.
 
-    SB3 calls ``on_step()`` after every environment step. When ``terminated``
-    is True, the ``info`` dict contains an ``EpisodeLog`` snapshot with full
-    ``RewardComponents``. We extract and log these here.
+    Enhanced over the original to also log:
+    - ``episode/total_steps`` — episode length (diagnoses over/under-planning)
+    - ``episode/tool_calls_total`` — total tool invocations
+    - ``episode/tool_success_rate`` — fraction of successful tool calls
+    - ``episode/reward_mean_20`` — rolling mean of total reward (last 20 episodes)
+    - ``episode/num_compressions`` — number of compression events in the episode
+
+    Parameters
+    ----------
+    run_logger     : Optional ``RLRunLogger``.  When provided, each completed
+                     episode is also written to ``episode_metrics.jsonl``.
+    tb_log_prefix  : TensorBoard tag prefix.  Defaults to ``"episode"``.
+    rolling_window : Window size for the rolling reward mean.
+    verbose        : SB3 verbosity level.
     """
 
-    def __init__(self, tb_log_prefix: str = "episode", verbose: int = 0) -> None:
+    def __init__(
+        self,
+        run_logger: "RLRunLogger | None" = None,
+        tb_log_prefix: str = "episode",
+        rolling_window: int = 20,
+        verbose: int = 0,
+    ) -> None:
         super().__init__(verbose=verbose)
         self._prefix = tb_log_prefix
         self._episode_count = 0
+        self._run_logger = run_logger
+        self._reward_window: deque[float] = deque(maxlen=rolling_window)
 
     def _on_step(self) -> bool:
         """Called after each env step. Returns True to continue training."""
@@ -75,7 +102,9 @@ class EpisodeLogCallback(BaseCallback):
             if "reward_components" not in info:
                 continue
             rc = info["reward_components"]
-            ep = self._episode_count
+            episode_log = info.get("episode_log")
+
+            # ── Reward components ──────────────────────────────────────────────
             self.logger.record(f"{self._prefix}/hard_constraint_score", rc.hard_constraint_score)
             self.logger.record(f"{self._prefix}/soft_constraint_score", rc.soft_constraint_score)
             self.logger.record(f"{self._prefix}/tool_efficiency_score", rc.tool_efficiency_score)
@@ -87,6 +116,61 @@ class EpisodeLogCallback(BaseCallback):
                     f"{self._prefix}/terminal_itinerary_score",
                     rc.terminal_itinerary_score,
                 )
+
+            # ── Rolling reward mean ────────────────────────────────────────────
+            self._reward_window.append(rc.total_reward)
+            reward_mean = sum(self._reward_window) / len(self._reward_window)
+            self.logger.record(f"{self._prefix}/reward_mean_20", reward_mean)
+
+            # ── Episode-level metrics from EpisodeLog ─────────────────────────
+            total_steps = 0
+            tool_calls_total = 0
+            tool_success_rate = 0.0
+            num_compressions = 0
+            request_id = info.get("request_id", "")
+            agent_mode = ""
+
+            if episode_log is not None:
+                total_steps = getattr(episode_log, "total_steps", 0)
+                num_compressions = len(getattr(episode_log, "compressed_states", ()))
+                agent_mode = getattr(episode_log, "agent_mode", "")
+
+                tool_stats = getattr(episode_log, "tool_stats", ())
+                if tool_stats:
+                    total_calls = sum(getattr(ts, "call_count", 0) for ts in tool_stats)
+                    total_success = sum(getattr(ts, "success_count", 0) for ts in tool_stats)
+                    tool_calls_total = total_calls
+                    tool_success_rate = total_success / total_calls if total_calls > 0 else 0.0
+
+                request_id = getattr(episode_log, "request_id", request_id)
+
+            self.logger.record(f"{self._prefix}/total_steps", total_steps)
+            self.logger.record(f"{self._prefix}/tool_calls_total", tool_calls_total)
+            self.logger.record(f"{self._prefix}/tool_success_rate", tool_success_rate)
+            self.logger.record(f"{self._prefix}/num_compressions", num_compressions)
+
+            # ── Persist to JSONL ───────────────────────────────────────────────
+            if self._run_logger is not None:
+                summary = EpisodeMetricsSummary(
+                    episode_id=getattr(episode_log, "episode_id", "") if episode_log else "",
+                    request_id=request_id,
+                    agent_mode=agent_mode,
+                    total_steps=total_steps,
+                    success=getattr(episode_log, "success", False) if episode_log else False,
+                    total_reward=rc.total_reward,
+                    hard_constraint_score=rc.hard_constraint_score,
+                    soft_constraint_score=rc.soft_constraint_score,
+                    tool_efficiency_score=rc.tool_efficiency_score,
+                    tool_failure_penalty=rc.tool_failure_penalty,
+                    logical_consistency_score=rc.logical_consistency_score,
+                    terminal_itinerary_score=rc.terminal_itinerary_score,
+                    tool_calls_total=tool_calls_total,
+                    tool_success_rate=tool_success_rate,
+                    num_compressions=num_compressions,
+                    reward_mean_20=reward_mean,
+                )
+                self._run_logger.log_episode_summary(summary)
+
             self._episode_count += 1
         return True
 
@@ -230,6 +314,67 @@ class MCTSMetricsCallback(BaseCallback):
         return True
 
 
+class PPOUpdateMetricsCallback(BaseCallback):
+    """
+    Captures per-PPO-update diagnostics from SB3's internal logger and writes
+    them to both TensorBoard and the ``RLRunLogger`` JSONL store.
+
+    Fires on ``_on_rollout_end()``, which SB3 calls after each complete
+    PPO update cycle (after the n_steps rollout has been collected and all
+    n_epochs gradient steps have run).
+
+    Why capture here instead of relying on SB3's default TensorBoard output?
+    -------------------------------------------------------------------------
+    SB3 computes ``approx_kl``, ``clip_fraction``, and ``explained_variance``
+    internally but does not always expose them as standalone TensorBoard
+    scalars in all versions.  This callback explicitly re-records them so they
+    are always visible, and also writes them to JSONL for offline analysis
+    without a running TensorBoard server.
+
+    Parameters
+    ----------
+    run_logger : ``RLRunLogger`` instance for JSONL persistence.
+    verbose    : SB3 verbosity level.
+    """
+
+    def __init__(self, run_logger: "RLRunLogger", verbose: int = 0) -> None:
+        super().__init__(verbose=verbose)
+        self._run_logger = run_logger
+        self._update_count = 0
+
+    def _on_rollout_end(self) -> None:
+        """Called after each complete PPO update cycle."""
+        log_values = self.model.logger.name_to_value  # type: ignore[attr-defined]
+
+        def _get(key: str, default: float = 0.0) -> float:
+            val = log_values.get(key, default)
+            return float(val) if val is not None else default
+
+        metrics = PPOUpdateMetrics(
+            update_step=self._update_count,
+            policy_loss=_get("train/policy_gradient_loss"),
+            value_loss=_get("train/value_loss"),
+            entropy_loss=_get("train/entropy_loss"),
+            total_loss=_get("train/loss"),
+            clip_fraction=_get("train/clip_fraction"),
+            approx_kl=_get("train/approx_kl"),
+            explained_variance=_get("train/explained_variance"),
+            learning_rate=_get("train/learning_rate"),
+            num_timesteps=self.num_timesteps,
+        )
+
+        # Ensure these appear in TensorBoard even if SB3 doesn't record them by default
+        self.logger.record("train/approx_kl", metrics.approx_kl)
+        self.logger.record("train/clip_fraction", metrics.clip_fraction)
+        self.logger.record("train/explained_variance", metrics.explained_variance)
+
+        self._run_logger.log_ppo_update(metrics)
+        self._update_count += 1
+
+    def _on_step(self) -> bool:
+        return True
+
+
 class RLTrainer:
     """
     Wires SB3 PPO with the custom ``CompressorPolicy`` and ``CompressionEnv``.
@@ -246,6 +391,9 @@ class RLTrainer:
     tokenizer         : HF tokenizer (or None to use char-level fallback in CompressionEnv).
     tensorboard_log   : Directory for TensorBoard logs. Defaults to ``outputs/logs``.
     checkpoint_dir    : Directory for SB3 + compressor checkpoints. Defaults to ``outputs/checkpoints``.
+    training_log_dir  : Root directory for training-only JSONL artifacts (PPO update metrics,
+                        episode summaries). Each ``train()`` call creates a timestamped
+                        subdirectory under this path. Defaults to ``outputs/training``.
     reward_predictor  : Optional RewardPredictorComponent. When provided, a
                         RewardPredictorCallback is added to the callback list so
                         that a PyTorch linear model trains on episode rewards.
@@ -264,6 +412,7 @@ class RLTrainer:
         tokenizer: Any = None,
         tensorboard_log: str | Path = "outputs/logs",
         checkpoint_dir: str | Path = "outputs/checkpoints",
+        training_log_dir: str | Path = "outputs/training",
         reward_predictor: Any = None,
         reward_predictor_fit_every: int = 50,
     ) -> None:
@@ -277,6 +426,7 @@ class RLTrainer:
         self._tokenizer = tokenizer
         self._tensorboard_log = Path(tensorboard_log)
         self._checkpoint_dir = Path(checkpoint_dir)
+        self._training_log_dir = Path(training_log_dir)
         self._reward_predictor = reward_predictor
         self._reward_predictor_fit_every = reward_predictor_fit_every
 
@@ -299,6 +449,11 @@ class RLTrainer:
         """
         n_steps = num_timesteps or self._config.num_timesteps
 
+        # Create a timestamped run directory for training-only JSONL artifacts.
+        # Each train() call gets its own directory so runs don't overwrite each other.
+        run_id = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+        run_logger = RLRunLogger(run_id=run_id, training_dir=self._training_log_dir)
+
         # Build vectorised env
         vec_env = self._make_vec_env()
 
@@ -309,14 +464,17 @@ class RLTrainer:
             self._ppo = self._build_ppo(vec_env)
 
         # Build callbacks
-        callbacks = self._build_callbacks()
+        callbacks = self._build_callbacks(run_logger=run_logger)
 
         # Run training
-        self._ppo.learn(
-            total_timesteps=n_steps,
-            callback=callbacks,
-            reset_num_timesteps=not bool(self._config.resume_from),
-        )
+        try:
+            self._ppo.learn(
+                total_timesteps=n_steps,
+                callback=callbacks,
+                reset_num_timesteps=not bool(self._config.resume_from),
+            )
+        finally:
+            run_logger.close()
 
     def save_checkpoint(self, path: str | Path | None = None) -> None:
         """
@@ -449,14 +607,20 @@ class RLTrainer:
         )
         return ppo
 
-    def _build_callbacks(self) -> CallbackList:
+    def _build_callbacks(self, run_logger: "RLRunLogger") -> CallbackList:
         """
         Build the list of SB3 callbacks used during ``ppo.learn()``.
 
         Includes:
         - SB3 built-in ``CheckpointCallback`` — saves full PPO model as zip.
         - ``CompressorCheckpointCallback`` — saves only the compressor weights.
-        - ``EpisodeLogCallback`` — writes reward components to TensorBoard.
+        - ``EpisodeLogCallback`` — reward components, episode stats → TensorBoard + JSONL.
+        - ``PPOUpdateMetricsCallback`` — per-update PPO diagnostics → TensorBoard + JSONL.
+        - ``MCTSMetricsCallback`` — MCTS tree stats → TensorBoard (no-op for non-MCTS runs).
+
+        Parameters
+        ----------
+        run_logger : Active ``RLRunLogger`` for this training run.
         """
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self._tensorboard_log.mkdir(parents=True, exist_ok=True)
@@ -477,10 +641,17 @@ class RLTrainer:
             verbose=1,
         )
 
-        episode_log = EpisodeLogCallback(verbose=0)
+        episode_log_cb = EpisodeLogCallback(run_logger=run_logger, verbose=0)
+        ppo_metrics_cb = PPOUpdateMetricsCallback(run_logger=run_logger, verbose=0)
         mcts_metrics = MCTSMetricsCallback(verbose=0)  # no-op for non-MCTS runs
 
-        callbacks: list[BaseCallback] = [sb3_ckpt, compressor_ckpt, episode_log, mcts_metrics]
+        callbacks: list[BaseCallback] = [
+            sb3_ckpt,
+            compressor_ckpt,
+            episode_log_cb,
+            ppo_metrics_cb,
+            mcts_metrics,
+        ]
 
         if self._reward_predictor is not None:
             rp_cb = RewardPredictorCallback(
