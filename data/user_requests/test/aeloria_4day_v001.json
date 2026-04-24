@@ -1,0 +1,80 @@
+{
+  "request_id": "req-aeloria-4day-v001",
+  "raw_text": "My partner and I are visiting Aeloria for 4 nights (June 1–5 2026). We have a total budget of $1,200 USD covering hotel, activities, and dining. We need a hotel with at least 3 stars. We'd love to explore the city's main attractions — especially anything with history or culture — and find a couple of good local restaurants. If there are any events or shows in the evenings we'd enjoy that too. We're not interested in anything that costs more than $60 per ticket.",
+  "origin_city": "Home",
+  "destination_cities": ["Aeloria"],
+  "start_date": "2026-06-01",
+  "end_date": "2026-06-05",
+  "budget_usd": 1200.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip spend (hotel + activities + events) must not exceed $1,200 USD.",
+      "value": "1200",
+      "unit": "USD"
+    },
+    {
+      "constraint_id": "hc-dates",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Stay must cover the nights of June 1, 2, 3, and 4 (check-in June 1, check-out June 5).",
+      "value": "2026-06-01 to 2026-06-05",
+      "unit": "date_range"
+    },
+    {
+      "constraint_id": "hc-hotel-stars",
+      "constraint_type": "hard",
+      "category": "accommodation",
+      "description": "Hotel must have a star rating of 3 or above.",
+      "value": "3",
+      "unit": "min_stars"
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-attractions",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Visit at least 2 attractions in Aeloria during the stay.",
+      "value": "2",
+      "unit": "min_count"
+    },
+    {
+      "constraint_id": "sc-dining",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Dine at local restaurants reflecting the city's dominant cuisine style.",
+      "value": "local_cuisine",
+      "unit": "preference"
+    },
+    {
+      "constraint_id": "sc-events",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Attend at least one evening event or show with ticket price under $60 per person.",
+      "value": "60",
+      "unit": "max_price_usd"
+    }
+  ],
+  "preferences": [
+    "prefer hotels near the city centre or main attractions",
+    "interested in history, culture, and local character",
+    "evening events preferred over late-night venues",
+    "walking-distance itinerary is a plus"
+  ],
+  "metadata": {
+    "version": "v001",
+    "created": "2026-04-23",
+    "notes": "First hand-crafted baseline request. Fixed budget and dates; low-complexity single-city visit.",
+    "target_world_seed": 42,
+    "evaluation_split": "test"
+  }
+}
