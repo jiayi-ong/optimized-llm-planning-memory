@@ -1,0 +1,51 @@
+# configs/agent/react_mcts.yaml
+# ==============================
+# Agent config for AgentMode.MCTS_COMPRESSOR.
+#
+# At each compression trigger, MCTSController.search() explores branching_factor
+# candidate actions for num_simulations iterations before calling the compressor.
+#
+# Usage:
+#   python scripts/run_evaluation.py agent=react_mcts compressor=llm_mcts
+#   python scripts/run_training.py   agent=react_mcts compressor=llm_mcts training=ppo_mcts
+#
+# @package agent
+
+mode: mcts_compressor
+llm_model_id: openai/gpt-4o-mini
+max_steps: 30
+max_retries_per_action: 3
+compress_every_n_steps: 5
+compress_on_token_threshold: 3000
+temperature: 0.0
+max_tokens_per_response: 1024
+system_prompt_version: v1
+few_shot_examples_path: data/few_shot_examples/react_tool_use.json
+
+mcts:
+  # Number of SELECT→EXPAND→SIMULATE→BACKPROPAGATE iterations per compression event.
+  # Reduce to 20 for faster iteration during development.
+  num_simulations: 50
+
+  # Maximum tree depth. Nodes at this depth are treated as terminal.
+  max_depth: 10
+
+  # UCB1 exploration constant C_p. sqrt(2) ≈ 1.414 is the theoretical optimum.
+  # Increase to explore more; decrease to exploit known-good branches.
+  exploration_constant: 1.414
+
+  # Number of candidate action texts sampled per expansion.
+  # Higher values increase coverage but add LLM API calls.
+  branching_factor: 3
+
+  # ReAct steps simulated per node (used in rollout; 0 = heuristic only).
+  rollout_steps: 5
+
+  # Model used for LLM-based node scoring (Tier 2 evaluation).
+  evaluator_model_id: openai/gpt-4o-mini
+
+  # Cache node scores by trajectory hash to avoid redundant LLM calls.
+  use_cached_evaluations: true
+
+  # Sampling temperature for candidate action generation. Must be > 0.
+  temperature: 0.7

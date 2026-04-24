@@ -1,0 +1,16 @@
+# configs/compressor/llm_mcts.yaml
+# ==================================
+# Compressor config for LLMMCTSCompressor.
+#
+# LLMMCTSCompressor is a non-trainable LLM-based MCTS-aware compressor:
+#   - compress()           → delegates to LLMCompressor (standard 6-section output)
+#   - compress_with_tree() → sends MCTSTreeRepresentation to an LLM that produces
+#                            structured output including top_candidates and tradeoffs.
+#
+# Pair with agent=react_mcts for full MCTS-augmented evaluation.
+#
+# @package compressor
+
+type: llm_mcts
+llm_model_id: openai/gpt-4o-mini
+max_output_tokens: 1024

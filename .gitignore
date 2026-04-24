@@ -39,7 +39,7 @@ wandb/
 # Data (generated; keep templates and rubrics)
 data/user_requests/train/
 data/user_requests/val/
-data/user_requests/test/
+# data/user_requests/test/
 
 # OS
 .DS_Store
