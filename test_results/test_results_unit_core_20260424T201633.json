@@ -1,0 +1,315 @@
+{
+  "level": "unit",
+  "component": "core",
+  "timestamp": "2026-04-24T20:16:33.030164+00:00",
+  "summary": {
+    "total": 43,
+    "passed": 43,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "tests": [
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_default_values",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_max_steps_ge_one",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_mode_string_raw",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestAgentConfig::test_compress_every_n_steps_ge_one",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_step_penalty_le_zero",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_step_penalty_negative_ok",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_weights_accessible",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestRewardConfig::test_tool_failure_weight_le_zero",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestEnvConfig::test_defaults",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestEnvConfig::test_custom_values",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestPPOHyperparams::test_defaults",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestPPOHyperparams::test_learning_rate_gt_zero",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestEvalConfig::test_deterministic_only_default_false",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_config_unit.py::TestEvalConfig::test_rubric_dimensions_populated",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_all_inherit_project_error",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_tool_not_found_includes_tool_name",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_tool_not_found_has_tool_name_attribute",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_log_probs_not_supported_is_compressor_error",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_simulator_errors_inherit_simulator_error",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_agent_errors_inherit_agent_error",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_training_error_hierarchy",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_evaluation_error_hierarchy",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_exceptions_unit.py::TestExceptionHierarchy::test_mcts_error_hierarchy",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_constraint_frozen",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_constraint_satisfied_defaults_none",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_constraint_type_hard_soft",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestConstraint::test_all_constraint_categories_defined",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestTravelerProfile::test_total_travelers_property",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestTravelerProfile::test_defaults_one_adult",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestUserRequest::test_frozen",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestUserRequest::test_destination_cities_min_length",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestUserRequest::test_budget_gt_zero",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestItineraryDay::test_total_cost_sums_transport_hotel_activities",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestItineraryDay::test_total_cost_no_accommodation",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestItinerary::test_recompute_total_cost",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestItinerary::test_cities_visited_unique_ordered",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestTrajectoryModel::test_total_steps_validator_mismatch_raises",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestTrajectoryModel::test_to_text_empty_steps",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestTrajectoryModel::test_slice_since_filters_by_step_index",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestHardConstraintLedger::test_satisfaction_ratio_empty",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestHardConstraintLedger::test_satisfaction_ratio_partial",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestRewardComponents::test_tool_failure_penalty_must_be_le_zero",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    },
+    {
+      "name": "tests/unit/test_core/test_models_unit.py::TestRewardComponents::test_hard_constraint_score_must_be_in_range",
+      "status": "passed",
+      "duration_ms": 0.0,
+      "failure_message": null,
+      "error_traceback": null
+    }
+  ]
+}

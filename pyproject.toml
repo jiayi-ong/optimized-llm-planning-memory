@@ -58,6 +58,12 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "pre-commit>=3.7",
+    "pytest-json-report>=1.5",  # structured JSON output for test runner
+]
+test-ui = [
+    "streamlit>=1.37",
+    "streamlit-autorefresh>=0.0.1",
+    "pandas>=2.2",
 ]
 notebook = [
     # Jupyter environment
@@ -106,4 +112,7 @@ asyncio_mode = "auto"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"'); downloads HuggingFace weights",
     "integration: marks tests that require a live API key",
+    "unit: fast isolated unit tests with all external deps mocked",
+    "module_test: multi-class workflow tests within a single component",
+    "system_test: cross-component end-to-end tests (LLM mocked, real logic)",
 ]

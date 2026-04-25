@@ -7,6 +7,22 @@ Stores ``PPOTransition`` objects collected across rollout episodes. After
 Generalised Advantage Estimation (GAE) is applied by ``RLTrainer``, the
 ``advantage`` field of each transition is filled in. The buffer then
 supports sampling of mini-batches for PPO policy/value network updates.
+
+Architecture note — SB3 integration path
+------------------------------------------
+When using ``stable_baselines3.PPO`` via ``RLTrainer``, SB3 manages its own
+internal rollout buffer and runs GAE/advantage computation automatically
+before each policy update. In that path, ``EpisodeBuffer`` is NOT used —
+SB3's ``RolloutBuffer`` is the active data structure.
+
+``EpisodeBuffer`` is retained for two use cases:
+  (a) A custom training loop that bypasses SB3 (requires implementing GAE
+      externally via ``fill_advantages()``, since SB3 is not called).
+  (b) Logging/inspection — collecting completed episode transitions for
+      offline analysis or replay without triggering a training step.
+
+If you are running a pure SB3 loop, you do not need to instantiate
+``EpisodeBuffer`` at all.
 """
 
 from __future__ import annotations

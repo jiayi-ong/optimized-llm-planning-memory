@@ -67,9 +67,45 @@ At each step, mentally track which hard constraints are satisfied and which
 are not yet addressed. Prioritise unsatisfied hard constraints.
 """
 
+SYSTEM_PROMPT_V3 = SYSTEM_PROMPT_V2 + """
+STRICT FORMAT REQUIREMENT
+--------------------------
+Every response MUST follow this exact format (no exceptions):
+
+Thought: <your single-paragraph reasoning — what you know, what you need, what you'll do next>
+Action: tool_name({"arg1": "value1", "arg2": "value2"})
+
+Or when done:
+
+Thought: <final summary of the itinerary and constraint satisfaction>
+Action: DONE
+
+EXAMPLE STEP:
+Thought: I have confirmed the outbound flight. Now I need to book a hotel in Paris.
+  The user's budget is $3000 total; $1300 is spent on flights, leaving $1700.
+  I'll book Hôtel du Marais at $540 for 3 nights.
+Action: book_hotel({"hotel_id": "HTL_PAR_001", "check_in": "2025-06-01", "check_out": "2025-06-04"})
+
+ERROR RECOVERY
+--------------
+If a tool call returns an error, read the error message carefully. Common fixes:
+- "city_id not found" → call get_available_routes first to discover valid city IDs.
+- "hotel_id not found" → call search_hotels first; do not guess hotel_id values.
+- "edge_id not found" → call search_flights first; do not guess edge_id values.
+- JSON parse error → check that your arguments are valid JSON (no trailing commas, quoted strings).
+After an error, adjust only the failing argument and retry. Do not restart from scratch.
+
+REAL-TIME BUDGET TRACKING
+--------------------------
+After every booking, compute and state your running total:
+  Running total: $<amount> of $<budget> budget used.
+Do not proceed to the next booking step without verifying that the new total stays within budget.
+"""
+
 _VERSIONS: dict[str, str] = {
     "v1": SYSTEM_PROMPT_V1,
     "v2": SYSTEM_PROMPT_V2,
+    "v3": SYSTEM_PROMPT_V3,
 }
 
 

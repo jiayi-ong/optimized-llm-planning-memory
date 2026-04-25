@@ -31,71 +31,107 @@ class MockSimulator:
     In-memory travel simulator that returns deterministic canned responses.
 
     Satisfies ``SimulatorProtocol`` as a structural subtype.
+    Method signatures match the keyword arguments that BaseTool subclasses pass.
     """
 
     def __init__(self, seed: int = 42) -> None:
         self._seed = seed
 
-    # ── Search methods ─────────────────────────────────────────────────────────
+    # ── Discovery ──────────────────────────────────────────────────────────────
+
+    def get_available_routes(self) -> list[dict]:
+        return [
+            {
+                "edge_id": "EDGE_NYC_PAR_001",
+                "origin_city_id": "nyc-001",
+                "origin_city_name": "New York",
+                "destination_city_id": "par-001",
+                "destination_city_name": "Paris",
+            },
+            {
+                "edge_id": "EDGE_LON_ROM_001",
+                "origin_city_id": "lon-001",
+                "origin_city_name": "London",
+                "destination_city_id": "rom-001",
+                "destination_city_name": "Rome",
+            },
+            {
+                "edge_id": "EDGE_AMS_BCN_001",
+                "origin_city_id": "ams-001",
+                "origin_city_name": "Amsterdam",
+                "destination_city_id": "bcn-001",
+                "destination_city_name": "Barcelona",
+            },
+        ]
+
+    # ── Flight methods ─────────────────────────────────────────────────────────
 
     def search_flights(
         self,
-        origin: str,
-        destination: str,
-        date: str,
-        num_passengers: int,
+        origin_city_id: str,
+        destination_city_id: str,
+        departure_date: str,
+        passengers: int = 1,
     ) -> list[dict]:
+        prefix = f"{origin_city_id[:3].upper()}_{destination_city_id[:3].upper()}"
         return [
             {
-                "flight_id": f"FL_{origin[:3].upper()}_{destination[:3].upper()}_001",
+                "edge_id": f"EDGE_{prefix}_001",
+                "flight_id": f"FL_{prefix}_001",
                 "airline": "MockAir",
-                "origin": origin,
-                "destination": destination,
-                "departure_datetime": f"{date}T08:00:00",
-                "arrival_datetime": f"{date}T14:00:00",
+                "origin_city_id": origin_city_id,
+                "destination_city_id": destination_city_id,
+                "departure_datetime": f"{departure_date}T08:00:00",
+                "arrival_datetime": f"{departure_date}T14:00:00",
                 "price_per_person": 350.0,
-                "total_price": 350.0 * num_passengers,
+                "total_price": 350.0 * passengers,
                 "stops": 0,
                 "duration_hours": 6.0,
             },
             {
-                "flight_id": f"FL_{origin[:3].upper()}_{destination[:3].upper()}_002",
+                "edge_id": f"EDGE_{prefix}_002",
+                "flight_id": f"FL_{prefix}_002",
                 "airline": "BudgetFly",
-                "origin": origin,
-                "destination": destination,
-                "departure_datetime": f"{date}T14:00:00",
-                "arrival_datetime": f"{date}T20:30:00",
+                "origin_city_id": origin_city_id,
+                "destination_city_id": destination_city_id,
+                "departure_datetime": f"{departure_date}T14:00:00",
+                "arrival_datetime": f"{departure_date}T20:30:00",
                 "price_per_person": 220.0,
-                "total_price": 220.0 * num_passengers,
+                "total_price": 220.0 * passengers,
                 "stops": 1,
                 "duration_hours": 6.5,
             },
         ]
 
+    # ── Hotel methods ──────────────────────────────────────────────────────────
+
     def search_hotels(
         self,
-        city: str,
+        city_id: str,
         check_in: str,
         check_out: str,
-        num_guests: int,
+        guests: int = 1,
+        max_price: float | None = None,
+        min_stars: float | None = None,
     ) -> list[dict]:
+        city_tag = city_id[:3].upper()
         return [
             {
-                "hotel_id": f"HTL_{city[:3].upper()}_BOUTIQUE",
-                "name": f"{city} Boutique Inn",
-                "city": city,
+                "hotel_id": f"HTL_{city_tag}_BOUTIQUE",
+                "name": f"{city_id} Boutique Inn",
+                "city_id": city_id,
                 "stars": 3,
                 "category": "boutique",
                 "check_in": check_in,
                 "check_out": check_out,
                 "price_per_night": 120.0,
-                "total_price": 120.0 * 3,  # assume 3 nights
+                "total_price": 120.0 * 3,
                 "amenities": ["wifi", "breakfast"],
             },
             {
-                "hotel_id": f"HTL_{city[:3].upper()}_GRAND",
-                "name": f"Grand {city} Hotel",
-                "city": city,
+                "hotel_id": f"HTL_{city_tag}_GRAND",
+                "name": f"Grand {city_id} Hotel",
+                "city_id": city_id,
                 "stars": 5,
                 "category": "luxury",
                 "check_in": check_in,
@@ -106,116 +142,137 @@ class MockSimulator:
             },
         ]
 
-    def search_activities(
-        self,
-        city: str,
-        date: str,
-        category: str | None = None,
-    ) -> list[dict]:
-        return [
-            {
-                "activity_id": f"ACT_{city[:3].upper()}_MUSEUM",
-                "name": f"{city} National Museum",
-                "city": city,
-                "location": f"Central {city}",
-                "date": date,
-                "category": "culture",
-                "duration_hours": 3.0,
-                "cost_per_person": 18.0,
-                "max_participants": 50,
-            },
-            {
-                "activity_id": f"ACT_{city[:3].upper()}_TOUR",
-                "name": f"{city} Walking Tour",
-                "city": city,
-                "location": f"Old Town {city}",
-                "date": date,
-                "category": "tour",
-                "duration_hours": 2.0,
-                "cost_per_person": 12.0,
-                "max_participants": 20,
-            },
-            {
-                "activity_id": f"ACT_{city[:3].upper()}_FOOD",
-                "name": f"{city} Food Market Tour",
-                "city": city,
-                "location": f"Market District {city}",
-                "date": date,
-                "category": "food",
-                "duration_hours": 2.5,
-                "cost_per_person": 25.0,
-                "max_participants": 15,
-            },
-        ]
-
-    def get_city_info(self, city: str) -> dict:
+    def book_hotel(self, hotel_id: str, check_in: str, check_out: str) -> dict:
         return {
-            "city": city,
-            "country": "TestLand",
-            "timezone": "UTC+1",
-            "currency": "USD",
-            "language": "English",
-            "population": 1_500_000,
-            "highlights": [f"{city} Old Town", f"{city} Museum", f"{city} Park"],
-            "avg_daily_cost_usd": 80.0,
-        }
-
-    def get_location_details(self, location_id: str) -> dict:
-        return {
-            "location_id": location_id,
-            "name": f"Location {location_id}",
-            "type": "point_of_interest",
-            "city": "MockCity",
-            "coordinates": {"lat": 48.85, "lon": 2.35},
-            "description": "A mock location for testing purposes.",
-            "rating": 4.2,
-        }
-
-    def get_events(
-        self, city: str, start_date: str, end_date: str
-    ) -> list[dict]:
-        return [
-            {
-                "event_id": f"EVT_{city[:3].upper()}_FESTIVAL",
-                "name": f"{city} Summer Festival",
-                "city": city,
-                "start_date": start_date,
-                "end_date": start_date,
-                "venue": f"{city} Main Square",
-                "category": "festival",
-                "cost": 0.0,
-                "description": "Annual city festival with music and food.",
-            }
-        ]
-
-    # ── Booking methods ────────────────────────────────────────────────────────
-
-    def book_flight(self, flight_id: str, passenger_details: dict) -> dict:
-        return {
-            "booking_ref": f"BK_FL_{flight_id[-3:]}_001",
-            "flight_id": flight_id,
-            "status": "confirmed",
-            "total_cost": 700.0,
-            "passenger_details": passenger_details,
-        }
-
-    def book_hotel(self, hotel_id: str, guest_details: dict) -> dict:
-        return {
-            "booking_ref": f"BK_HTL_{hotel_id[-6:]}_001",
+            "booking_ref": f"SIM-HTL-{hotel_id[-6:]}-001",
             "hotel_id": hotel_id,
             "status": "confirmed",
             "total_cost": 360.0,
-            "check_in": guest_details.get("check_in", "2025-06-01"),
-            "check_out": guest_details.get("check_out", "2025-06-04"),
+            "check_in": check_in,
+            "check_out": check_out,
         }
 
-    def book_activity(self, activity_id: str, participant_details: dict) -> dict:
+    def get_hotel_detail(self, hotel_id: str) -> dict:
         return {
-            "booking_ref": f"BK_ACT_{activity_id[-6:]}_001",
-            "activity_id": activity_id,
+            "hotel_id": hotel_id,
+            "name": f"Hotel {hotel_id}",
+            "stars": 3,
+            "description": "A mock hotel for testing.",
+            "amenities": ["wifi", "breakfast"],
+            "price_per_night": 120.0,
+        }
+
+    # ── Attraction methods ─────────────────────────────────────────────────────
+
+    def search_attractions(
+        self,
+        city_id: str,
+        category: str | None = None,
+        free_only: bool = False,
+    ) -> list[dict]:
+        city_tag = city_id[:3].upper()
+        return [
+            {
+                "attraction_id": f"ATT_{city_tag}_MUSEUM",
+                "name": f"{city_id} National Museum",
+                "city_id": city_id,
+                "category": "museum",
+                "duration_hours": 3.0,
+                "admission_fee": 18.0,
+                "is_free": False,
+                "description": "A world-class museum.",
+            },
+            {
+                "attraction_id": f"ATT_{city_tag}_PARK",
+                "name": f"{city_id} Central Park",
+                "city_id": city_id,
+                "category": "park",
+                "duration_hours": 2.0,
+                "admission_fee": 0.0,
+                "is_free": True,
+                "description": "A beautiful park.",
+            },
+        ]
+
+    def get_attraction_detail(self, attraction_id: str) -> dict:
+        return {
+            "attraction_id": attraction_id,
+            "name": f"Attraction {attraction_id}",
+            "description": "A mock attraction for testing.",
+            "admission_fee": 18.0,
+            "duration_hours": 3.0,
+            "opening_hours": "09:00-18:00",
+        }
+
+    # ── Event methods ──────────────────────────────────────────────────────────
+
+    def search_events(
+        self,
+        city_id: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        category: str | None = None,
+    ) -> list[dict]:
+        city_tag = city_id[:3].upper()
+        return [
+            {
+                "event_id": f"EVT_{city_tag}_FESTIVAL",
+                "name": f"{city_id} Summer Festival",
+                "city_id": city_id,
+                "start_date": start_date or "2025-06-01",
+                "end_date": end_date or "2025-06-01",
+                "venue": f"{city_id} Main Square",
+                "category": "festival",
+                "price_per_ticket": 0.0,
+                "description": "Annual city festival.",
+            }
+        ]
+
+    def book_event(self, event_id: str, quantity: int = 1) -> dict:
+        return {
+            "booking_ref": f"SIM-EVT-{event_id[-6:]}-001",
+            "event_id": event_id,
             "status": "confirmed",
-            "total_cost": 36.0,
-            "participant_details": participant_details,
+            "quantity": quantity,
+            "total_cost": 0.0,
+        }
+
+    # ── Restaurant methods ─────────────────────────────────────────────────────
+
+    def search_restaurants(
+        self,
+        city_id: str,
+        cuisine: str | None = None,
+        max_avg_spend: float | None = None,
+    ) -> list[dict]:
+        city_tag = city_id[:3].upper()
+        return [
+            {
+                "restaurant_id": f"RST_{city_tag}_BISTRO",
+                "name": f"{city_id} Bistro",
+                "city_id": city_id,
+                "cuisine": cuisine or "international",
+                "avg_spend_per_person": 35.0,
+                "rating": 4.2,
+            },
+        ]
+
+    # ── Routing methods ────────────────────────────────────────────────────────
+
+    def plan_route(
+        self,
+        origin_location_id: str,
+        destination_location_id: str,
+        departure_datetime: str | None = None,
+        optimize_for: str | None = None,
+    ) -> dict:
+        return {
+            "route_id": f"ROUTE_{origin_location_id[:4]}_{destination_location_id[:4]}",
+            "origin_location_id": origin_location_id,
+            "destination_location_id": destination_location_id,
+            "duration_minutes": 45,
+            "distance_km": 12.5,
+            "mode": "transit",
         }
 
     # ── Utility methods ────────────────────────────────────────────────────────

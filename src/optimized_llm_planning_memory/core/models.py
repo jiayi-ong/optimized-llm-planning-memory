@@ -36,7 +36,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 if TYPE_CHECKING:
     # Avoid a circular import at runtime: MCTSStats is only referenced in
@@ -96,6 +96,31 @@ class Constraint(BaseModel):
     unit: str | None = None
     satisfied: bool | None = None
     score: float | None = None
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def _validate_value_type(cls, v: Any, info: Any) -> Any:
+        """Reject type-mismatched constraint values early (M8 fix)."""
+        # info.data may be partially populated; only validate when category is known
+        category = (info.data or {}).get("category")
+        if category is None:
+            return v
+        if category == ConstraintCategory.BUDGET:
+            if not isinstance(v, (int, float)):
+                raise ValueError(
+                    f"BUDGET constraint requires a numeric value, got {type(v).__name__!r}: {v!r}"
+                )
+        elif category == ConstraintCategory.DURATION:
+            if not isinstance(v, (int, float)):
+                raise ValueError(
+                    f"DURATION constraint requires a numeric value, got {type(v).__name__!r}: {v!r}"
+                )
+        elif category in (ConstraintCategory.CITY, ConstraintCategory.DATE):
+            if not isinstance(v, str):
+                raise ValueError(
+                    f"{category.value.upper()} constraint requires a string value, got {type(v).__name__!r}: {v!r}"
+                )
+        return v
 
 
 class ConstraintSatisfactionResult(BaseModel):
@@ -230,6 +255,16 @@ class Itinerary(BaseModel):
     total_cost_usd: float = Field(default=0.0, ge=0.0)
     is_complete: bool = False
     version: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def _sync_total_cost(self) -> "Itinerary":
+        """Auto-sync total_cost_usd from day sums on construction (M9 fix).
+
+        Prevents divergence between the stored field and the sum of per-day costs.
+        ``recompute_total_cost()`` remains available for explicit mid-episode updates.
+        """
+        self.total_cost_usd = sum(d.total_cost_usd for d in self.days)
+        return self
 
     def recompute_total_cost(self) -> float:
         """Recompute and store total cost from all days. Returns the updated total."""

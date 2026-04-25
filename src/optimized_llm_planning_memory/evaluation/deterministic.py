@@ -101,7 +101,8 @@ class DeterministicEvaluator:
         self, itinerary: Itinerary | None, request: UserRequest
     ) -> float:
         if itinerary is None or not request.soft_constraints:
-            return 0.5
+            # 1.0 matches constraints.py and reward.py: no constraints = fully satisfied (H5 fix).
+            return 1.0
         results = self._engine.evaluate(itinerary, list(request.soft_constraints))
         return self._engine.soft_satisfaction_score(results, list(request.soft_constraints))
 
@@ -151,17 +152,28 @@ class DeterministicEvaluator:
         return max(0.0, 1.0 - overshoot / request.budget_usd)
 
     def _logical_consistency(self, itinerary: Itinerary | None) -> float:
-        """Date ordering + no duplicate hotel bookings. [0, 1]"""
+        """
+        Date ordering, no duplicate hotel bookings, and temporal feasibility. [0, 1]
+
+        Checks (M3 fix — added temporal feasibility):
+        1. Itinerary days are in chronological order.
+        2. No hotel_id appears on more than one day.
+        3. No two activities on the same day have overlapping time windows
+           (requires start_datetime + duration_hours on ActivityBooking).
+        4. Flight arrival datetime is on or before the hotel check-in date.
+        """
         if itinerary is None or not itinerary.days:
             return 0.0
         issues = 0
         checks = 0
 
+        # Check 1: days are sorted
         dates = [d.date for d in itinerary.days]
         checks += 1
         if dates != sorted(dates):
             issues += 1
 
+        # Check 2: no duplicate hotel bookings
         hotel_ids = [
             d.accommodation.hotel_id
             for d in itinerary.days
@@ -170,5 +182,47 @@ class DeterministicEvaluator:
         checks += 1
         if len(hotel_ids) != len(set(hotel_ids)):
             issues += 1
+
+        # Check 3: no overlapping activities within a day
+        for day in itinerary.days:
+            if not day.activities:
+                continue
+            slots: list[tuple[str, str]] = []
+            for act in day.activities:
+                start = getattr(act, "start_datetime", None)
+                dur = getattr(act, "duration_hours", None)
+                if start and dur:
+                    try:
+                        from datetime import datetime, timedelta
+                        start_dt = datetime.fromisoformat(start)
+                        end_dt = start_dt + timedelta(hours=float(dur))
+                        slots.append((start_dt.isoformat(), end_dt.isoformat()))
+                    except (ValueError, TypeError):
+                        pass
+            if len(slots) > 1:
+                checks += 1
+                sorted_slots = sorted(slots)
+                overlap = any(
+                    sorted_slots[i][1] > sorted_slots[i + 1][0]
+                    for i in range(len(sorted_slots) - 1)
+                )
+                if overlap:
+                    issues += 1
+
+        # Check 4: flight arrival ≤ hotel check-in date on the same day
+        for day in itinerary.days:
+            if day.accommodation is None:
+                continue
+            hotel_checkin = getattr(day.accommodation, "check_in", None)
+            for seg in day.transport_segments:
+                arrival = getattr(seg, "arrival_datetime", None)
+                if hotel_checkin and arrival:
+                    try:
+                        arrival_date = arrival[:10]
+                        checks += 1
+                        if arrival_date > hotel_checkin:
+                            issues += 1
+                    except (IndexError, TypeError):
+                        pass
 
         return max(0.0, 1.0 - issues / checks) if checks > 0 else 1.0

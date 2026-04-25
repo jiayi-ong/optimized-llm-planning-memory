@@ -15,15 +15,15 @@ training. The hybrid approach combines both:
     another LLM call): generates the ``current_itinerary_sketch`` and
     ``soft_constraints_summary`` sections where nuance matters.
 
-This is the starting architecture recommended for exploration before
-committing to full PPO training of the TransformerCompressor.
-
-Note
-----
-HybridCompressor inherits from ``CompressorBase`` (not ``TrainableCompressorBase``)
-because it delegates to an LLM for the trainable parts. If the free-form
-generation is handled by a TransformerCompressor, inject that and promote
-HybridCompressor to TrainableCompressorBase.
+Trainability (M6 fix)
+---------------------
+``HybridCompressor`` now inherits from ``TrainableCompressorBase`` and
+delegates the trainable contract (get_log_probs, get_trainable_parameters,
+save/load_checkpoint) to the ``narrative_compressor`` when it is a
+``TrainableCompressorBase``. If the narrative compressor is a plain
+``CompressorBase`` (e.g., LLMCompressor), these methods raise
+``LogProbsNotSupportedError`` as before — the hybrid is only trainable when
+a ``TransformerCompressor`` is injected as the narrative pass.
 """
 
 from __future__ import annotations
@@ -31,17 +31,20 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+import torch
+
 from optimized_llm_planning_memory.compressor.base import CompressorBase
 from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
 from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
+from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
+from optimized_llm_planning_memory.core.exceptions import LogProbsNotSupportedError
 from optimized_llm_planning_memory.core.models import (
     CompressedState,
-    HardConstraintLedger,
     TrajectoryModel,
 )
 
 
-class HybridCompressor(CompressorBase):
+class HybridCompressor(TrainableCompressorBase):
     """
     Two-pass compressor: typed slot extraction + free-form narrative.
 
@@ -53,9 +56,8 @@ class HybridCompressor(CompressorBase):
         Generate ``soft_constraints_summary`` and ``current_itinerary_sketch``.
         These are free-form and capture nuance.
 
-    Currently both passes use ``LLMCompressor`` (fast to implement, no GPU).
-    To make Pass 2 trainable, inject a ``TransformerCompressor`` as
-    ``narrative_compressor`` and override with ``TrainableCompressorBase``.
+    To enable RL training, inject a ``TransformerCompressor`` as
+    ``narrative_compressor``. The trainable contract is delegated to it.
 
     Parameters
     ----------
@@ -84,15 +86,9 @@ class HybridCompressor(CompressorBase):
         Pass 1 extracts structured slots. Pass 2 generates free-form narrative.
         Results are merged into a single CompressedState.
         """
-        # Pass 1: slot extraction
         slot_state = self._slot_compressor.compress(trajectory, previous_state)
-
-        # Pass 2: narrative generation (may reuse slot_state as context)
-        # Here we reuse the same trajectory; a more sophisticated implementation
-        # could pass the slot_state as guidance to the narrative compressor.
         narrative_state = self._narrative_compressor.compress(trajectory, slot_state)
 
-        # Merge: take structured fields from slot_state, narrative from narrative_state
         merged = CompressedState(
             state_id=str(uuid.uuid4()),
             trajectory_id=trajectory.trajectory_id,
@@ -110,3 +106,30 @@ class HybridCompressor(CompressorBase):
 
         self._template.validate(merged)
         return merged
+
+    # ── TrainableCompressorBase delegation ───────────────────────────────────
+
+    def get_log_probs(self, trajectory_text: str, compressed_text: str) -> torch.Tensor:
+        """Delegate to narrative_compressor if trainable; else unsupported."""
+        if isinstance(self._narrative_compressor, TrainableCompressorBase):
+            return self._narrative_compressor.get_log_probs(trajectory_text, compressed_text)
+        raise LogProbsNotSupportedError(
+            "HybridCompressor.get_log_probs() requires a TrainableCompressorBase "
+            "as narrative_compressor. Inject a TransformerCompressor to enable RL training."
+        )
+
+    def get_trainable_parameters(self) -> list[torch.nn.Parameter]:
+        """Delegate to narrative_compressor if trainable; else return empty list."""
+        if isinstance(self._narrative_compressor, TrainableCompressorBase):
+            return self._narrative_compressor.get_trainable_parameters()
+        return []
+
+    def save_checkpoint(self, path: str) -> None:
+        """Delegate to narrative_compressor if trainable."""
+        if isinstance(self._narrative_compressor, TrainableCompressorBase):
+            self._narrative_compressor.save_checkpoint(path)
+
+    def load_checkpoint(self, path: str) -> None:
+        """Delegate to narrative_compressor if trainable."""
+        if isinstance(self._narrative_compressor, TrainableCompressorBase):
+            self._narrative_compressor.load_checkpoint(path)

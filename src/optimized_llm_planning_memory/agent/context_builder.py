@@ -68,6 +68,11 @@ class ContextBuilder:
         self._llm_model_id = llm_model_id
         self._summary_max_tokens = summary_max_tokens
         self._template = CompressedStateTemplate()
+        # Cache LLM summaries keyed by (trajectory_object_id, last_compressed_step).
+        # Regenerating the summary on every step is O(max_steps) LLM calls per episode;
+        # the cache reduces this to O(num_compressions) since recent steps are appended
+        # verbatim anyway (M11 fix).
+        self._summary_cache: dict[tuple[int, int], str] = {}
 
     def build(
         self,
@@ -149,7 +154,14 @@ class ContextBuilder:
         if compressed_state is None:
             return self._history_raw(trajectory)
 
-        summary = self._llm_summarise(trajectory)
+        # Cache by (object identity of trajectory, last compressed step index).
+        # The summary content only changes when a new compression fires and
+        # last_compressed_step advances; between compressions the same text applies.
+        cache_key = (id(trajectory), trajectory.last_compressed_step)
+        if cache_key not in self._summary_cache:
+            self._summary_cache[cache_key] = self._llm_summarise(trajectory)
+        summary = self._summary_cache[cache_key]
+
         recent_steps = trajectory.steps_since_last_compression()
         recent_text = _steps_to_text(recent_steps) if recent_steps else ""
 

@@ -125,14 +125,30 @@ def main(cfg: DictConfig) -> None:
         user_request = UserRequest.model_validate(json.loads(template_path.read_text()))
 
     # ── Run episode ───────────────────────────────────────────────────────────
-    log.info("episode.start", request_id=user_request.request_id)
-    episode_log = agent.run_episode(request=user_request, simulator=simulator)
-    log.info("episode.complete", total_steps=episode_log.total_steps, success=episode_log.success)
+    import uuid as _uuid
+    from optimized_llm_planning_memory.utils.live_writer import LiveEpisodeWriter
+
+    episodes_dir = Path(cfg.project.output_dir) / "episodes"
+
+    # Pre-generate episode_id so LiveEpisodeWriter and run_episode() share the
+    # same ID — the live JSONL file is named <episode_id>.jsonl.
+    episode_id = str(_uuid.uuid4())
+    log.info("episode.start", request_id=user_request.request_id, episode_id=episode_id)
+
+    # LiveEpisodeWriter streams step events to outputs/episodes/live/<id>.jsonl
+    # so the Streamlit UI can show live progress while this script runs.
+    with LiveEpisodeWriter(episode_id=episode_id, output_dir=episodes_dir) as live_writer:
+        episode_log = agent.run_episode(
+            request=user_request,
+            simulator=simulator,
+            live_writer=live_writer,
+            episode_id=episode_id,
+        )
 
     # ── Print + save ──────────────────────────────────────────────────────────
     print_episode(episode_log)
 
-    out_path = save_episode(episode_log, Path(cfg.project.output_dir) / "episodes")
+    out_path = save_episode(episode_log, episodes_dir)
     log.info("episode.saved", path=str(out_path))
 
 
