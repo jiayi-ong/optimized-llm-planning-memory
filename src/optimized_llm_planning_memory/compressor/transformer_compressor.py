@@ -37,7 +37,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, PreTrainedModel
 
 from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
 from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
-from optimized_llm_planning_memory.core.config import TransformerCompressorConfig as _Cfg
+from optimized_llm_planning_memory.core.config import LoRAConfig, TransformerCompressorConfig as _Cfg
 from optimized_llm_planning_memory.core.exceptions import CompressorCheckpointError
 from optimized_llm_planning_memory.core.models import CompressedState, TrajectoryModel
 
@@ -68,6 +68,8 @@ class TransformerCompressor(TrainableCompressorBase):
         max_input_tokens: int = 2048,
         max_output_tokens: int = 512,
         device: str = "auto",
+        use_lora: bool = False,
+        lora_config: LoRAConfig | None = None,
     ) -> None:
         self._model_name = model_name_or_path
         self._max_input_tokens = max_input_tokens
@@ -80,6 +82,10 @@ class TransformerCompressor(TrainableCompressorBase):
         self._model: PreTrainedModel = AutoModelForSeq2SeqLM.from_pretrained(
             model_name_or_path
         ).to(self._device)
+
+        # Auto-apply LoRA adapters when requested (L1 fix)
+        if use_lora and lora_config is not None:
+            self.apply_lora(lora_config)
 
     # ── CompressorBase ────────────────────────────────────────────────────────
 
@@ -138,9 +144,13 @@ class TransformerCompressor(TrainableCompressorBase):
         """
         Compute per-token log p(compressed_token | trajectory_text).
 
-        Uses teacher-forcing: the model receives the full target sequence as
-        decoder input and returns a distribution over the vocabulary at each
-        position. We select the log-prob of the actual target token.
+        Uses explicit teacher-forcing via ``decoder_input_ids`` rather than
+        passing ``labels`` to the model. Passing ``labels`` triggers an internal
+        cross-entropy loss computation that is redundant here and can obscure the
+        exact log-prob semantics. With explicit decoder inputs:
+          - decoder_input_ids[t] = target[t-1] (BOS at position 0)
+          - logits[t] predicts target[t]
+        Padding tokens are masked out of the returned log-probs.
 
         Returns
         -------
@@ -158,23 +168,27 @@ class TransformerCompressor(TrainableCompressorBase):
             return_tensors="pt",
             max_length=self._max_output_tokens,
             truncation=True,
-        ).to(self._device)
+        ).to(self._device)  # (1, target_len)
 
-        outputs = self._model(
-            input_ids=input_ids,
-            labels=target_ids,
-        )
-        # outputs.logits: (1, seq_len, vocab_size)
-        logits = outputs.logits.squeeze(0)  # (seq_len, vocab_size)
-        log_probs = F.log_softmax(logits, dim=-1)  # (seq_len, vocab_size)
+        # Explicit teacher-forcing: decoder sees [BOS, target[0], ..., target[-2]]
+        # so logits[t] predicts target[t].
+        bos_id = self._model.config.decoder_start_token_id or 0
+        bos = torch.tensor([[bos_id]], dtype=torch.long, device=self._device)
+        decoder_input_ids = torch.cat([bos, target_ids[:, :-1]], dim=1)  # (1, target_len)
 
-        # Gather log-prob of each actual target token
-        target = target_ids.squeeze(0)  # (seq_len,)
+        outputs = self._model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        logits = outputs.logits.squeeze(0)           # (target_len, vocab_size)
+        log_probs = F.log_softmax(logits, dim=-1)    # (target_len, vocab_size)
+
+        target = target_ids.squeeze(0)               # (target_len,)
         token_log_probs = log_probs.gather(
             dim=-1, index=target.unsqueeze(-1)
-        ).squeeze(-1)  # (seq_len,)
+        ).squeeze(-1)                                # (target_len,)
 
-        return token_log_probs
+        # Zero out padding positions so they don't distort the PPO log-prob sum
+        pad_id = self._tokenizer.pad_token_id or 0
+        non_pad_mask = (target != pad_id).float()
+        return token_log_probs * non_pad_mask
 
     def get_trainable_parameters(self) -> list[nn.Parameter]:
         """Return all parameters with requires_grad=True."""
