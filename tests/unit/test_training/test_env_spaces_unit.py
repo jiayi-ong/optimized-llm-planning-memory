@@ -30,17 +30,8 @@ def _make_env(max_obs: int = 64, max_act: int = 32) -> CompressionEnv:
     reward_fn.compute.return_value = 0.5
 
     agent = MagicMock()
-    agent.run_episode.return_value = MagicMock(
-        episode_id="ep-001",
-        success=True,
-        total_steps=1,
-        steps=[],
-        final_itinerary=None,
-        tool_call_count=0,
-        tool_success_count=0,
-        reward_components={},
-        metadata={},
-    )
+    # run_steps() now drives the env loop; must return (itinerary, done, error_msg)
+    agent.run_steps.return_value = (None, False, None)
 
     sim = MagicMock()
 

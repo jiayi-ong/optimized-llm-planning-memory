@@ -88,36 +88,41 @@ def _build_agent(simulator: MockSimulator, mode: AgentMode = AgentMode.RAW,
 
 # Scripted LLM response sequences for a Paris trip
 _PARIS_SCRIPT = [
+    # Discover routes + city IDs
+    _make_response(
+        'Thought: First, discover available routes.\n'
+        'Action: get_available_routes({})'
+    ),
     # Search flights
     _make_response(
         'Thought: Find flights from New York to Paris.\n'
-        'Action: search_flights({"origin": "New York", "destination": "Paris", '
-        '"date": "2025-06-01", "num_passengers": 1})'
+        'Action: search_flights({"origin_city_id": "nyc-001", "destination_city_id": "par-001", '
+        '"departure_date": "2025-06-01", "passengers": 1})'
     ),
-    # Book the cheap flight
+    # Select the cheap flight
     _make_response(
-        'Thought: BudgetFly at $220 fits budget. Book it.\n'
-        'Action: book_flight({"flight_id": "FL_NEW_PAR_002", '
-        '"passenger_details": {"num_passengers": 1}})'
+        'Thought: BudgetFly at $220 fits budget. Select it.\n'
+        'Action: select_flight({"edge_id": "EDGE_NYC_PAR_002", '
+        '"origin_city_name": "New York", "destination_city_name": "Paris", '
+        '"departure_datetime": "2025-06-01T14:00:00", '
+        '"arrival_datetime": "2025-06-01T20:30:00", "total_price": 220.0})'
     ),
     # Search hotels
     _make_response(
         'Thought: Find a hotel in Paris.\n'
-        'Action: search_hotels({"city": "Paris", "check_in": "2025-06-01", '
-        '"check_out": "2025-06-03", "num_guests": 1})'
+        'Action: search_hotels({"city_id": "par-001", "check_in": "2025-06-01", '
+        '"check_out": "2025-06-03", "guests": 1})'
     ),
     # Book boutique hotel
     _make_response(
         'Thought: Boutique Inn at $120/night ($240 total). Book it.\n'
         'Action: book_hotel({"hotel_id": "HTL_PAR_BOUTIQUE", '
-        '"guest_details": {"num_guests": 1, "check_in": "2025-06-01", '
-        '"check_out": "2025-06-03"}})'
+        '"check_in": "2025-06-01", "check_out": "2025-06-03"})'
     ),
-    # Search activities
+    # Search attractions
     _make_response(
-        'Thought: Look for museum activities in Paris.\n'
-        'Action: search_activities({"city": "Paris", "date": "2025-06-01", '
-        '"category": "culture"})'
+        'Thought: Look for museums in Paris.\n'
+        'Action: search_attractions({"city_id": "par-001", "category": "museum"})'
     ),
     # Done
     _make_response(
@@ -151,7 +156,7 @@ class TestToolTracking:
             log = agent.run_episode(request, sim)
         tool_names = {s.tool_name for s in log.tool_stats}
         assert "search_flights" in tool_names
-        assert "book_flight" in tool_names
+        assert "select_flight" in tool_names
         assert "search_hotels" in tool_names
         assert "book_hotel" in tool_names
 
@@ -164,7 +169,7 @@ class TestToolTracking:
             log = agent.run_episode(request, sim)
         stats = {s.tool_name: s for s in log.tool_stats}
         assert stats["search_flights"].success_count == 1
-        assert stats["book_flight"].success_count == 1
+        assert stats["select_flight"].success_count == 1
         assert stats["book_hotel"].success_count == 1
 
     def test_no_redundant_calls_in_clean_episode(self):
@@ -184,8 +189,8 @@ class TestToolTracking:
         request = make_test_requests()[0]
         search_hotels_call = _make_response(
             'Thought: Search hotels.\n'
-            'Action: search_hotels({"city": "Paris", "check_in": "2025-06-01", '
-            '"check_out": "2025-06-03", "num_guests": 1})'
+            'Action: search_hotels({"city_id": "par-001", "check_in": "2025-06-01", '
+            '"check_out": "2025-06-03", "guests": 1})'
         )
         script = iter([search_hotels_call, search_hotels_call,
                        _make_response("Thought: Done.\nAction: DONE")])
@@ -323,16 +328,16 @@ class TestFullEvaluatorPipeline:
             [
                 _make_response(
                     'Thought: Search for flights to Rome.\n'
-                    'Action: search_flights({"origin": "London", "destination": "Rome", '
-                    '"date": "2025-06-10", "num_passengers": 2})'
+                    'Action: search_flights({"origin_city_id": "lon-001", "destination_city_id": "rom-001", '
+                    '"departure_date": "2025-06-10", "passengers": 2})'
                 ),
                 _make_response("Thought: Done.\nAction: DONE"),
             ],
             [
                 _make_response(
                     'Thought: Search for flights to Barcelona.\n'
-                    'Action: search_flights({"origin": "Amsterdam", "destination": "Barcelona", '
-                    '"date": "2025-06-20", "num_passengers": 3})'
+                    'Action: search_flights({"origin_city_id": "ams-001", "destination_city_id": "bcn-001", '
+                    '"departure_date": "2025-06-20", "passengers": 3})'
                 ),
                 _make_response("Thought: Done.\nAction: DONE"),
             ],

@@ -14,46 +14,48 @@ from test_integration.mock_simulator import MockSimulator
 class TestMockSimulatorSearchMethods:
     def test_search_flights_returns_list(self):
         sim = MockSimulator(seed=42)
-        results = sim.search_flights("NYC", "PAR", "2025-06-01", 1)
+        results = sim.search_flights("nyc-001", "par-001", "2025-06-01", 1)
         assert isinstance(results, list)
         assert len(results) > 0
 
     def test_search_flights_result_has_required_keys(self):
         sim = MockSimulator(seed=42)
-        results = sim.search_flights("NYC", "PAR", "2025-06-01", 2)
-        assert all("flight_id" in r for r in results)
+        results = sim.search_flights("nyc-001", "par-001", "2025-06-01", 2)
+        assert all("edge_id" in r for r in results)
         assert all("airline" in r for r in results)
         assert all("price_per_person" in r for r in results)
         assert all("stops" in r for r in results)
 
     def test_search_hotels_returns_list(self):
         sim = MockSimulator(seed=42)
-        results = sim.search_hotels("Paris", "2025-06-01", "2025-06-04", 2)
+        results = sim.search_hotels("par-001", "2025-06-01", "2025-06-04", 2)
         assert isinstance(results, list)
         assert len(results) >= 2
 
-    def test_search_hotels_has_hotel_id_and_city(self):
+    def test_search_hotels_has_hotel_id_and_city_id(self):
         sim = MockSimulator(seed=42)
-        results = sim.search_hotels("Paris", "2025-06-01", "2025-06-04", 1)
+        results = sim.search_hotels("par-001", "2025-06-01", "2025-06-04", 1)
         for r in results:
             assert "hotel_id" in r
-            assert "city" in r
+            assert "city_id" in r
 
-    def test_search_activities_returns_three(self):
+    def test_search_attractions_returns_list(self):
         sim = MockSimulator(seed=42)
-        results = sim.search_activities("Paris", "2025-06-01")
-        assert len(results) == 3
+        results = sim.search_attractions("par-001")
+        assert isinstance(results, list)
+        assert len(results) >= 2
 
-    def test_get_city_info_returns_dict(self):
+    def test_get_available_routes_returns_routes(self):
         sim = MockSimulator(seed=42)
-        info = sim.get_city_info("Paris")
-        assert isinstance(info, dict)
-        assert "city" in info
-        assert "country" in info
+        routes = sim.get_available_routes()
+        assert isinstance(routes, list)
+        assert len(routes) > 0
+        assert all("origin_city_id" in r for r in routes)
+        assert all("destination_city_id" in r for r in routes)
 
-    def test_get_events_returns_list(self):
+    def test_search_events_returns_list(self):
         sim = MockSimulator(seed=42)
-        events = sim.get_events("Paris", "2025-06-01", "2025-06-30")
+        events = sim.search_events("par-001", start_date="2025-06-01", end_date="2025-06-30")
         assert isinstance(events, list)
         assert all("event_id" in e for e in events)
         assert all("name" in e for e in events)
@@ -61,22 +63,17 @@ class TestMockSimulatorSearchMethods:
 
 @pytest.mark.unit
 class TestMockSimulatorBookMethods:
-    def test_book_flight_returns_confirmed(self):
-        sim = MockSimulator(seed=42)
-        result = sim.book_flight("FL_NYC_PAR_001", {"passenger": "Alice"})
-        assert result["status"] == "confirmed"
-        assert "booking_ref" in result
-
     def test_book_hotel_returns_confirmed(self):
         sim = MockSimulator(seed=42)
-        result = sim.book_hotel("HTL_PAR_BOUTIQUE", {"check_in": "2025-06-01"})
+        result = sim.book_hotel("HTL_PAR_BOUTIQUE", "2025-06-01", "2025-06-04")
         assert result["status"] == "confirmed"
         assert "booking_ref" in result
 
-    def test_book_activity_returns_confirmed(self):
+    def test_book_event_returns_confirmed(self):
         sim = MockSimulator(seed=42)
-        result = sim.book_activity("ACT_PAR_MUSEUM", {"participants": 1})
+        result = sim.book_event("EVT_PAR_FESTIVAL", quantity=1)
         assert result["status"] == "confirmed"
+        assert "booking_ref" in result
 
 
 @pytest.mark.unit

@@ -113,6 +113,9 @@ class TestRewardFunctionCompute:
 class TestCompressionEnvResetStep:
     def test_reset_returns_zero_obs(self, paris_request, reward_fn, env_config_small):
         agent = MagicMock()
+        # run_steps() must return (final_itinerary, done, error_msg)
+        agent.run_steps.return_value = (None, False, None)
+
         env = CompressionEnv(
             agent_factory=lambda: agent,
             simulator_factory=lambda seed: MagicMock(),

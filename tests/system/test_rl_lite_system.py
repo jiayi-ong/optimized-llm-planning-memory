@@ -56,7 +56,8 @@ def _make_episode_log() -> EpisodeLog:
 
 def _make_env(paris_request, reward_fn, env_config_small: EnvConfig) -> CompressionEnv:
     agent = MagicMock()
-    agent.run_episode.return_value = _make_episode_log()
+    # run_steps() now drives the env loop; must return (itinerary, done, error_msg)
+    agent.run_steps.return_value = (None, False, None)
 
     sim = MagicMock()
 

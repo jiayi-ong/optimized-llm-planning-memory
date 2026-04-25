@@ -185,10 +185,10 @@ class TestExecuteTool:
         tool_call = ToolCall(
             tool_name="search_flights",
             arguments={
-                "origin": "New York",
-                "destination": "Paris",
-                "date": "2025-06-01",
-                "num_passengers": 1,
+                "origin_city_id": "nyc-001",
+                "destination_city_id": "par-001",
+                "departure_date": "2025-06-01",
+                "passengers": 1,
             },
             raw_text="search_flights(...)",
         )
@@ -287,8 +287,8 @@ SEARCH_THEN_DONE = [
     # Step 0: search flights
     _make_litellm_response(
         'Thought: I need to find flights.\n'
-        'Action: search_flights({"origin": "New York", "destination": "Paris", '
-        '"date": "2025-06-01", "num_passengers": 1})'
+        'Action: search_flights({"origin_city_id": "nyc-001", "destination_city_id": "par-001", '
+        '"departure_date": "2025-06-01", "passengers": 1})'
     ),
     # Step 1: done
     _make_litellm_response("Thought: Found flights. Planning done.\nAction: DONE"),
@@ -297,13 +297,13 @@ SEARCH_THEN_DONE = [
 BOOK_HOTEL_THEN_DONE = [
     _make_litellm_response(
         'Thought: Search hotels in Paris.\n'
-        'Action: search_hotels({"city": "Paris", "check_in": "2025-06-01", '
-        '"check_out": "2025-06-04", "num_guests": 1})'
+        'Action: search_hotels({"city_id": "par-001", "check_in": "2025-06-01", '
+        '"check_out": "2025-06-04", "guests": 1})'
     ),
     _make_litellm_response(
         'Thought: Book the boutique hotel.\n'
         'Action: book_hotel({"hotel_id": "HTL_PAR_BOUTIQUE", '
-        '"guest_details": {"num_guests": 1, "check_in": "2025-06-01", "check_out": "2025-06-04"}})'
+        '"check_in": "2025-06-01", "check_out": "2025-06-04"})'
     ),
     _make_litellm_response("Thought: Hotel booked. Done.\nAction: DONE"),
 ]
@@ -359,8 +359,8 @@ class TestRunEpisode:
         agent, simulator, _ = _make_agent(mode=AgentMode.RAW)
         same_search = (
             'Thought: Let me search again.\n'
-            'Action: search_flights({"origin": "New York", "destination": "Paris", '
-            '"date": "2025-06-01", "num_passengers": 1})'
+            'Action: search_flights({"origin_city_id": "nyc-001", "destination_city_id": "par-001", '
+            '"departure_date": "2025-06-01", "passengers": 1})'
         )
         responses = [
             _make_litellm_response(same_search),
