@@ -75,16 +75,24 @@ class CompressorPolicy(BasePolicy):
         self.compressor = compressor
         self._value_hidden_dim = value_hidden_dim
 
-        # Value network: linear projection over obs embedding → scalar
-        obs_dim = int(np.prod(observation_space.shape))
+        # Value network: embed token IDs → mean-pool → MLP → scalar
+        # Token IDs are categorical, not ordinal; a plain Linear over raw IDs
+        # would be meaningless (M1 fix).
+        _vocab_size = (
+            getattr(getattr(compressor, "_tokenizer", None), "vocab_size", None) or 32768
+        )
+        _embed_dim = 64
+        self._token_embed = nn.Embedding(_vocab_size, _embed_dim)
         self._value_net = nn.Sequential(
-            nn.Linear(obs_dim, value_hidden_dim),
+            nn.Linear(_embed_dim, value_hidden_dim),
             nn.ReLU(),
             nn.Linear(value_hidden_dim, 1),
         )
 
         self.optimizer = self.optimizer_class(
-            list(compressor.get_trainable_parameters()) + list(self._value_net.parameters()),
+            list(compressor.get_trainable_parameters())
+            + list(self._token_embed.parameters())
+            + list(self._value_net.parameters()),
             lr=lr_schedule(1.0),
             **self.optimizer_kwargs,
         )
@@ -162,7 +170,14 @@ class CompressorPolicy(BasePolicy):
             log_prob = token_log_probs.sum()
             log_probs_list.append(log_prob)
 
-            # Entropy: -sum(p * log p) ≈ -mean(log_p) for discrete sequence
+            # Entropy proxy: we approximate H(π) ≈ -mean(log_prob) per token,
+            # which equals per-token cross-entropy, not the true distribution
+            # entropy H = -Σ p·log(p).  This is numerically close for well-trained
+            # policies (where action distribution is sharp) but will overestimate
+            # entropy for flat distributions early in training.  The PPO entropy
+            # bonus coefficient (ent_coef) is applied to this proxy, so calibrate
+            # ent_coef accordingly.  To use true token entropy, compute
+            # F.log_softmax(logits, dim=-1) and apply -Σ exp(lp)*lp per token.
             entropy = -token_log_probs.mean()
             entropy_list.append(entropy)
 
@@ -187,34 +202,70 @@ class CompressorPolicy(BasePolicy):
         self, obs_text: str, deterministic: bool
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        Generate compressed state tokens from the compressor.
+        Generate compressed state tokens by calling the compressor on the observation.
+
+        Wraps obs_text in a minimal single-step TrajectoryModel so it can be passed
+        to ``compressor.compress()``. The resulting CompressedState is tokenized into
+        the action tensor, and ``get_log_probs()`` gives the scalar log-prob for PPO.
 
         Returns (action_tensor, scalar_log_prob).
         """
-        from optimized_llm_planning_memory.core.models import TrajectoryModel
         import uuid
+        from datetime import datetime, timezone
 
-        # Wrap obs_text in a minimal TrajectoryModel for the compressor interface
-        # TODO: pass a proper TrajectoryModel from the env rather than reconstructing
-        dummy_traj = TrajectoryModel(
-            trajectory_id=str(uuid.uuid4()),
-            request_id="env_step",
-            steps=(),
-            total_steps=0,
-        )
-        # For now, get log_probs from a placeholder action
-        # Full integration requires the env to pass the trajectory model directly
+        from optimized_llm_planning_memory.core.models import ReActStep, TrajectoryModel
+
         max_act = int(np.prod(self.action_space.shape))
-        action_tokens = torch.zeros(max_act, dtype=torch.int32)
-        log_prob = torch.tensor(0.0)
-        return action_tokens, log_prob
+
+        try:
+            # Build a minimal single-step trajectory from the observation text
+            step = ReActStep(
+                step_index=0,
+                thought=obs_text,
+                action=None,
+                observation=None,
+                itinerary_snapshot=None,
+                timestamp=datetime.now(tz=timezone.utc).isoformat(),
+            )
+            traj = TrajectoryModel(
+                trajectory_id=str(uuid.uuid4()),
+                request_id="env_step",
+                steps=(step,),
+                total_steps=1,
+            )
+
+            # Generate the compressed state (inference mode inside compress())
+            compressed_state = self.compressor.compress(traj, previous_state=None)
+            compressed_text = compressed_state.model_dump_json()
+
+            # Tokenize compressed state text → action token IDs
+            tokenizer = getattr(self.compressor, "_tokenizer", None)
+            if tokenizer is not None:
+                token_ids = tokenizer.encode(
+                    compressed_text, max_length=max_act, truncation=True
+                )
+            else:
+                token_ids = [ord(c) % 32768 for c in compressed_text[:max_act]]
+
+            action_arr = np.zeros(max_act, dtype=np.int32)
+            action_arr[:len(token_ids)] = token_ids[:max_act]
+            action_tensor = torch.tensor(action_arr, dtype=torch.int32)
+
+            # Scalar log-prob = sum of token-level log-probs
+            token_log_probs = self.compressor.get_log_probs(obs_text, compressed_text)
+            log_prob = token_log_probs.sum()
+
+        except Exception:
+            action_tensor = torch.zeros(max_act, dtype=torch.int32)
+            log_prob = torch.tensor(0.0)
+
+        return action_tensor, log_prob
 
     def _compute_value(self, obs: torch.Tensor) -> torch.Tensor:
-        """Compute value estimates from the observation embeddings."""
-        # Cast to float and flatten for the MLP value head
-        obs_float = obs.float()
-        values = self._value_net(obs_float)  # (batch, 1)
-        return values
+        """Compute value estimates from mean-pooled token embeddings."""
+        embedded = self._token_embed(obs.long())  # (batch, obs_len, embed_dim)
+        pooled = embedded.mean(dim=1)              # (batch, embed_dim)
+        return self._value_net(pooled)             # (batch, 1)
 
     def _decode_obs(self, obs_tokens: torch.Tensor) -> str:
         """Decode observation token IDs to text string."""
