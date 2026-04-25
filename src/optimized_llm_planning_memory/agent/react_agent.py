@@ -74,6 +74,7 @@ from optimized_llm_planning_memory.core.models import (
 )
 from optimized_llm_planning_memory.mcts.controller import MCTSController
 from optimized_llm_planning_memory.mcts.node import MCTSStats
+EpisodeLog.model_rebuild()  # resolve MCTSStats forward reference
 from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
 from optimized_llm_planning_memory.tools.events import EventBus
 from optimized_llm_planning_memory.tools.registry import ToolRegistry
@@ -341,6 +342,96 @@ class ReActAgent:
 
         return episode_log
 
+    def run_steps(
+        self,
+        n: int,
+        trajectory: Trajectory,
+        registry: ToolRegistry,
+        compressed_state: "CompressedState | None",
+        request: UserRequest,
+        start_step_index: int = 0,
+        final_itinerary: "Itinerary | None" = None,
+    ) -> "tuple[Itinerary | None, bool, str | None]":
+        """
+        Execute up to ``n`` ReAct steps, modifying ``trajectory`` in place.
+
+        Used by ``CompressionEnv.step()`` to run a fixed-length window of ReAct
+        steps between compression events. Unlike ``run_episode()``, this method
+        does not create its own Trajectory or ToolRegistry — the caller owns those
+        objects so that state accumulates correctly across multiple calls.
+
+        Parameters
+        ----------
+        n                : Maximum number of ReAct steps to execute in this window.
+        trajectory       : Live Trajectory (modified in place).
+        registry         : Tool middleware registry for this episode.
+        compressed_state : Current compressed state to inject into context (None → raw).
+        request          : The travel planning request for this episode.
+        start_step_index : ReAct step index of the first step in this window.
+        final_itinerary  : Partial itinerary carried over from prior windows.
+
+        Returns
+        -------
+        final_itinerary : Updated partial itinerary (None if no bookings yet).
+        done            : True if the episode ended (DONE signal or LLM error).
+        error_msg       : Non-None string if done due to an error.
+        """
+        self._current_request = request
+        done = False
+        error_msg: str | None = None
+
+        for i in range(n):
+            step_index = start_step_index + i
+
+            context = self._context_builder.build(
+                trajectory=trajectory,
+                compressed_state=compressed_state,
+                mode=self._mode,
+                request=request,
+            )
+
+            try:
+                llm_response = self._call_llm(context)
+            except Exception as exc:
+                error_msg = f"LLM error at step {step_index}: {type(exc).__name__}: {exc}"
+                done = True
+                break
+
+            thought, tool_call = self._parse_response(llm_response)
+
+            if tool_call is None or tool_call.tool_name.upper() == "DONE":
+                step = ReActStep(
+                    step_index=step_index,
+                    thought=thought,
+                    action=None,
+                    observation=None,
+                    itinerary_snapshot=final_itinerary,
+                    timestamp=_now(),
+                )
+                trajectory.add_step(step)
+                done = True
+                break
+
+            tool_result = self._execute_tool(registry, tool_call)
+
+            itinerary_snapshot = self._try_extract_itinerary(
+                thought, tool_result, request.request_id, final_itinerary, tool_call
+            )
+            if itinerary_snapshot is not None:
+                final_itinerary = itinerary_snapshot
+
+            step = ReActStep(
+                step_index=step_index,
+                thought=thought,
+                action=tool_call,
+                observation=tool_result,
+                itinerary_snapshot=itinerary_snapshot,
+                timestamp=_now(),
+            )
+            trajectory.add_step(step)
+
+        return final_itinerary, done, error_msg
+
     # ── LLM call ──────────────────────────────────────────────────────────────
 
     def _call_llm(self, context: str) -> str:
@@ -365,29 +456,43 @@ class ReActAgent:
             Action: <tool_name>(<json_args>)
 
         Returns (thought, None) if the action is DONE or absent.
+        Tolerates: code fences around JSON args, extra whitespace, case variation.
         """
         thought = ""
         tool_call: ToolCall | None = None
 
-        thought_match = re.search(r"Thought:\s*(.+?)(?=\nAction:|$)", text, re.DOTALL)
+        # re.IGNORECASE handles case variation (Thought / THOUGHT / thought)
+        thought_match = re.search(r"Thought:\s*(.+?)(?=\nAction:|$)", text, re.DOTALL | re.IGNORECASE)
         if thought_match:
             thought = thought_match.group(1).strip()
 
-        action_match = re.search(r"Action:\s*(.+?)(?:\n|$)", text, re.DOTALL)
+        action_match = re.search(r"Action:\s*(.+?)(?:\n|$)", text, re.DOTALL | re.IGNORECASE)
         if action_match:
             action_text = action_match.group(1).strip()
 
             if action_text.upper() == "DONE":
                 return thought, None
 
+            # Strip surrounding code fences that LLMs sometimes emit
+            action_text = re.sub(r"^```(?:\w+)?\s*", "", action_text)
+            action_text = re.sub(r"\s*```$", "", action_text).strip()
+
             # Parse tool_name(json_args) format
             call_match = re.match(r"(\w+)\((.+)\)$", action_text, re.DOTALL)
             if call_match:
                 tool_name = call_match.group(1)
-                args_str = call_match.group(2)
+                args_str = call_match.group(2).strip()
+                # Strip code fences inside the args block too
+                args_str = re.sub(r"^```(?:json)?\s*", "", args_str)
+                args_str = re.sub(r"\s*```$", "", args_str).strip()
                 try:
                     arguments = json.loads(args_str)
                 except json.JSONDecodeError:
+                    log.warning(
+                        "react.parse.json_error",
+                        action_text=action_text[:120],
+                        args_preview=args_str[:80],
+                    )
                     arguments = {"_raw": args_str}
 
                 tool_call = ToolCall(
