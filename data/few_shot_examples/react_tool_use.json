@@ -1,33 +1,38 @@
 [
   {
     "example_id": "fse_001",
-    "description": "Searching for flights and handling a not-found error",
+    "description": "Discover routes, search for flights, then confirm selection",
     "steps": [
       {
-        "thought": "I need to find available flights from New York to Paris on June 1st for 2 passengers. Let me search for options.",
-        "action": {"tool_name": "search_flights", "arguments": {"origin": "New York", "destination": "Paris", "date": "2025-06-01", "num_passengers": 2}},
-        "observation": {"success": true, "result": [{"flight_id": "FL001", "airline": "Air France", "departure": "08:00", "arrival": "20:00", "price_per_person": 650.0, "stops": 0}]}
+        "thought": "I need to find available flights from the origin city to the destination. First I should check available routes to get the correct city IDs.",
+        "action": {"tool_name": "get_available_routes", "arguments": {}},
+        "observation": {"success": true, "result": [{"origin_city_id": "NYC", "origin_city_name": "New York", "destination_city_id": "PAR", "destination_city_name": "Paris", "travel_modes": ["flight"]}]}
       },
       {
-        "thought": "Good, I found a direct flight at $650 per person ($1300 total). This fits within our $5000 budget. Let me book it.",
-        "action": {"tool_name": "book_flight", "arguments": {"flight_id": "FL001", "passenger_details": {"num_passengers": 2}}},
-        "observation": {"success": true, "result": {"booking_ref": "AF-2025-0601-001", "total_cost": 1300.0, "status": "confirmed"}}
+        "thought": "Good. Origin city ID is 'NYC' and destination is 'PAR'. Let me search for flights on 2025-06-01 for 2 passengers.",
+        "action": {"tool_name": "search_flights", "arguments": {"origin_city_id": "NYC", "destination_city_id": "PAR", "departure_date": "2025-06-01", "passengers": 2}},
+        "observation": {"success": true, "result": [{"edge_id": "NYC-PAR-0601-AF", "airline": "Air France", "departure_datetime": "2025-06-01T08:00:00", "arrival_datetime": "2025-06-01T20:00:00", "total_price": 1300.0, "stops": 0}]}
+      },
+      {
+        "thought": "Found a direct flight at $1300 total. This fits within our budget. I'll confirm this selection using select_flight with the edge_id.",
+        "action": {"tool_name": "select_flight", "arguments": {"edge_id": "NYC-PAR-0601-AF", "origin_city_name": "New York", "destination_city_name": "Paris", "departure_datetime": "2025-06-01T08:00:00", "arrival_datetime": "2025-06-01T20:00:00", "total_price": 1300.0}},
+        "observation": {"success": true, "result": {"booking_id": "FLT-AF0601", "edge_id": "NYC-PAR-0601-AF", "total_price": 1300.0, "status": "selected"}}
       }
     ]
   },
   {
     "example_id": "fse_002",
-    "description": "Hotel search with budget constraint and fallback",
+    "description": "Hotel search with budget constraint, then booking with correct flat arguments",
     "steps": [
       {
-        "thought": "Now I need a hotel in Paris for June 1–4 (3 nights) for 2 guests. Budget remaining is about $3700.",
-        "action": {"tool_name": "search_hotels", "arguments": {"city": "Paris", "check_in": "2025-06-01", "check_out": "2025-06-04", "num_guests": 2}},
+        "thought": "I need a hotel in Paris (city_id 'PAR') for June 1–4 (3 nights) for 2 guests. Budget remaining is about $3700. I'll filter for mid-range options.",
+        "action": {"tool_name": "search_hotels", "arguments": {"city_id": "PAR", "check_in": "2025-06-01", "check_out": "2025-06-04", "guests": 2, "max_price_per_night": 300.0}},
         "observation": {"success": true, "result": [{"hotel_id": "HTL_PAR_001", "name": "Hôtel du Marais", "stars": 3, "price_per_night": 180.0, "total_cost": 540.0, "category": "boutique"}, {"hotel_id": "HTL_PAR_002", "name": "Grand Paris Hotel", "stars": 5, "price_per_night": 450.0, "total_cost": 1350.0, "category": "luxury"}]}
       },
       {
-        "thought": "Hôtel du Marais is a boutique hotel at $180/night ($540 total), which matches the preference and fits the budget. I'll book it.",
-        "action": {"tool_name": "book_hotel", "arguments": {"hotel_id": "HTL_PAR_001", "guest_details": {"num_guests": 2, "check_in": "2025-06-01", "check_out": "2025-06-04"}}},
-        "observation": {"success": true, "result": {"booking_ref": "HTL-MAR-2025-001", "total_cost": 540.0, "status": "confirmed"}}
+        "thought": "Hôtel du Marais is a boutique hotel at $180/night ($540 for 3 nights), which matches the preference and fits the budget. I'll book it using the hotel_id and flat check-in/check-out fields.",
+        "action": {"tool_name": "book_hotel", "arguments": {"hotel_id": "HTL_PAR_001", "check_in": "2025-06-01", "check_out": "2025-06-04"}},
+        "observation": {"success": true, "result": {"booking_id": "HTL-MAR-2025-001", "hotel_id": "HTL_PAR_001", "hotel_name": "Hôtel du Marais", "check_in": "2025-06-01", "check_out": "2025-06-04", "total_cost": 540.0, "status": "confirmed"}}
       }
     ]
   }

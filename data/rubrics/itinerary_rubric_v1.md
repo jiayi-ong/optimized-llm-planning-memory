@@ -76,6 +76,12 @@ Evaluate whether the itinerary could realistically be executed by the traveler:
 booking references exist, sufficient time allocated per activity, reasonable
 connection times, no physical impossibilities.
 
+> **Note on booking references:** This system uses a synthetic travel simulator.
+> All booking references are auto-generated and prefixed with `SIM-` (e.g.,
+> `SIM-HTL-BOUTIQUE-001`). These are valid synthetic confirmations, not real
+> bookings. Do **not** penalise for the `SIM-` prefix — treat any `SIM-` booking
+> reference as a confirmed booking for scoring purposes.
+
 | Score | Description |
 |-------|-------------|
 | 1.0   | Fully executable as described; all details present |
