@@ -108,10 +108,15 @@ class RewardFunction:
                 total += self._config.terminal_bonus
 
         if self._config.normalize:
+            # Only include terminal components in the denominator when the terminal
+            # bonus actually applies — including them unconditionally would under-scale
+            # intermediate-step rewards (H6 fix).
             max_possible = (
                 w.hard_constraint + w.soft_constraint + w.tool_efficiency
-                + w.logical_consistency + w.terminal_itinerary + self._config.terminal_bonus
+                + w.logical_consistency
             )
+            if is_terminal:
+                max_possible += w.terminal_itinerary + self._config.terminal_bonus
             total = total / max_possible if max_possible > 0 else 0.0
 
         return RewardComponents(
@@ -140,7 +145,9 @@ class RewardFunction:
     ) -> float:
         """Weighted average soft constraint satisfaction. [0.0, 1.0]"""
         if itinerary is None or not request.soft_constraints:
-            return 0.5  # neutral if no soft constraints
+            # 1.0 matches constraints.py::soft_satisfaction_score() for the no-constraint case,
+            # preserving the training-reward ≡ evaluation-metric invariant (H5 fix).
+            return 1.0
         results = self._engine.evaluate(itinerary, list(request.soft_constraints))
         return self._engine.soft_satisfaction_score(results, list(request.soft_constraints))
 
@@ -166,7 +173,12 @@ class RewardFunction:
         return -failure_rate  # maps to [-1.0, 0.0]; config weight scales it
 
     def _logical_consistency_score(self, itinerary: Itinerary | None) -> float:
-        """Check date ordering and no double-bookings. [0.0, 1.0]"""
+        """
+        Date ordering, no duplicate hotel bookings, temporal feasibility. [0.0, 1.0]
+
+        Mirrors DeterministicEvaluator._logical_consistency() to maintain the
+        training-reward ≡ evaluation-metric invariant (M3 fix).
+        """
         if itinerary is None or not itinerary.days:
             return 0.0
 
@@ -189,10 +201,47 @@ class RewardFunction:
         if len(hotel_ids) != len(set(hotel_ids)):
             issues += 1
 
-        # Check 3: budget not exceeded
-        if itinerary.total_cost_usd > 0:
-            total_checks += 1
-            # (budget check is in hard constraint; here we check internal consistency)
+        # Check 3: no overlapping activities within a day
+        for day in itinerary.days:
+            if not day.activities:
+                continue
+            slots: list[tuple[str, str]] = []
+            for act in day.activities:
+                start = getattr(act, "start_datetime", None)
+                dur = getattr(act, "duration_hours", None)
+                if start and dur:
+                    try:
+                        from datetime import datetime, timedelta
+                        start_dt = datetime.fromisoformat(start)
+                        end_dt = start_dt + timedelta(hours=float(dur))
+                        slots.append((start_dt.isoformat(), end_dt.isoformat()))
+                    except (ValueError, TypeError):
+                        pass
+            if len(slots) > 1:
+                total_checks += 1
+                sorted_slots = sorted(slots)
+                overlap = any(
+                    sorted_slots[i][1] > sorted_slots[i + 1][0]
+                    for i in range(len(sorted_slots) - 1)
+                )
+                if overlap:
+                    issues += 1
+
+        # Check 4: flight arrival ≤ hotel check-in date
+        for day in itinerary.days:
+            if day.accommodation is None:
+                continue
+            hotel_checkin = getattr(day.accommodation, "check_in", None)
+            for seg in day.transport_segments:
+                arrival = getattr(seg, "arrival_datetime", None)
+                if hotel_checkin and arrival:
+                    try:
+                        arrival_date = arrival[:10]
+                        total_checks += 1
+                        if arrival_date > hotel_checkin:
+                            issues += 1
+                    except (IndexError, TypeError):
+                        pass
 
         if total_checks == 0:
             return 1.0
