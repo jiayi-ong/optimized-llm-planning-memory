@@ -88,7 +88,12 @@ class MCTSTree:
         node = self._nodes[self._root_id]
 
         while node.children and not node.is_terminal:
-            # UCB1 over children
+            # UCB1 over children.
+            # Approximation: we read parent.visit_count at selection time, which
+            # is the count AFTER all previous iterations (already incremented).
+            # Standard UCB1 uses the parent count at the moment the child was
+            # created, but the difference shrinks as N grows and is negligible
+            # for the exploration constant values used here (C ≈ 1.4).
             parent_visits = node.visit_count
             node = max(
                 node.children,

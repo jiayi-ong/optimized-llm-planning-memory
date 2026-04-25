@@ -33,6 +33,9 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+# mcts.config only imports pydantic — no circular-import risk.
+from optimized_llm_planning_memory.mcts.config import MCTSConfig as MCTSSearchConfig  # re-exported
+
 
 # ── Simulator ─────────────────────────────────────────────────────────────────
 
@@ -45,29 +48,6 @@ class SimulatorConfig(BaseModel):
         default_factory=dict,
         description="Extra kwargs forwarded to the simulator constructor.",
     )
-
-
-# ── MCTS ──────────────────────────────────────────────────────────────────────
-
-class MCTSSearchConfig(BaseModel):
-    """
-    MCTS hyperparameters embedded in AgentConfig.
-
-    Mirrors ``mcts.config.MCTSConfig`` to avoid a circular import between
-    ``core.config`` and ``mcts.config``. When constructing ``MCTSController``
-    in scripts, convert this to ``MCTSConfig`` via::
-
-        from optimized_llm_planning_memory.mcts import MCTSConfig
-        mcts_cfg = MCTSConfig(**agent_config.mcts.model_dump())
-    """
-    num_simulations: int = Field(default=50, ge=1)
-    max_depth: int = Field(default=10, ge=1)
-    exploration_constant: float = Field(default=1.414, gt=0.0)
-    branching_factor: int = Field(default=3, ge=1)
-    rollout_steps: int = Field(default=5, ge=1)
-    evaluator_model_id: str = "openai/gpt-4o-mini"
-    use_cached_evaluations: bool = True
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
@@ -96,7 +76,7 @@ class AgentConfig(BaseModel):
     )
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens_per_response: int = Field(default=1024, ge=64)
-    system_prompt_version: str = Field(default="v1")
+    system_prompt_version: str = Field(default="v2")
     few_shot_examples_path: str = Field(
         default="data/few_shot_examples/react_tool_use.json",
     )
@@ -172,6 +152,14 @@ class EnvConfig(BaseModel):
     steps_per_compression: int = Field(
         default=5,
         description="Number of ReAct steps the agent runs between compression events.",
+    )
+    max_agent_steps: int = Field(
+        default=30, ge=1,
+        description="Total ReAct steps per episode before truncation; should match AgentConfig.max_steps.",
+    )
+    vocab_size: int = Field(
+        default=32768, ge=1,
+        description="Tokenizer vocab size for obs/action space bounds (overridden by tokenizer at runtime).",
     )
 
 

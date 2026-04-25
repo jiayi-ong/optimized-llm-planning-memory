@@ -67,3 +67,7 @@ class MCTSConfig(BaseModel):
         default=0.7, ge=0.0, le=2.0,
         description="Sampling temperature for branching action generation.",
     )
+    timeout_seconds: float = Field(
+        default=30.0, gt=0.0,
+        description="Wall-clock budget for one search() call; raises MCTSSearchTimeoutError when exceeded.",
+    )

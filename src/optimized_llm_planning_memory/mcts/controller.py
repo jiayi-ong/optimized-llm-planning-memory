@@ -41,6 +41,7 @@ LLM tier is enabled.
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -113,8 +114,14 @@ class MCTSController:
         tree.build_root(trajectory, compressed_state)
 
         simulations_run = 0
+        deadline = time.monotonic() + self._config.timeout_seconds
         try:
             for _ in range(self._config.num_simulations):
+                if time.monotonic() > deadline:
+                    raise MCTSSearchTimeoutError(
+                        f"MCTS search exceeded {self._config.timeout_seconds}s wall-clock budget "
+                        f"after {simulations_run} simulations."
+                    )
                 leaf = tree.select()
 
                 # Expand unvisited leaf that is not terminal
