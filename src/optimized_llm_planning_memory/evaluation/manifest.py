@@ -57,6 +57,8 @@ class EvalRunManifest(BaseModel):
     mcts_enabled      : True when this run used AgentMode.MCTS_COMPRESSOR.
     mcts_config_hash  : Short hash of the MCTSSearchConfig used. None for non-MCTS runs.
     notes             : Free-form developer notes.
+    episode_source    : How episodes were generated — "scripted_baseline", "react_agent",
+                        etc. Distinct from agent_mode, which describes context processing.
     """
     model_config = ConfigDict(frozen=True)
 
@@ -79,5 +81,9 @@ class EvalRunManifest(BaseModel):
     mcts_config_hash: str | None = Field(
         default=None,
         description="Short hash of MCTSSearchConfig. None for non-MCTS runs.",
+    )
+    episode_source: str | None = Field(
+        default=None,
+        description="Episode generation method: 'scripted_baseline', 'react_agent', etc.",
     )
     notes: str | None = None

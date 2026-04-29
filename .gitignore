@@ -23,6 +23,7 @@ multirun/
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb~
+notebooks/worlds/
 
 # ML artifacts
 *.pt

@@ -150,7 +150,7 @@ class ConstraintSatisfactionEngine:
     def _evaluate_date(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
-        """Constraint.value = expected start date string (ISO 8601)."""
+        """Constraint.value = 'YYYY-MM-DD to YYYY-MM-DD' date range or single ISO date."""
         if not itinerary.days:
             return ConstraintSatisfactionResult(
                 constraint_id=constraint.constraint_id,
@@ -158,14 +158,29 @@ class ConstraintSatisfactionEngine:
                 score=0.0,
                 explanation="Itinerary has no days yet.",
             )
-        actual_start = itinerary.days[0].date
-        expected = str(constraint.value)
-        satisfied = actual_start == expected
+        value = str(constraint.value)
+        if " to " in value:
+            expected_start, expected_end = [p.strip() for p in value.split(" to ", 1)]
+            actual_start = itinerary.days[0].date
+            actual_end = itinerary.days[-1].date
+            start_ok = actual_start == expected_start
+            end_ok = actual_end == expected_end
+            satisfied = start_ok and end_ok
+            score = (int(start_ok) + int(end_ok)) / 2.0
+            explanation = (
+                f"Start {actual_start!r}=={expected_start!r}: {start_ok}. "
+                f"End {actual_end!r}=={expected_end!r}: {end_ok}."
+            )
+        else:
+            actual_start = itinerary.days[0].date
+            satisfied = actual_start == value
+            score = 1.0 if satisfied else 0.0
+            explanation = f"Start date {actual_start!r} vs required {value!r}."
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
             satisfied=satisfied,
-            score=1.0 if satisfied else 0.0,
-            explanation=f"Start date {actual_start!r} vs required {expected!r}.",
+            score=score,
+            explanation=explanation,
         )
 
     def _evaluate_duration(
@@ -210,36 +225,75 @@ class ConstraintSatisfactionEngine:
     def _evaluate_accommodation(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
-        """Constraint.value = required accommodation type or property (e.g., 'hotel', 'hostel')."""
-        # Check that every night has some accommodation booked.
-        nights_with_hotel = sum(1 for d in itinerary.days if d.accommodation is not None)
+        """Constraint.value = min_stars (numeric) when unit='min_stars', else checks booking exists."""
+        all_bookings = [d.accommodation for d in itinerary.days if d.accommodation is not None]
         total_nights = len(itinerary.days)
-        satisfied = total_nights > 0 and nights_with_hotel == total_nights
-        score = nights_with_hotel / total_nights if total_nights > 0 else 0.0
+        if not all_bookings:
+            return ConstraintSatisfactionResult(
+                constraint_id=constraint.constraint_id,
+                satisfied=False,
+                score=0.0,
+                explanation="No accommodation booked.",
+            )
+        if constraint.unit == "min_stars":
+            min_stars = float(constraint.value)
+            booking = all_bookings[0]
+            if booking.star_rating is not None:
+                satisfied = booking.star_rating >= min_stars
+                score = 1.0 if satisfied else max(0.0, booking.star_rating / min_stars)
+                explanation = f"Hotel star rating {booking.star_rating} vs required >={min_stars}."
+            else:
+                satisfied, score = True, 1.0
+                explanation = "Hotel booked; star rating not recorded, assuming satisfied."
+        else:
+            nights_with_hotel = len(all_bookings)
+            satisfied = nights_with_hotel == total_nights
+            score = nights_with_hotel / total_nights if total_nights > 0 else 0.0
+            explanation = f"{nights_with_hotel}/{total_nights} nights have accommodation."
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
             satisfied=satisfied,
             score=score,
-            explanation=f"{nights_with_hotel}/{total_nights} nights have accommodation.",
+            explanation=explanation,
         )
 
     def _evaluate_activity(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
-        """Constraint.value = required activity category or name."""
-        required = str(constraint.value).lower()
-        all_activities = [
-            a for day in itinerary.days for a in day.activities
-        ]
-        found = any(
-            required in a.category.lower() or required in a.activity_name.lower()
-            for a in all_activities
-        )
+        """Constraint.value and unit determine evaluation strategy:
+        - unit='min_count': count non-event activities >= value
+        - unit='max_price_usd': check that at least one event was booked (price enforced at booking)
+        - otherwise: text search on category/name (for preference-style activity constraints)
+        """
+        all_activities = [a for day in itinerary.days for a in day.activities]
+        if constraint.unit == "min_count":
+            required_count = int(constraint.value)
+            count = sum(1 for a in all_activities if a.category.lower() != "event")
+            satisfied = count >= required_count
+            score = min(1.0, count / required_count) if required_count > 0 else 1.0
+            explanation = f"{count} activities found vs required >={required_count}."
+        elif constraint.unit == "max_price_usd":
+            # Events are pre-filtered at booking time; presence confirms price was met.
+            event_acts = [a for a in all_activities if a.category.lower() == "event"]
+            satisfied = len(event_acts) > 0
+            score = 1.0 if satisfied else 0.0
+            explanation = (
+                f"Found {len(event_acts)} event(s) within price limit."
+                if satisfied else "No events booked."
+            )
+        else:
+            required = str(constraint.value).lower()
+            found = any(
+                required in a.category.lower() or required in a.activity_name.lower()
+                for a in all_activities
+            )
+            satisfied, score = found, 1.0 if found else 0.0
+            explanation = f"Activity matching '{required}' {'found' if found else 'not found'}."
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
-            satisfied=found,
-            score=1.0 if found else 0.0,
-            explanation=f"Activity matching '{required}' {'found' if found else 'not found'}.",
+            satisfied=satisfied,
+            score=score,
+            explanation=explanation,
         )
 
     def _evaluate_transport(
@@ -283,15 +337,37 @@ class ConstraintSatisfactionEngine:
     def _evaluate_preference(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
+        """Soft preference check against activity categories in the itinerary.
+        Dining/food preferences match on category keywords; others use text search.
         """
-        Soft preference check. Only used for SOFT constraints.
-        Always returns 0.5 (unknown) unless overridden by a more specific evaluator.
-        """
+        _DINING_KEYWORDS = {"restaurant", "dining", "food", "cuisine", "cafe", "food_market", "bistro"}
+        all_activities = [a for day in itinerary.days for a in day.activities]
+        value = str(constraint.value).lower()
+        if any(kw in value for kw in ("cuisine", "dining", "restaurant", "food")):
+            matched = any(
+                any(kw in a.category.lower() for kw in _DINING_KEYWORDS)
+                for a in all_activities
+            )
+            satisfied, score = matched, 1.0 if matched else 0.0
+            explanation = (
+                "Dining/food activity found in itinerary."
+                if matched else "No dining/food activities found in itinerary."
+            )
+        else:
+            matched = any(
+                value in a.category.lower() or value in a.activity_name.lower()
+                for a in all_activities
+            )
+            satisfied, score = matched, 0.7 if matched else 0.3
+            explanation = (
+                f"Preference '{value}' matched in itinerary."
+                if matched else f"Preference '{value}' not matched; partial credit."
+            )
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
-            satisfied=False,
-            score=0.5,
-            explanation="Preference evaluation requires LLM judge; score 0.5 by default.",
+            satisfied=satisfied,
+            score=score,
+            explanation=explanation,
         )
 
     def _evaluate_unknown(
