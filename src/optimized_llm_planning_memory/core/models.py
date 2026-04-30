@@ -335,7 +335,7 @@ class ReActStep(BaseModel):
     action: ToolCall | None = None
     observation: ToolResult | None = None
     itinerary_snapshot: Itinerary | None = None
-    timestamp: str = Field(description="ISO 8601 datetime when this step was recorded.")
+    timestamp: str | None = Field(default=None, description="ISO 8601 datetime when this step was recorded.")
 
 
 class TrajectoryModel(BaseModel):
