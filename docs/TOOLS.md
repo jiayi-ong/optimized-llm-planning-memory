@@ -53,12 +53,16 @@ Subclasses never override `call()`. Validation, tracking, and events are guarant
 
 ### `get_available_routes`
 
-**Always call this first.** Returns all flight-connected city pairs with their `city_id` values. Use these IDs with every other search tool.
+**Always call this first.** Returns one descriptor per city available in this simulation world. Extract `city_id` from each descriptor and use it with every other search tool.
 
 ```
 Input: {} (no parameters)
-Returns: list of {origin_city_id, origin_city_name, destination_city_id, destination_city_name, edge_id}
+Returns: list of {city_id, city_name, description, vibe_summary,
+                  dominant_cuisines, dominant_attraction_categories,
+                  dominant_event_categories}
 ```
+
+If none of the returned `city_name` values match the user's requested destinations, those cities do not exist in this world — output `Action: EXIT(reason=CITY_NOT_FOUND)` immediately.
 
 ---
 
@@ -70,6 +74,7 @@ Input:
   destination_city_id  str   — from get_available_routes
   departure_date       str   — YYYY-MM-DD
   passengers           int   — default 1, range [1, 20]
+  max_results          int   — default 10, range [1, 50]; results sorted cheapest first
 
 Returns: list of {edge_id, airline, departure_time, arrival_time, duration_min, price_usd, seats_available}
 ```
@@ -100,8 +105,9 @@ Input:
   check_in             str    — YYYY-MM-DD
   check_out            str    — YYYY-MM-DD
   guests               int    — default 1, range [1, 20]
-  max_price_per_night  float  — optional, USD
+  max_price_per_night  float  — optional, USD; ALWAYS set to remaining_budget / num_nights
   min_stars            float  — optional, [0.0, 5.0]
+  max_results          int    — default 10, range [1, 50]; results sorted cheapest first
 
 Returns: list of {hotel_id, name, stars, price_per_night_usd, district, amenities, availability}
 ```
@@ -136,9 +142,10 @@ Returns: full hotel profile including rooms, policies, nearby attractions
 
 ```
 Input:
-  city_id   str  — from get_available_routes
-  category  str  — optional: 'museum' | 'park' | 'landmark' | 'entertainment' | 'shopping' | 'nature'
-  free_only bool — default False
+  city_id     str   — from get_available_routes
+  category    str   — optional: 'museum' | 'park' | 'landmark' | 'entertainment' | 'shopping' | 'nature'
+  free_only   bool  — default False
+  max_results int   — default 10, range [1, 50]; results sorted by popularity (highest first)
 
 Returns: list of {attraction_id, name, category, ticket_price_usd, duration_hours, popularity, wait_time_min}
 ```
@@ -163,6 +170,7 @@ Input:
   city_id       str   — from get_available_routes
   cuisine       str   — optional: 'italian' | 'japanese' | 'french' | 'mexican' | ... (case-insensitive)
   max_avg_spend float — optional, USD per person
+  max_results   int   — default 10, range [1, 50]; results sorted by rating (highest first)
 
 Returns: list of {restaurant_id, name, cuisine, avg_spend_usd, price_tier, michelin_stars, reservation_required}
 ```
@@ -174,10 +182,11 @@ Returns: list of {restaurant_id, name, cuisine, avg_spend_usd, price_tier, miche
 ```
 Input:
   city_id    str   — from get_available_routes
-  start_date str   — optional, YYYY-MM-DD
-  end_date   str   — optional, YYYY-MM-DD
+  start_date str   — ALWAYS pass this matching your trip start date (YYYY-MM-DD)
+  end_date   str   — ALWAYS pass this matching your trip end date (YYYY-MM-DD)
   category   str   — optional: 'concert' | 'festival' | 'sport' | 'exhibition' | 'theater' | 'cultural'
   max_price  float — optional, USD per ticket
+  max_results int  — default 10, range [1, 50]; results sorted cheapest first
 
 Returns: list of {event_id, name, category, date, venue, ticket_price_usd, availability}
 ```
@@ -347,7 +356,7 @@ stats = tracker.get_stats()
 #  redundant_call_count, total_latency_ms, avg_latency_ms}
 ```
 
-A call is counted as **redundant** when the same tool is called with the same arguments a second time in the same episode without any new information arriving in between.
+A call is counted as **redundant** when the same tool is called with identical arguments more than once in the same episode. Starting from the third identical call, `BaseTool.call()` appends an `agent_warning` key to the result directing the agent to `Action: EXIT(reason=REPEATED_DEAD_END)`. The call still executes — no hard block — so evaluation metrics remain unbiased.
 
 ---
 

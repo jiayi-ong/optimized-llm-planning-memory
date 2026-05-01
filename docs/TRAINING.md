@@ -32,7 +32,7 @@ step(action)
   → run next compress_every_n_steps ReAct steps
   → compute reward via RewardFunction
   → return updated trajectory tokens as next observation
-  → if agent signals DONE or max_steps reached: terminated=True
+  → if agent signals DONE, EXIT(<code>), or max_steps reached: terminated=True
 ```
 
 The agent runs inside the environment. The **compressor** is the policy being trained. Each PPO action is the full text of a `CompressedState` (tokenized into the action vector).

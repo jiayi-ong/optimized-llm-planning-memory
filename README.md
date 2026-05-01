@@ -43,7 +43,7 @@ ReActAgent  ──────────────────────�
                                                                       │
 EpisodeLog ◄──────────────────────────────────────────────────────────┘
     │   frozen data contract: trajectory, compressed_states,
-    │   final_itinerary, reward_components, tool_stats
+    │   final_itinerary, reward_components, tool_stats, termination_reason
     │
     ├─► RewardFunction            (PPO training signal)
     │       uses ConstraintSatisfactionEngine
