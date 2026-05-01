@@ -1,9 +1,8 @@
 # configs/logging/default.yaml
 # @package logging
-logging:
-  level: INFO
-  use_tensorboard: true
-  use_wandb: false
-  wandb_project: optllm-planning
-  wandb_entity: null
-  log_every_n_steps: 10
+level: INFO
+use_tensorboard: true
+use_wandb: false
+wandb_project: optllm-planning
+wandb_entity: null
+log_every_n_steps: 10

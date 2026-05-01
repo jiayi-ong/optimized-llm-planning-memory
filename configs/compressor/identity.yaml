@@ -8,8 +8,7 @@
 # The optional PySpark MLlib component (use_spark: true) learns to predict
 # episode rewards in local mode; it does NOT affect compress() output.
 
-compressor:
-  type: identity
-  use_spark: true
-  spark_master: "local[*]"
-  spark_fit_every_n_episodes: 50
+type: identity
+use_spark: true
+spark_master: "local[*]"
+spark_fit_every_n_episodes: 50

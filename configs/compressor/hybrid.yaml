@@ -1,12 +1,11 @@
 # configs/compressor/hybrid.yaml
 # HybridCompressor: structured slots + free-form LLM narrative.
 # @package compressor
-compressor:
-  type: hybrid
-  model_name_or_path: openai/gpt-4o-mini
-  max_input_tokens: 4096
-  max_output_tokens: 512
-  device: null
-  use_lora: false
-  lora: {}
-  freeze_base_layers: false
+type: hybrid
+model_name_or_path: openai/gpt-4o-mini
+max_input_tokens: 4096
+max_output_tokens: 512
+device: null
+use_lora: false
+lora: {}
+freeze_base_layers: false
