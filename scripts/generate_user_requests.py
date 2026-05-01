@@ -108,7 +108,7 @@ def _make_request(
                 "constraint_type": "hard",
                 "category": "budget",
                 "description": f"Total trip cost must not exceed ${budget:.0f} USD.",
-                "value": str(budget),
+                "value": budget,
                 "unit": "USD",
             },
             {
@@ -126,7 +126,7 @@ def _make_request(
                 "constraint_type": "soft",
                 "category": "accommodation",
                 "description": "Prefer mid-range or above hotels (3+ stars).",
-                "value": "3",
+                "value": 3,
                 "unit": "min_stars",
             },
             {

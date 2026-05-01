@@ -1,54 +1,53 @@
 # configs/eval/default.yaml
 # @package eval
-eval:
-  judge_model_id: openai/gpt-4o    # fixed across all runs for fairness
-  rubric_path: data/rubrics/itinerary_rubric_v1.md
-  rubric_dimensions:
-    - constraint_adherence
-    - logical_coherence
-    - activity_diversity
-    - budget_efficiency
-    - feasibility
-    - creativity
-  deterministic_only: true
-  output_format: json
-  ablation_components:
-    - compressor_type
-    - agent_mode
-    - reward_weights
+judge_model_id: openai/gpt-4o    # fixed across all runs for fairness
+rubric_path: data/rubrics/itinerary_rubric_v1.md
+rubric_dimensions:
+  - constraint_adherence
+  - logical_coherence
+  - activity_diversity
+  - budget_efficiency
+  - feasibility
+  - creativity
+deterministic_only: true
+output_format: json
+ablation_components:
+  - compressor_type
+  - agent_mode
+  - reward_weights
 
-  # ── Overall score weighting ──────────────────────────────────────────────
-  # The overall_score in EvaluationResult is a weighted average computed by
-  # Evaluator._compute_overall_score().  Weights rationale:
-  #
-  #  hard_constraint_ratio × 2  — doubled because hard constraints are
-  #    non-negotiable (budget, required cities, dates).  A trip that violates
-  #    a hard constraint is strictly worse than one that does not, regardless
-  #    of other quality dimensions.
-  #
-  #  soft_constraint_score × 1  — soft constraints represent strong user
-  #    preferences.  Weighted equally with the other quality dimensions
-  #    because partial satisfaction is acceptable.
-  #
-  #  tool_efficiency × 1        — efficiency measures planning quality
-  #    (fewer redundant tool calls = better reasoning).
-  #
-  #  budget_adherence × 1       — budget is a proxy for hard_constraint for
-  #    trips whose primary hard constraint is financial.
-  #
-  #  logical_consistency × 1    — temporal feasibility is a baseline quality
-  #    gate; most well-formed itineraries pass it.
-  #
-  #  LLM judge dimensions × 1 each — rubric scores capture qualitative
-  #    dimensions (creativity, diversity) not measurable deterministically.
-  #
-  # To change weights, edit Evaluator._compute_overall_score() in
-  # src/optimized_llm_planning_memory/evaluation/evaluator.py.  This config
-  # documents the intent but weights are currently hard-coded there.
-  scoring_weights:
-    hard_constraint_ratio: 2   # doubled — primary evaluation criterion
-    soft_constraint_score: 1
-    tool_efficiency: 1
-    budget_adherence: 1
-    logical_consistency: 1
-    llm_judge_dimensions: 1    # each rubric dimension equally weighted
+# ── Overall score weighting ──────────────────────────────────────────────
+# The overall_score in EvaluationResult is a weighted average computed by
+# Evaluator._compute_overall_score().  Weights rationale:
+#
+#  hard_constraint_ratio × 2  — doubled because hard constraints are
+#    non-negotiable (budget, required cities, dates).  A trip that violates
+#    a hard constraint is strictly worse than one that does not, regardless
+#    of other quality dimensions.
+#
+#  soft_constraint_score × 1  — soft constraints represent strong user
+#    preferences.  Weighted equally with the other quality dimensions
+#    because partial satisfaction is acceptable.
+#
+#  tool_efficiency × 1        — efficiency measures planning quality
+#    (fewer redundant tool calls = better reasoning).
+#
+#  budget_adherence × 1       — budget is a proxy for hard_constraint for
+#    trips whose primary hard constraint is financial.
+#
+#  logical_consistency × 1    — temporal feasibility is a baseline quality
+#    gate; most well-formed itineraries pass it.
+#
+#  LLM judge dimensions × 1 each — rubric scores capture qualitative
+#    dimensions (creativity, diversity) not measurable deterministically.
+#
+# To change weights, edit Evaluator._compute_overall_score() in
+# src/optimized_llm_planning_memory/evaluation/evaluator.py.  This config
+# documents the intent but weights are currently hard-coded there.
+scoring_weights:
+  hard_constraint_ratio: 2   # doubled — primary evaluation criterion
+  soft_constraint_score: 1
+  tool_efficiency: 1
+  budget_adherence: 1
+  logical_consistency: 1
+  llm_judge_dimensions: 1    # each rubric dimension equally weighted

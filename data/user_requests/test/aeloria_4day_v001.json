@@ -18,7 +18,7 @@
       "constraint_type": "hard",
       "category": "budget",
       "description": "Total trip spend (hotel + activities + events) must not exceed $1,200 USD.",
-      "value": "1200",
+      "value": 1200,
       "unit": "USD"
     },
     {
@@ -34,7 +34,7 @@
       "constraint_type": "hard",
       "category": "accommodation",
       "description": "Hotel must have a star rating of 3 or above.",
-      "value": "3",
+      "value": 3,
       "unit": "min_stars"
     }
   ],
@@ -44,7 +44,7 @@
       "constraint_type": "soft",
       "category": "activity",
       "description": "Visit at least 2 attractions in Aeloria during the stay.",
-      "value": "2",
+      "value": 2,
       "unit": "min_count"
     },
     {
@@ -60,7 +60,7 @@
       "constraint_type": "soft",
       "category": "activity",
       "description": "Attend at least one evening event or show with ticket price under $60 per person.",
-      "value": "60",
+      "value": 60,
       "unit": "max_price_usd"
     }
   ],

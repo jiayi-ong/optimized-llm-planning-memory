@@ -1,13 +1,12 @@
 # configs/reward/default.yaml
 # @package reward
-reward:
-  weights:
-    hard_constraint: 2.0
-    soft_constraint: 1.0
-    tool_efficiency: 0.3
-    tool_failure_penalty: -0.5
-    logical_consistency: 0.5
-    terminal_itinerary: 3.0
-  terminal_bonus: 5.0
-  step_penalty: -0.01
-  normalize: true
+weights:
+  hard_constraint: 2.0
+  soft_constraint: 1.0
+  tool_efficiency: 0.3
+  tool_failure_penalty: -0.5
+  logical_consistency: 0.5
+  terminal_itinerary: 3.0
+terminal_bonus: 5.0
+step_penalty: -0.01
+normalize: true

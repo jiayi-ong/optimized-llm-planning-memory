@@ -34,11 +34,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
 # ── Scripted agent ────────────────────────────────────────────────────────────
 
 
-def run_scripted_episode(request, simulator, registry, compressor):
+def run_scripted_episode(request, simulator, registry=None, compressor=None):
     """
     Execute a deterministic planning sequence using real tool calls.
 
@@ -53,6 +55,19 @@ def run_scripted_episode(request, simulator, registry, compressor):
     7. book_event                 → book the cheapest qualifying event (if any)
     8. DONE
     """
+    if registry is None:
+        from optimized_llm_planning_memory.tools.tracker import ToolCallTracker
+        from optimized_llm_planning_memory.tools.events import EventBus
+        from optimized_llm_planning_memory.tools.registry import ToolRegistry
+        registry = ToolRegistry.from_config(
+            simulator=simulator,
+            tracker=ToolCallTracker(),
+            event_bus=EventBus(),
+        )
+    if compressor is None:
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        compressor = IdentityCompressor()
+
     from optimized_llm_planning_memory.agent.trajectory import Trajectory
     from optimized_llm_planning_memory.core.models import (
         AccommodationBooking,
@@ -118,6 +133,18 @@ def run_scripted_episode(request, simulator, registry, compressor):
 
     check_in, check_out = request.start_date, request.end_date
 
+    # Pre-populate one ItineraryDay per night (check-in through check-out) so that:
+    #   (a) hc-dates constraint can verify days[0] and days[-1] cover the full range
+    #   (b) activities can be spread across nights instead of stacked on check-in
+    from datetime import date as _date, timedelta as _td
+    _cur = _date.fromisoformat(check_in)
+    _end = _date.fromisoformat(check_out)
+    while _cur <= _end:
+        _get_or_create_day(final_itinerary, _cur.isoformat(), city_name)
+        _cur += _td(days=1)
+    # Night dates only (excludes check-out morning) — used for activity distribution.
+    _trip_nights = [d.date for d in final_itinerary.days if d.date < check_out]
+
     # ── Step 2: hotel search ───────────────────────────────────────────────────
     r2 = _call("search_hotels",
                {"city_id": city_id, "check_in": check_in, "check_out": check_out,
@@ -152,6 +179,7 @@ def run_scripted_episode(request, simulator, registry, compressor):
                 check_out=check_out,
                 cost_per_night_usd=booked_hotel.get("price_per_night", 0.0),
                 total_cost_usd=res.get("total_cost", booked_hotel.get("total_cost", 0.0)),
+                star_rating=booked_hotel.get("star_rating"),
                 booking_ref=res.get("booking_id"),
             )
             # Attach to check-in day only; AccommodationBooking.check_out covers full stay.
@@ -169,26 +197,48 @@ def run_scripted_episode(request, simulator, registry, compressor):
             [a for a in r4.result if isinstance(a, dict)],
             key=lambda a: a.get("ticket_price", 0.0) or 0.0,
         )[:5]
-        for attr in affordable[:3]:
+        for i, attr in enumerate(affordable[:3]):
+            # One attraction per trip night so no same-day time overlaps occur.
+            target_date = _trip_nights[i % len(_trip_nights)] if _trip_nights else check_in
             ticket = attr.get("ticket_price", 0.0) or 0.0
             activity = ActivityBooking(
                 activity_id=attr.get("attraction_id", str(uuid.uuid4())),
                 activity_name=attr.get("name", "Attraction"),
                 location=attr.get("district_name", city_name),
                 city=city_name,
-                start_datetime=f"{check_in}T10:00:00",
+                start_datetime=f"{target_date}T09:00:00",
                 duration_hours=attr.get("duration_hours", 2.0) or 2.0,
                 cost_usd=ticket * 2,  # 2 adults
                 category=attr.get("category", "attraction"),
                 booking_ref=None,
             )
-            day = _get_or_create_day(final_itinerary, check_in, city_name)
+            day = _get_or_create_day(final_itinerary, target_date, city_name)
             day.activities.append(activity)
             attraction_count += 1
 
-    # ── Step 5: restaurant search ──────────────────────────────────────────────
+    # ── Step 5: restaurant search + add dining activities ────────────────────
     r5 = _call("search_restaurants", {"city_id": city_id},
                "Looking for local restaurants for a couple of dinners.")
+    if r5.success and isinstance(r5.result, list):
+        restaurants = [r for r in r5.result if isinstance(r, dict)][:2]
+        for i, rest in enumerate(restaurants):
+            target_date = _trip_nights[i % len(_trip_nights)] if _trip_nights else check_in
+            meal_cost = float(
+                rest.get("avg_meal_cost_per_person") or rest.get("avg_cost_per_person") or 20.0
+            )
+            restaurant_activity = ActivityBooking(
+                activity_id=rest.get("restaurant_id", str(uuid.uuid4())),
+                activity_name=rest.get("name", "Restaurant"),
+                location=rest.get("district_name", city_name),
+                city=city_name,
+                start_datetime=f"{target_date}T12:00:00",
+                duration_hours=1.5,
+                cost_usd=meal_cost * 2,  # 2 adults
+                category="restaurant",
+                booking_ref=None,
+            )
+            day = _get_or_create_day(final_itinerary, target_date, city_name)
+            day.activities.append(restaurant_activity)
 
     # ── Step 6: event search ───────────────────────────────────────────────────
     r6 = _call("search_events",
@@ -212,18 +262,19 @@ def run_scripted_episode(request, simulator, registry, compressor):
                    f"(${evt.get('base_ticket_price', 0):.0f}/ticket × 2).")
         if r7.success and isinstance(r7.result, dict):
             res = r7.result
+            event_date = _trip_nights[-1] if _trip_nights else check_in
             event_activity = ActivityBooking(
                 activity_id=res.get("event_id", evt["event_id"]),
                 activity_name=res.get("event_name", evt.get("name", "Event")),
                 location=evt.get("venue_name", city_name),
                 city=city_name,
-                start_datetime=f"{check_in}T19:00:00",
+                start_datetime=f"{event_date}T19:00:00",
                 duration_hours=2.0,
                 cost_usd=res.get("total_cost", 0.0),
                 category="event",
                 booking_ref=res.get("booking_id"),
             )
-            day = _get_or_create_day(final_itinerary, check_in, city_name)
+            day = _get_or_create_day(final_itinerary, event_date, city_name)
             day.activities.append(event_activity)
             event_booked = True
 

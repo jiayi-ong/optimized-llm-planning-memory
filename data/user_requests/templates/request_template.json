@@ -1,10 +1,10 @@
 {
   "request_id": "TEMPLATE",
-  "raw_text": "Plan a 7-day trip from New York to Paris and Rome for 2 adults with a budget of $5000. We prefer boutique hotels, love art museums, and need vegetarian dining options.",
-  "origin_city": "New York",
-  "destination_cities": ["Paris", "Rome"],
-  "start_date": "2025-06-01",
-  "end_date": "2025-06-07",
+  "raw_text": "Plan a 7-day trip from Aeloria to Brindor and Caelum for 2 adults with a budget of $5000. We prefer boutique hotels, love art museums, and need vegetarian dining options.",
+  "origin_city": "Aeloria",
+  "destination_cities": ["Brindor", "Caelum"],
+  "start_date": "2026-06-01",
+  "end_date": "2026-06-07",
   "budget_usd": 5000.0,
   "traveler_profile": {
     "num_adults": 2,
@@ -25,8 +25,8 @@
       "constraint_id": "hc_dates",
       "constraint_type": "hard",
       "category": "date",
-      "description": "Trip must start on 2025-06-01 and end on 2025-06-07",
-      "value": {"start": "2025-06-01", "end": "2025-06-07"},
+      "description": "Trip must start on 2026-06-01 and end on 2026-06-07",
+      "value": "2026-06-01 to 2026-06-07",
       "unit": null
     }
   ],

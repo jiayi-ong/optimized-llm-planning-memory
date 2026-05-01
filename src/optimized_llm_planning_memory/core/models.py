@@ -206,6 +206,7 @@ class AccommodationBooking(BaseModel):
     check_out: str
     cost_per_night_usd: float = Field(ge=0.0)
     total_cost_usd: float = Field(ge=0.0)
+    star_rating: float | None = None
     booking_ref: str | None = None
 
 
@@ -608,3 +609,9 @@ class EvalResult(BaseModel):
         default="v1",
         description="Version tag of the metric schema that produced these scores.",
     )
+
+# mcts.node has no dependency on core.models, so this import is safe here.
+# Calling model_rebuild() resolves the "MCTSStats | None" forward reference in
+# EpisodeLog so Pydantic can fully validate instances at runtime.
+from optimized_llm_planning_memory.mcts.node import MCTSStats  # noqa: E402
+EpisodeLog.model_rebuild()

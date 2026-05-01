@@ -22,6 +22,15 @@ Streamlit's native multipage support (pages/ directory) handles routing.
 This file renders the landing/home page and sets shared page config.
 """
 
+import sys
+from pathlib import Path
+
+# Streamlit adds app/ (the script dir) to sys.path, not the repo root.
+# Insert the repo root so `from app.*` imports resolve correctly.
+_repo_root = str(Path(__file__).resolve().parent.parent)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
 import streamlit as st
 
 st.set_page_config(
