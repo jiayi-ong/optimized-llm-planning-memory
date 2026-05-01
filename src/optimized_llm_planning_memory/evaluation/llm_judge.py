@@ -1,16 +1,15 @@
 """
 evaluation/llm_judge.py
 ========================
-LLMJudge — rubric-based itinerary scoring via litellm + instructor.
+LLMJudge — rubric-based itinerary scoring via litellm + pydantic.
 
 Design principles
 -----------------
 - **Single judge model**: ``judge_model_id`` is fixed per evaluation run and
   shared across all rubric dimensions for fairness. Do not change it
   mid-evaluation.
-- **Instructor for structured output**: ``instructor.from_litellm()`` wraps
-  litellm and parses the judge's response into a ``JudgeScores`` Pydantic model,
-  eliminating hand-written JSON parsing.
+- **Structured output via JSON mode**: litellm ``response_format=json_object``
+  + ``model_validate()`` parses the judge's response into ``JudgeScores``.
 - **Per-dimension prompting**: Each rubric dimension is evaluated independently
   to avoid the judge conflating criteria.
 - **Score normalisation**: Raw scores are floats in [0.0, 1.0]. The rubric text
@@ -19,8 +18,10 @@ Design principles
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
+import litellm
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -72,7 +73,6 @@ class LLMJudge:
         self._model = judge_model_id
         self._dimensions = rubric_dimensions or DEFAULT_RUBRIC_DIMENSIONS
         self._config = config or LLMJudgeConfig()
-        self._client = self._build_client()
 
     def score(
         self,
@@ -109,12 +109,15 @@ class LLMJudge:
 
         prompt = self._build_prompt(itinerary_text, request_text, rubric_text)
 
-        result: JudgeScores = self._client.chat.completions.create(
+        raw = litellm.completion(
             model=self._model,
-            response_model=JudgeScores,
             messages=[{"role": "user", "content": prompt}],
             temperature=self._config.temperature,
             max_tokens=self._config.max_tokens,
+            response_format={"type": "json_object"},
+        )
+        result = JudgeScores.model_validate(
+            json.loads(raw.choices[0].message.content)
         )
         flat = result.as_dict()
         breakdown = {
@@ -124,18 +127,6 @@ class LLMJudge:
         return flat, breakdown
 
     # ── Private helpers ───────────────────────────────────────────────────────
-
-    def _build_client(self) -> Any:
-        """Build instructor-wrapped litellm client."""
-        try:
-            import instructor
-            import litellm
-            return instructor.from_litellm(litellm.completion)
-        except ImportError as exc:
-            raise ImportError(
-                "instructor and litellm are required for LLMJudge. "
-                "Install with: pip install instructor litellm"
-            ) from exc
 
     def _build_rubric_text(self) -> str:
         lines = []

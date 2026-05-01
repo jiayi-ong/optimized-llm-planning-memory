@@ -25,11 +25,11 @@ Used for:
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-import instructor
 import litellm
 from pydantic import BaseModel
 
@@ -89,7 +89,6 @@ class LLMMCTSCompressor(MCTSAwareCompressor):
         self._temperature = temperature
         self._max_tokens = max_output_tokens
         self._template = CompressedStateTemplate()
-        self._client = instructor.from_litellm(litellm.completion)
         # Non-MCTS fallback: delegate to LLMCompressor
         self._fallback = LLMCompressor(
             model_id=llm_model_id,
@@ -129,15 +128,18 @@ class LLMMCTSCompressor(MCTSAwareCompressor):
         """
         prompt = self._build_tree_prompt(tree_repr, previous_state)
 
-        response: _MCTSCompressorLLMResponse = self._client.chat.completions.create(
+        raw = litellm.completion(
             model=self._model_id,
-            response_model=_MCTSCompressorLLMResponse,
             messages=[
                 {"role": "system", "content": _MCTS_SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             temperature=self._temperature,
             max_tokens=self._max_tokens,
+            response_format={"type": "json_object"},
+        )
+        response = _MCTSCompressorLLMResponse.model_validate(
+            json.loads(raw.choices[0].message.content)
         )
 
         # Build HardConstraintLedger from response + previous state

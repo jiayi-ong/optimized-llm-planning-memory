@@ -15,15 +15,15 @@ litellm) to produce a structured CompressedState. It is used as:
 Because it calls an external API, LLMCompressor does NOT implement
 ``get_log_probs()`` — it is not trainable via PPO.
 
-Stack: litellm → API call; instructor → parse structured output
+Stack: litellm → API call; pydantic → parse structured JSON output
 """
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 
-import instructor
 import litellm
 from pydantic import BaseModel
 
@@ -78,8 +78,6 @@ class LLMCompressor(CompressorBase):
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._template = CompressedStateTemplate()
-        # Patch the litellm client with instructor for structured output
-        self._client = instructor.from_litellm(litellm.completion)
 
     def compress(
         self,
@@ -96,15 +94,18 @@ class LLMCompressor(CompressorBase):
         """
         prompt = self._build_prompt(trajectory, previous_state)
 
-        response: _CompressorLLMResponse = self._client.chat.completions.create(
+        raw = litellm.completion(
             model=self._model_id,
-            response_model=_CompressorLLMResponse,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             temperature=self._temperature,
             max_tokens=self._max_tokens,
+            response_format={"type": "json_object"},
+        )
+        response = _CompressorLLMResponse.model_validate(
+            json.loads(raw.choices[0].message.content)
         )
 
         # Reconstruct HardConstraintLedger from the response
