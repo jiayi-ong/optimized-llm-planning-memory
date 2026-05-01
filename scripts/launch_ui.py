@@ -52,6 +52,15 @@ def main() -> None:
     os.environ["DATA_ROOT"] = data_root
     print(f"Data root: {data_root}")
 
+    # Ensure the repo root is on PYTHONPATH so `from app.*` imports work.
+    # Streamlit adds the script's directory (app/) to sys.path, not the repo root.
+    existing_pythonpath = os.environ.get("PYTHONPATH", "")
+    repo_root_str = str(_REPO_ROOT)
+    paths = [p for p in existing_pythonpath.split(os.pathsep) if p]
+    if repo_root_str not in paths:
+        paths.insert(0, repo_root_str)
+    os.environ["PYTHONPATH"] = os.pathsep.join(paths)
+
     cmd = [
         sys.executable, "-m", "streamlit", "run",
         str(_APP_ENTRY),
