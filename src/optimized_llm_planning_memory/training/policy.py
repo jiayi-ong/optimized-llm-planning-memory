@@ -64,6 +64,8 @@ class CompressorPolicy(BasePolicy):
         value_hidden_dim: int = 256,
         **kwargs: Any,
     ) -> None:
+        # PPO always injects use_sde for ActorCriticPolicy; BasePolicy doesn't accept it.
+        kwargs.pop("use_sde", None)
         super().__init__(
             observation_space=observation_space,
             action_space=action_space,
@@ -195,6 +197,16 @@ class CompressorPolicy(BasePolicy):
         """Return predicted actions (without values/log_probs). Used by SB3 env loop."""
         actions, _, _ = self.forward(observation, deterministic=deterministic)
         return actions
+
+    def predict_values(self, obs: torch.Tensor) -> torch.Tensor:
+        """
+        Return value estimates for the given observations.
+
+        Required by SB3's on-policy rollout collector (``collect_rollouts``) to
+        bootstrap returns when an episode terminates mid-rollout. Defined on
+        ``ActorCriticPolicy`` but not on ``BasePolicy``, so we implement it here.
+        """
+        return self._compute_value(obs)
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 

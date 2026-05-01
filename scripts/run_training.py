@@ -96,6 +96,7 @@ def main(cfg: DictConfig) -> None:
     from optimized_llm_planning_memory.agent.react_agent import ReActAgent
     from optimized_llm_planning_memory.agent.modes import AgentMode
     from optimized_llm_planning_memory.agent.context_builder import ContextBuilder
+    from optimized_llm_planning_memory.agent.prompts import get_system_prompt
     from optimized_llm_planning_memory.core.config import AgentConfig
 
     agent_config = AgentConfig(
@@ -115,11 +116,18 @@ def main(cfg: DictConfig) -> None:
         tracker = ToolCallTracker()
         event_bus = EventBus()
         registry = ToolRegistry.from_config(simulator=sim, tracker=tracker, event_bus=event_bus)
+        system_prompt = get_system_prompt(
+            OmegaConf.select(cfg, "agent.system_prompt_version", default="v1")
+        )
         return ReActAgent(
             llm_model_id=cfg.agent.llm_model_id,
             tool_registry=registry,
             compressor=compressor,
-            context_builder=ContextBuilder(),
+            context_builder=ContextBuilder(
+                system_prompt=system_prompt,
+                tool_registry=registry,
+                llm_model_id=cfg.agent.llm_model_id,
+            ),
             config=agent_config,
             mode=AgentMode(cfg.agent.mode),
         )
@@ -130,7 +138,7 @@ def main(cfg: DictConfig) -> None:
     from omegaconf import OmegaConf
 
     training_cfg = TrainingConfig(**OmegaConf.to_container(cfg.training, resolve=True))
-    env_cfg = EnvConfig()
+    env_cfg = training_cfg.env  # populated from training YAML's `env:` section
     reward_cfg = RewardConfig(**OmegaConf.to_container(cfg.reward, resolve=True))
 
     output_dir = Path(cfg.project.output_dir)
