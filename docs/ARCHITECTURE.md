@@ -56,11 +56,19 @@ class EpisodeLog:
     tool_stats:          tuple[ToolCallStats, ...]
     total_steps:         int
     success:             bool
+    termination_reason:  str | None             # DONE_ITINERARY | EXIT_<CODE> | MAX_STEPS | PARSE_FAILURE | ERROR_<TYPE>
     config_hash:         str                    # hash of ProjectConfig at run time
     created_at:          str                    # ISO 8601
 ```
 
 `EpisodeLog` is **frozen** (`frozen=True`). Once created it is never mutated. This makes it safe to cache, serialize, and distribute across parallel workers.
+
+`termination_reason` values:
+- `DONE_ITINERARY` — agent produced `Action: DONE` with a full `Itinerary:` block
+- `EXIT_CITY_NOT_FOUND` / `EXIT_BUDGET_EXCEEDED` / `EXIT_DATE_INVALID` / `EXIT_NO_AVAILABILITY` / `EXIT_REPEATED_DEAD_END` — agent detected a lethal scenario and exited gracefully
+- `MAX_STEPS` — episode reached `agent.max_steps` without a terminal signal
+- `PARSE_FAILURE` — parser could not extract a valid action after `max_retries_per_action` retries
+- `ERROR_<TYPE>` — unexpected exception (e.g. `ERROR_VALUEERROR`)
 
 ### `CompressedState` — the compressor's output
 

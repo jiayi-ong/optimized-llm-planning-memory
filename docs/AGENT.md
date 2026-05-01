@@ -36,11 +36,21 @@ Three prompt versions are stored in `agent/prompts.py`. The active version is se
 
 | Version | Config key | What it adds over the previous |
 |---|---|---|
-| `v1` | `"v1"` | Base ReAct instructions: planning approach, output format |
+| `v1` | `"v1"` | Base ReAct instructions plus: WORLD CONTEXT (synthetic city names, no `get_city_info`), PLANNING PHASE (required execution order), BOOKING RULE (commit before proceeding), THOUGHT DISCIPLINE (`"The last observation showed..."` opener), LETHAL SCENARIOS (EXIT codes for unresolvable episodes) |
 | `v2` | `"v2"` | + explicit **constraint tracking** guidance (track satisfied vs. open constraints at each step) |
-| `v3` | `"v3"` | + strict format requirement with inline example; error-recovery and budget-tracking guidance |
+| `v3` | `"v3"` | + strict format requirement with inline example; error-recovery and budget-tracking guidance; city-not-found → `EXIT(reason=CITY_NOT_FOUND)` |
 
 `v2` is the default for all configs (including `react_default.yaml`). Do not change an existing config to `v1` — it regresses planning quality.
+
+### V1 base sections (inherited by all versions)
+
+| Section | Purpose |
+|---|---|
+| WORLD CONTEXT | Reminds the agent it is in a synthetic world; city IDs come only from `get_available_routes`; `get_city_info` does not exist |
+| PLANNING PHASE | Required execution order: discover routes → flights → hotels → activities → verify budget → DONE |
+| BOOKING RULE | Never search the next category until the current booking is confirmed (prevents deferring commitments) |
+| THOUGHT DISCIPLINE | Every `Thought:` must open with `"The last observation showed..."` to prevent verbatim thought repetition |
+| LETHAL SCENARIOS — IMMEDIATE EXIT | Conditions that require `Action: EXIT(reason=<code>)` rather than continued search (see Response Parsing below) |
 
 ### Selecting a prompt in config
 
@@ -64,30 +74,37 @@ Few-shot tool-use examples are loaded at runtime from `data/few_shot_examples/re
 
 ### File format
 
+Each step is a flat JSON object with three string fields: `thought`, `action`, `observation`.
+
 ```json
 [
   {
-    "thought": "I need to find available cities and routes first.",
+    "thought": "The last observation showed nothing yet — this is the start. I need to call get_available_routes to discover which cities exist in this world.",
     "action": "get_available_routes({})",
-    "observation": "Routes: [{\"origin_city_id\": \"nyc-001\", ...}]"
+    "observation": "[{'city_id': 'city_synth_001_0000', 'city_name': 'Aeloria', 'vibe_summary': '...', 'dominant_cuisines': ['Japanese', 'French'], ...}, ...]"
   },
   {
-    "thought": "Now I'll search for flights from New York to Paris.",
-    "action": "search_flights({\"origin_city_id\": \"nyc-001\", \"destination_city_id\": \"par-001\", \"departure_date\": \"2025-06-01\", \"passengers\": 1})",
-    "observation": "Flights: [{\"edge_id\": \"FL-001\", \"price_usd\": 450, ...}]"
+    "thought": "The last observation showed two cities: Aeloria (city_id: city_synth_001_0000) and Brindor (city_id: city_synth_001_0001). I will search for flights from Aeloria to Brindor.",
+    "action": "search_flights({\"origin_city_id\": \"city_synth_001_0000\", \"destination_city_id\": \"city_synth_001_0001\", \"departure_date\": \"2026-06-01\", \"passengers\": 2})",
+    "observation": "[{'edge_id': 'city_synth_001_0000-city_synth_001_0001-20260601-AE', 'airline': 'Aeloria Air', 'total_price': 480.0, ...}]"
   }
 ]
 ```
 
-Each example must use **real tool names from the registry** and **valid argument schemas** — the agent pattern-matches on these. Never invent tool names or add fields that don't exist in the input schema.
+**Critical format rules:**
+- `action` must be a plain string in the format `tool_name({json_args})` — **not** a dict like `{"tool_name": ..., "arguments": ...}`. The latter is printed as Python repr and confuses the agent.
+- `observation` must be a Python repr string matching `TrajectoryModel.to_text()` output (single-quoted keys, not JSON).
+- `thought` must open with `"The last observation showed..."` per THOUGHT DISCIPLINE.
+
+Each example must use **real tool names from the registry** and **valid argument schemas**. Never invent tool names or fields that don't exist in the input schema.
 
 ### Rules for good few-shot examples
 
 1. Always start with `get_available_routes({})` — the agent must discover city IDs before searching.
-2. Use `origin_city_id` / `destination_city_id` (not `origin` / `destination`).
-3. Use ISO 8601 dates (`YYYY-MM-DD`).
-4. Show at least one tool error + recovery to teach the agent error handling.
-5. The final example must use `Action: DONE` and include an `Itinerary:` block.
+2. Show `get_available_routes` returning per-city descriptors (`city_id`, `city_name`, `vibe_summary`, ...) — not origin/destination route pairs.
+3. Use realistic synthetic city IDs like `city_synth_001_0000`, not real-world names like `"nyc-001"`.
+4. Use ISO 8601 dates (`YYYY-MM-DD`).
+5. The final step must use `Action: DONE` followed by an `Itinerary:` block listing all booked items and total cost.
 
 The best way to generate examples is to run a live episode with `agent.mode=raw`, capture the trajectory, and save the successful steps. See `scripts/run_episode.py`.
 
@@ -125,7 +142,7 @@ The tool section is generated automatically from `ToolRegistry.get_tool_schemas(
 
 ## Response Parsing
 
-The agent expects LLM output in one of two formats:
+The agent expects LLM output in one of three formats:
 
 **Mid-episode:**
 ```
@@ -133,14 +150,28 @@ Thought: <reasoning paragraph>
 Action: tool_name({"key": "value"})
 ```
 
-**Terminal:**
+**Successful completion:**
 ```
 Thought: <final reasoning>
 Action: DONE
-Itinerary: <structured summary>
+Itinerary:
+- Flight: Aeloria → Brindor, 2026-06-01 (FLT-AE0601, $480.00)
+- Hotel: Harbour View Boutique, 2026-06-01 to 2026-06-04 (HTL-001, $525.00)
+Total cost: $1005.00 of $4180.00 budget
 ```
 
-The parser (`react_agent.py:_parse_response`) uses regex with these properties:
+**Lethal scenario exit (no itinerary producible):**
+```
+Thought: <explanation of why the request cannot be fulfilled>
+Action: EXIT(reason=<CODE>)
+Reason: <one-sentence explanation>
+```
+
+Valid EXIT codes: `CITY_NOT_FOUND`, `BUDGET_EXCEEDED`, `DATE_INVALID`, `NO_AVAILABILITY`, `REPEATED_DEAD_END`.
+
+`_parse_response` returns a 4-tuple `(thought, tool_call, is_done, exit_reason)`. The `exit_reason` is `None` for normal tool calls and `DONE`, or the exit code string (e.g. `"CITY_NOT_FOUND"`) for EXIT signals. The `run_episode` method records the outcome in `EpisodeLog.termination_reason`.
+
+Additional parser properties:
 - Case-insensitive `Thought:` / `Action:` / `Itinerary:` matching.
 - Strips markdown code fences (` ```json ... ``` `) from arguments before JSON parsing.
 - On parse failure: logs a warning and returns structured feedback to the agent so it can self-correct on the next step (up to `max_retries_per_action`).
