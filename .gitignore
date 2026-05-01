@@ -42,6 +42,9 @@ data/user_requests/train/
 data/user_requests/val/
 # data/user_requests/test/
 
+# Simulator world snapshots (generated at runtime; deterministic from seed)
+worlds/
+
 # OS
 .DS_Store
 Thumbs.db

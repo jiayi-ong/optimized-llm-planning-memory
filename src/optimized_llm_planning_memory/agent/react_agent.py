@@ -186,6 +186,7 @@ class ReActAgent:
         final_itinerary: Itinerary | None = None
         success = True
         error_msg: str | None = None
+        termination_reason: str | None = None
 
         try:
             for step_index in range(self._config.max_steps):
@@ -200,7 +201,7 @@ class ReActAgent:
                 )
 
                 # Call the LLM (with format-reminder retries on parse failure)
-                thought, tool_call, is_done = self._call_and_parse(
+                thought, tool_call, is_done, exit_reason = self._call_and_parse(
                     context, step_index, episode_id
                 )
 
@@ -211,9 +212,15 @@ class ReActAgent:
                     thought_preview=thought[:200],
                 )
 
-                # Explicit DONE signal from the LLM
+                # Terminal signal: DONE (itinerary complete) or EXIT (lethal scenario)
                 if is_done or (tool_call is not None and tool_call.tool_name.upper() == "DONE"):
-                    log.info("react.step.done", episode_id=episode_id, step=step_index)
+                    termination_reason = f"EXIT_{exit_reason}" if exit_reason else "DONE_ITINERARY"
+                    log.info(
+                        "react.step.terminal",
+                        episode_id=episode_id,
+                        step=step_index,
+                        termination_reason=termination_reason,
+                    )
                     step = ReActStep(
                         step_index=step_index,
                         thought=thought,
@@ -230,6 +237,7 @@ class ReActAgent:
                 # Parse failure after all retries — record and end with error
                 if tool_call is None:
                     success = False
+                    termination_reason = "PARSE_FAILURE"
                     error_msg = (
                         f"LLM did not produce a valid Action after "
                         f"{self._config.max_retries_per_action} attempts at step {step_index}."
@@ -314,17 +322,20 @@ class ReActAgent:
                         if live_writer is not None:
                             live_writer.write_compression(compressed)
             else:
-                # Loop exhausted without DONE → max_steps reached
+                # Loop exhausted without terminal signal → max_steps reached
                 success = False
+                termination_reason = "MAX_STEPS"
                 error_msg = (
-                    f"Max steps ({self._config.max_steps}) reached without DONE signal."
+                    f"Max steps ({self._config.max_steps}) reached without terminal signal."
                 )
 
         except AgentMaxStepsError as exc:
             success = False
+            termination_reason = "MAX_STEPS"
             error_msg = str(exc)
         except Exception as exc:
             success = False
+            termination_reason = f"ERROR_{type(exc).__name__.upper()}"
             error_msg = f"Unexpected error: {type(exc).__name__}: {exc}"
 
         # Build placeholder reward (will be overwritten by RewardFunction in training)
@@ -343,6 +354,7 @@ class ReActAgent:
             mcts_stats=self._last_mcts_stats,
             success=success,
             error=error_msg,
+            termination_reason=termination_reason,
             config_hash=self._compute_config_hash(),
             created_at=_now(),
         )
@@ -409,7 +421,7 @@ class ReActAgent:
             )
 
             try:
-                thought, tool_call, is_done = self._call_and_parse(context, step_index)
+                thought, tool_call, is_done, _exit_reason = self._call_and_parse(context, step_index)
             except Exception as exc:
                 error_msg = f"LLM error at step {step_index}: {type(exc).__name__}: {exc}"
                 done = True
@@ -488,18 +500,17 @@ class ReActAgent:
 
     # ── Response parsing ──────────────────────────────────────────────────────
 
-    def _parse_response(self, text: str) -> tuple[str, ToolCall | None, bool]:
+    def _parse_response(self, text: str) -> tuple[str, ToolCall | None, bool, str | None]:
         """
-        Parse an LLM response into (thought, ToolCall | None, is_done).
+        Parse an LLM response into (thought, ToolCall | None, is_done, exit_reason).
 
-        Expected format::
+        Supported terminal signals::
 
-            Thought: <text>
-            Action: <tool_name>(<json_args>)
+            Action: DONE            → is_done=True,  exit_reason=None
+            Action: EXIT(reason=X)  → is_done=True,  exit_reason="X" (uppercased)
 
-        ``is_done`` is True when the LLM explicitly wrote "Action: DONE".
-        ``tool_call`` is None both when is_done=True and when parsing fails.
-        Callers should check ``is_done`` to distinguish the two cases.
+        For regular tool calls:  is_done=False, exit_reason=None.
+        On parse failure:        tool_call=None, is_done=False, exit_reason=None.
 
         Tolerates: multi-line JSON args, code fences, extra whitespace, case variation.
         """
@@ -510,10 +521,9 @@ class ReActAgent:
         if thought_match:
             thought = thought_match.group(1).strip()
 
-        # Capture DONE or a full tool_name(args) call including multi-line JSON args.
-        # Using re.DOTALL so .*? can cross newlines; non-greedy stops at first closing ).
+        # Alternation order matters: EXIT must precede the generic \w+\(...\) branch.
         action_match = re.search(
-            r"Action:\s*(DONE|\w+\(.*?\))",
+            r"Action:\s*(DONE|EXIT\([^)]*\)|\w+\(.*?\))",
             text,
             re.DOTALL | re.IGNORECASE,
         )
@@ -521,7 +531,13 @@ class ReActAgent:
             action_text = action_match.group(1).strip()
 
             if action_text.upper() == "DONE":
-                return thought, None, True
+                return thought, None, True, None
+
+            # EXIT(reason=<code>) — graceful abort for lethal scenarios
+            exit_match = re.match(r"EXIT\(reason=([^)]+)\)", action_text, re.IGNORECASE)
+            if exit_match:
+                exit_reason = exit_match.group(1).strip().upper()
+                return thought, None, True, exit_reason
 
             # Strip surrounding code fences that LLMs sometimes emit
             action_text = re.sub(r"^```(?:\w+)?\s*", "", action_text)
@@ -551,20 +567,20 @@ class ReActAgent:
                     raw_text=action_text,
                 )
 
-        return thought, tool_call, False
+        return thought, tool_call, False, None
 
     def _call_and_parse(
         self,
         context: str,
         step_index: int,
         episode_id: str = "unknown",
-    ) -> tuple[str, ToolCall | None, bool]:
+    ) -> tuple[str, ToolCall | None, bool, str | None]:
         """
         Call the LLM and parse, retrying with a format reminder when no Action
-        line is produced.  Genuine "Action: DONE" responses are never retried.
+        line is produced.  Terminal signals (DONE, EXIT) are never retried.
 
-        Returns (thought, tool_call, is_done).
-        ``is_done`` is True only when the LLM explicitly wrote "Action: DONE".
+        Returns (thought, tool_call, is_done, exit_reason).
+        ``exit_reason`` is the EXIT reason code or None (see _parse_response).
         ``tool_call`` is None after all retries failed (is_done will be False).
         """
         _FORMAT_REMINDER = (
@@ -573,14 +589,15 @@ class ReActAgent:
             "Every response MUST end with exactly one of:\n"
             "  Action: tool_name({\"key\": \"value\"})\n"
             "  Action: DONE\n"
+            "  Action: EXIT(reason=<code>)\n"
         )
-        thought, tool_call, is_done = "", None, False
+        thought, tool_call, is_done, exit_reason = "", None, False, None
         for attempt in range(self._config.max_retries_per_action):
             prompt = context if attempt == 0 else context + _FORMAT_REMINDER
             llm_response = self._call_llm(prompt)
-            thought, tool_call, is_done = self._parse_response(llm_response)
+            thought, tool_call, is_done, exit_reason = self._parse_response(llm_response)
             if tool_call is not None or is_done:
-                return thought, tool_call, is_done
+                return thought, tool_call, is_done, exit_reason
             log.warning(
                 "react.parse.no_action",
                 episode_id=episode_id,
@@ -589,7 +606,7 @@ class ReActAgent:
                 max_retries=self._config.max_retries_per_action,
                 response_preview=llm_response[:300],
             )
-        return thought, None, False
+        return thought, None, False, None
 
     # ── Tool execution ────────────────────────────────────────────────────────
 

@@ -1,9 +1,18 @@
 # configs/simulator/default.yaml
 # @package simulator
+
 seed_range: [0, 9999]
+
+# World generation parameters — forwarded verbatim to WorldGenerator as world_config.
+# Keys must match WorldGenerator.DEFAULT_CONFIG in my-travel-world/travel_world/generation/world_generator.py.
 world_params:
-  num_cities: 20
-  num_hotels_per_city: 10
-  num_flights_per_route: 5
-  num_activities_per_city: 15
-  price_variance: 0.2
+  num_regions: 1
+  num_cities_per_region: 3        # 3 cities supports multi-city trip templates
+  num_districts_per_city: 5
+  num_hotels_per_district: 3
+  num_attractions_per_district: 4
+  num_restaurants_per_district: 5
+  num_transport_hubs_per_city: 2
+  date_range_days: 90
+  num_events_per_city: 60
+  num_flights_per_route: 10

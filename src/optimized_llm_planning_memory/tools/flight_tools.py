@@ -37,7 +37,11 @@ class SearchFlightsInput(BaseModel):
     )
     passengers: int = Field(
         default=1, ge=1, le=20,
-        description="Total number of passengers."
+        description="Total number of passengers. Always pass this to match your group size."
+    )
+    max_results: int = Field(
+        default=10, ge=1, le=50,
+        description="Maximum number of results to return, sorted by total price (cheapest first)."
     )
 
 
@@ -79,18 +83,21 @@ class SearchFlights(BaseTool):
     tool_description = (
         "Search for available flights between two cities on a specific date. "
         "Requires city IDs — call get_available_routes first to discover them. "
-        "Returns a list of flight options with edge_id, price, schedule, and availability. "
-        "Use the edge_id with select_flight to record your choice."
+        "Returns up to 10 flights sorted by total price (cheapest first). "
+        "ALWAYS pass 'passengers' matching your group size to filter correctly. "
+        "Use the edge_id with select_flight to confirm your choice."
     )
     input_schema = SearchFlightsInput
 
     def _execute(self, validated_input: SearchFlightsInput) -> Any:
-        return self._simulator.search_flights(
+        results = self._simulator.search_flights(
             origin_city_id=validated_input.origin_city_id,
             destination_city_id=validated_input.destination_city_id,
             departure_date=validated_input.departure_date,
             passengers=validated_input.passengers,
         )
+        results.sort(key=lambda r: r.get("total_price", float("inf")))
+        return results[: validated_input.max_results]
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (

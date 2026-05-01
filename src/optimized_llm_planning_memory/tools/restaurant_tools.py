@@ -17,12 +17,20 @@ class SearchRestaurantsInput(BaseModel):
         default=None,
         description=(
             "Optional cuisine filter (case-insensitive), e.g. 'italian', 'japanese', "
-            "'french', 'mexican', 'thai', 'indian', 'american'."
+            "'french', 'mexican', 'thai', 'indian', 'american'. "
+            "Pass this when the user has a food preference."
         ),
     )
     max_avg_spend: float | None = Field(
         default=None, ge=0.0,
-        description="Optional maximum average spend per person in USD."
+        description=(
+            "Optional maximum average spend per person in USD. "
+            "Set based on per-meal budget to exclude expensive options."
+        ),
+    )
+    max_results: int = Field(
+        default=10, ge=1, le=50,
+        description="Maximum number of results to return, sorted by rating (highest first)."
     )
 
 
@@ -32,18 +40,21 @@ class SearchRestaurants(BaseTool):
     tool_name = "search_restaurants"
     tool_description = (
         "Search for restaurants in a city. "
-        "Returns restaurant name, cuisine types, average spend per person, "
-        "price tier, Michelin stars, reservation requirement, and ratings. "
-        "Optionally filter by cuisine type or max spend."
+        "Returns up to 10 restaurants sorted by average rating (highest first). "
+        "ALWAYS pass 'cuisine' when the user has a food preference, and "
+        "'max_avg_spend' based on per-meal budget to exclude expensive options. "
+        "Returns name, cuisine types, average spend per person, Michelin stars, and rating."
     )
     input_schema = SearchRestaurantsInput
 
     def _execute(self, validated_input: SearchRestaurantsInput) -> Any:
-        return self._simulator.search_restaurants(
+        results = self._simulator.search_restaurants(
             city_id=validated_input.city_id,
             cuisine=validated_input.cuisine,
             max_avg_spend=validated_input.max_avg_spend,
         )
+        results.sort(key=lambda r: r.get("average_rating", 0.0), reverse=True)
+        return results[: validated_input.max_results]
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (

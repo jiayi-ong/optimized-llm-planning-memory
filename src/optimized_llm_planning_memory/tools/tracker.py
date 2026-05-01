@@ -105,6 +105,11 @@ class ToolCallTracker:
                 )
             return sorted(stats, key=lambda s: s.tool_name)
 
+    def call_count_for_hash(self, tool_name: str, args_hash: str) -> int:
+        """Return how many times this exact (tool_name, args_hash) pair has been recorded."""
+        with self._lock:
+            return sum(1 for r in self._calls.get(tool_name, []) if r.args_hash == args_hash)
+
     def get_redundancy_count(self) -> int:
         """Return total number of calls that duplicated a previous (name, args) pair."""
         with self._lock:

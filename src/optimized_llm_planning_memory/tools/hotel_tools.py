@@ -18,11 +18,18 @@ class SearchHotelsInput(BaseModel):
     guests: int = Field(default=1, ge=1, le=20, description="Number of guests.")
     max_price_per_night: float | None = Field(
         default=None, ge=0.0,
-        description="Optional maximum price per night in USD."
+        description=(
+            "Optional maximum price per night in USD. "
+            "ALWAYS set this to remaining_budget / num_nights to filter out unaffordable hotels."
+        ),
     )
     min_stars: float | None = Field(
         default=None, ge=0.0, le=5.0,
-        description="Optional minimum star rating (0.0–5.0)."
+        description="Optional minimum star rating (0.0–5.0). Set if the user has a quality preference."
+    )
+    max_results: int = Field(
+        default=10, ge=1, le=50,
+        description="Maximum number of results to return, sorted by price per night (cheapest first)."
     )
 
 
@@ -42,14 +49,15 @@ class SearchHotels(BaseTool):
     tool_name = "search_hotels"
     tool_description = (
         "Search for available hotels in a city for a given check-in/check-out period. "
-        "Requires a city_id — use get_available_routes to discover city IDs. "
-        "Returns hotel name, price per night, star rating, district, and amenities. "
-        "Optionally filter by max_price_per_night or min_stars."
+        "Returns up to 10 hotels sorted by price per night (cheapest first). "
+        "ALWAYS pass 'max_price_per_night' = remaining_budget / num_nights to exclude "
+        "unaffordable options; pass 'min_stars' if the user has a quality preference. "
+        "Requires a city_id from get_available_routes."
     )
     input_schema = SearchHotelsInput
 
     def _execute(self, validated_input: SearchHotelsInput) -> Any:
-        return self._simulator.search_hotels(
+        results = self._simulator.search_hotels(
             city_id=validated_input.city_id,
             check_in=validated_input.check_in,
             check_out=validated_input.check_out,
@@ -57,6 +65,8 @@ class SearchHotels(BaseTool):
             max_price=validated_input.max_price_per_night,
             min_stars=validated_input.min_stars,
         )
+        results.sort(key=lambda r: r.get("price_per_night", float("inf")))
+        return results[: validated_input.max_results]
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (

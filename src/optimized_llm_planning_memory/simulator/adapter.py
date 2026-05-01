@@ -30,10 +30,10 @@ Usage
     from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
 
     sim = SimulatorAdapter(seed=42)
-    routes = sim.get_available_routes()           # discover city IDs
+    cities = sim.get_available_routes()           # returns city descriptors
     flights = sim.search_flights(
-        origin_city_id=routes[0]["origin_city_id"],
-        destination_city_id=routes[0]["destination_city_id"],
+        origin_city_id=cities[0]["city_id"],
+        destination_city_id=cities[1]["city_id"],
         departure_date="2026-06-01",
     )
 
@@ -73,15 +73,25 @@ class SimulatorAdapter:
 
     Parameters
     ----------
-    seed       : World generation seed. Identical seeds → identical worlds.
-    worlds_dir : Directory where WorldManager stores world files.
-                 Created on first use if it does not exist.
+    seed         : World generation seed. Identical seeds → identical worlds.
+    worlds_dir   : Directory where WorldManager stores world files.
+                   Created on first use if it does not exist.
+    world_config : Optional dict of WorldGenerator config overrides
+                   (e.g. ``{"num_cities_per_region": 3, "num_regions": 1}``).
+                   Keys must match WorldGenerator.DEFAULT_CONFIG exactly.
+                   When None, WorldGenerator's DEFAULT_CONFIG is used unchanged.
     """
 
-    def __init__(self, seed: int, worlds_dir: str | Path = "./worlds") -> None:
+    def __init__(
+        self,
+        seed: int,
+        worlds_dir: str | Path = "./worlds",
+        world_config: dict | None = None,
+    ) -> None:
         self._seed = seed
         self._worlds_dir = Path(worlds_dir)
         self._worlds_dir.mkdir(parents=True, exist_ok=True)
+        self._world_config = world_config
         self._init_services(seed)
 
     def _init_services(self, seed: int) -> None:
@@ -103,7 +113,7 @@ class SimulatorAdapter:
 
         try:
             manager = WorldManager(self._worlds_dir)
-            self._ws = manager.create_world(seed=seed)
+            self._ws = manager.create_world(seed=seed, config=self._world_config)
         except Exception as exc:
             raise SimulatorError(
                 f"Failed to create travel_world world with seed={seed}: {exc}"
@@ -163,13 +173,15 @@ class SimulatorAdapter:
 
     def get_available_routes(self) -> list[dict]:
         """
-        Return all city-pair routes that have at least one flight edge, or —
-        in single-city worlds — a city descriptor for each city in the world.
+        Return a city descriptor for every city in this world.
 
         This is the primary city-discovery method. The agent calls this first
-        to learn which city_id values exist. In the current travel_world build
-        each world contains exactly one city, so the flight-route list is
-        empty and we fall back to reading the geo layer directly.
+        to learn which city_id values are valid. Always reads from the geo layer
+        so the output format is consistent regardless of whether the world has
+        inter-city flight edges (single-city vs. multi-city worlds).
+
+        To discover which city pairs are connected by flights, use search_flights
+        with the city_ids returned here.
 
         Returns
         -------
@@ -177,15 +189,8 @@ class SimulatorAdapter:
             city_id, city_name, description, vibe_summary,
             dominant_cuisines, dominant_attraction_categories,
             dominant_event_categories
-        (For multi-city worlds that have flight edges the dicts additionally
-        contain origin_city_id / destination_city_id / hub_id fields.)
         """
         try:
-            routes = self._flights.get_available_routes()
-            if routes:
-                return routes
-            # Single-city world: expose city info from the geo layer so the
-            # agent can discover the city_id it should use for tool calls.
             geo = self._ws.get_layer("geo")
             result = []
             for cid, city in geo.cities.items():
@@ -446,9 +451,11 @@ class SimulatorAdapter:
 
     # ── World management ──────────────────────────────────────────────────────
 
-    def reset(self, seed: int | None = None) -> None:
-        """Re-initialise the world and session, optionally with a new seed."""
+    def reset(self, seed: int | None = None, world_config: dict | None = None) -> None:
+        """Re-initialise the world and session, optionally with a new seed or config."""
         self._seed = seed if seed is not None else self._seed
+        if world_config is not None:
+            self._world_config = world_config
         self._init_services(self._seed)
 
     def get_world_seed(self) -> int:

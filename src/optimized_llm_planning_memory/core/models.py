@@ -553,6 +553,15 @@ class EpisodeLog(BaseModel):
     )
     success: bool
     error: str | None = None
+    termination_reason: str | None = Field(
+        default=None,
+        description=(
+            "How the episode ended: DONE_ITINERARY | EXIT_<code> | "
+            "MAX_STEPS | PARSE_FAILURE | ERROR_<TYPE>. "
+            "EXIT codes: CITY_NOT_FOUND, BUDGET_EXCEEDED, DATE_INVALID, "
+            "NO_AVAILABILITY, REPEATED_DEAD_END."
+        ),
+    )
     config_hash: str
     created_at: str = Field(description="ISO 8601 datetime.")
 

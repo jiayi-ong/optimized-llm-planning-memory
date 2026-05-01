@@ -58,7 +58,8 @@ def main(cfg: DictConfig) -> None:
     from omegaconf import OmegaConf
 
     worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
-    simulator = SimulatorAdapter(seed=cfg.project.seed, worlds_dir=worlds_dir)
+    world_params = OmegaConf.to_container(cfg.simulator.world_params, resolve=True) if OmegaConf.select(cfg, "simulator.world_params") else None
+    simulator = SimulatorAdapter(seed=cfg.project.seed, worlds_dir=worlds_dir, world_config=world_params)
     tracker = ToolCallTracker()
     event_bus = EventBus()
 

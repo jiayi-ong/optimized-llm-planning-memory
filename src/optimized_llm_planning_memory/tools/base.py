@@ -101,6 +101,10 @@ class BaseTool(ABC):
         """
         args_hash = ToolCallTracker.hash_arguments(self.tool_name, raw_arguments)
 
+        # Check for redundant repeat before executing — used to inject a warning below.
+        # The tracker records AFTER execution, so prior_count reflects only earlier calls.
+        prior_count = self._tracker.call_count_for_hash(self.tool_name, args_hash)
+
         # Step 1: Validate input
         try:
             validated = self.input_schema.model_validate(raw_arguments)
@@ -132,6 +136,20 @@ class BaseTool(ABC):
                 result = None
                 error_msg = self._generate_error_feedback(exc, raw_arguments)
                 success = False
+
+        # Inject a redundancy warning into the result after the 2nd repeat (3rd+ call).
+        # This surfaces in the agent's Observation text so it knows to stop retrying.
+        # Only applied when prior_count >= 2 to allow one legitimate retry after an error.
+        if success and prior_count >= 2:
+            result = {
+                "result": result,
+                "agent_warning": (
+                    f"[REDUNDANT CALL #{prior_count + 1}] '{self.tool_name}' has been called "
+                    f"with these identical arguments {prior_count + 1} times. "
+                    f"The result will not change. Either change your approach or "
+                    f"use Action: EXIT(reason=REPEATED_DEAD_END)."
+                ),
+            }
 
         # Steps 3 + 4
         self._record_and_emit(
