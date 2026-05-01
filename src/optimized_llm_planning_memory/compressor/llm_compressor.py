@@ -15,7 +15,7 @@ litellm) to produce a structured CompressedState. It is used as:
 Because it calls an external API, LLMCompressor does NOT implement
 ``get_log_probs()`` — it is not trainable via PPO.
 
-Stack: litellm → API call; pydantic → parse structured JSON output
+Stack: litellm → API call with response_format=json_object → Pydantic parse
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ class _CompressorLLMResponse(BaseModel):
 
 class LLMCompressor(CompressorBase):
     """
-    Compressor that uses an off-the-shelf LLM via litellm + instructor.
+    Compressor that uses an off-the-shelf LLM via litellm JSON mode.
 
     Not trainable (does not override get_log_probs / get_trainable_parameters).
 
@@ -104,9 +104,8 @@ class LLMCompressor(CompressorBase):
             max_tokens=self._max_tokens,
             response_format={"type": "json_object"},
         )
-        response = _CompressorLLMResponse.model_validate(
-            json.loads(raw.choices[0].message.content)
-        )
+        raw_text = raw.choices[0].message.content or "{}"
+        response = _CompressorLLMResponse.model_validate(json.loads(raw_text))
 
         # Reconstruct HardConstraintLedger from the response
         # (constraints list comes from previous_state if available)
