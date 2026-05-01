@@ -199,11 +199,10 @@ class ReActAgent:
                     request=request,
                 )
 
-                # Call the LLM
-                llm_response = self._call_llm(context)
-
-                # Parse thought and action
-                thought, tool_call = self._parse_response(llm_response)
+                # Call the LLM (with format-reminder retries on parse failure)
+                thought, tool_call, is_done = self._call_and_parse(
+                    context, step_index, episode_id
+                )
 
                 log.info(
                     "react.step.thought",
@@ -212,11 +211,30 @@ class ReActAgent:
                     thought_preview=thought[:200],
                 )
 
-                # Check for DONE signal
-                if tool_call is None or (
-                    tool_call.tool_name.upper() == "DONE"
-                ):
+                # Explicit DONE signal from the LLM
+                if is_done or (tool_call is not None and tool_call.tool_name.upper() == "DONE"):
                     log.info("react.step.done", episode_id=episode_id, step=step_index)
+                    step = ReActStep(
+                        step_index=step_index,
+                        thought=thought,
+                        action=None,
+                        observation=None,
+                        itinerary_snapshot=final_itinerary,
+                        timestamp=_now(),
+                    )
+                    trajectory.add_step(step)
+                    if live_writer is not None:
+                        live_writer.write_step(step)
+                    break
+
+                # Parse failure after all retries — record and end with error
+                if tool_call is None:
+                    success = False
+                    error_msg = (
+                        f"LLM did not produce a valid Action after "
+                        f"{self._config.max_retries_per_action} attempts at step {step_index}."
+                    )
+                    log.error("react.parse.failed", episode_id=episode_id, step=step_index, error=error_msg)
                     step = ReActStep(
                         step_index=step_index,
                         thought=thought,
@@ -391,15 +409,13 @@ class ReActAgent:
             )
 
             try:
-                llm_response = self._call_llm(context)
+                thought, tool_call, is_done = self._call_and_parse(context, step_index)
             except Exception as exc:
                 error_msg = f"LLM error at step {step_index}: {type(exc).__name__}: {exc}"
                 done = True
                 break
 
-            thought, tool_call = self._parse_response(llm_response)
-
-            if tool_call is None or tool_call.tool_name.upper() == "DONE":
+            if is_done or (tool_call is not None and tool_call.tool_name.upper() == "DONE"):
                 step = ReActStep(
                     step_index=step_index,
                     thought=thought,
@@ -409,6 +425,14 @@ class ReActAgent:
                     timestamp=_now(),
                 )
                 trajectory.add_step(step)
+                done = True
+                break
+
+            if tool_call is None:
+                error_msg = (
+                    f"LLM did not produce a valid Action after "
+                    f"{self._config.max_retries_per_action} attempts at step {step_index}."
+                )
                 done = True
                 break
 
@@ -435,10 +459,28 @@ class ReActAgent:
     # ── LLM call ──────────────────────────────────────────────────────────────
 
     def _call_llm(self, context: str) -> str:
-        """Call the planning LLM with the assembled context string."""
+        """Call the planning LLM with the assembled context string.
+
+        Splits the leading [SYSTEM] block into a proper system message so
+        OpenAI models follow the ReAct format instructions reliably.
+        """
+        system_content = ""
+        user_content = context
+        if context.startswith("[SYSTEM]\n"):
+            split_marker = "\n[USER REQUEST]"
+            idx = context.find(split_marker)
+            if idx != -1:
+                system_content = context[len("[SYSTEM]\n"):idx].strip()
+                user_content = context[idx + 1:]  # drop leading \n before [USER REQUEST]
+
+        messages: list[dict[str, str]] = []
+        if system_content:
+            messages.append({"role": "system", "content": system_content})
+        messages.append({"role": "user", "content": user_content})
+
         response = litellm.completion(
             model=self._llm_model_id,
-            messages=[{"role": "user", "content": context}],
+            messages=messages,
             temperature=self._config.temperature,
             max_tokens=self._config.max_tokens_per_response,
         )
@@ -446,32 +488,40 @@ class ReActAgent:
 
     # ── Response parsing ──────────────────────────────────────────────────────
 
-    def _parse_response(self, text: str) -> tuple[str, ToolCall | None]:
+    def _parse_response(self, text: str) -> tuple[str, ToolCall | None, bool]:
         """
-        Parse an LLM response into (thought, ToolCall | None).
+        Parse an LLM response into (thought, ToolCall | None, is_done).
 
         Expected format::
 
             Thought: <text>
             Action: <tool_name>(<json_args>)
 
-        Returns (thought, None) if the action is DONE or absent.
-        Tolerates: code fences around JSON args, extra whitespace, case variation.
+        ``is_done`` is True when the LLM explicitly wrote "Action: DONE".
+        ``tool_call`` is None both when is_done=True and when parsing fails.
+        Callers should check ``is_done`` to distinguish the two cases.
+
+        Tolerates: multi-line JSON args, code fences, extra whitespace, case variation.
         """
         thought = ""
         tool_call: ToolCall | None = None
 
-        # re.IGNORECASE handles case variation (Thought / THOUGHT / thought)
-        thought_match = re.search(r"Thought:\s*(.+?)(?=\nAction:|$)", text, re.DOTALL | re.IGNORECASE)
+        thought_match = re.search(r"Thought:\s*(.+?)(?=\nAction:|\Z)", text, re.DOTALL | re.IGNORECASE)
         if thought_match:
             thought = thought_match.group(1).strip()
 
-        action_match = re.search(r"Action:\s*(.+?)(?:\n|$)", text, re.DOTALL | re.IGNORECASE)
+        # Capture DONE or a full tool_name(args) call including multi-line JSON args.
+        # Using re.DOTALL so .*? can cross newlines; non-greedy stops at first closing ).
+        action_match = re.search(
+            r"Action:\s*(DONE|\w+\(.*?\))",
+            text,
+            re.DOTALL | re.IGNORECASE,
+        )
         if action_match:
             action_text = action_match.group(1).strip()
 
             if action_text.upper() == "DONE":
-                return thought, None
+                return thought, None, True
 
             # Strip surrounding code fences that LLMs sometimes emit
             action_text = re.sub(r"^```(?:\w+)?\s*", "", action_text)
@@ -501,7 +551,45 @@ class ReActAgent:
                     raw_text=action_text,
                 )
 
-        return thought, tool_call
+        return thought, tool_call, False
+
+    def _call_and_parse(
+        self,
+        context: str,
+        step_index: int,
+        episode_id: str = "unknown",
+    ) -> tuple[str, ToolCall | None, bool]:
+        """
+        Call the LLM and parse, retrying with a format reminder when no Action
+        line is produced.  Genuine "Action: DONE" responses are never retried.
+
+        Returns (thought, tool_call, is_done).
+        ``is_done`` is True only when the LLM explicitly wrote "Action: DONE".
+        ``tool_call`` is None after all retries failed (is_done will be False).
+        """
+        _FORMAT_REMINDER = (
+            "\n\n[FORMAT REMINDER]\n"
+            "Your previous response did not include a valid 'Action:' line.\n"
+            "Every response MUST end with exactly one of:\n"
+            "  Action: tool_name({\"key\": \"value\"})\n"
+            "  Action: DONE\n"
+        )
+        thought, tool_call, is_done = "", None, False
+        for attempt in range(self._config.max_retries_per_action):
+            prompt = context if attempt == 0 else context + _FORMAT_REMINDER
+            llm_response = self._call_llm(prompt)
+            thought, tool_call, is_done = self._parse_response(llm_response)
+            if tool_call is not None or is_done:
+                return thought, tool_call, is_done
+            log.warning(
+                "react.parse.no_action",
+                episode_id=episode_id,
+                step=step_index,
+                attempt=attempt + 1,
+                max_retries=self._config.max_retries_per_action,
+                response_preview=llm_response[:300],
+            )
+        return thought, None, False
 
     # ── Tool execution ────────────────────────────────────────────────────────
 
