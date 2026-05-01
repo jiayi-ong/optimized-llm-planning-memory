@@ -17,12 +17,17 @@ class SearchAttractionsInput(BaseModel):
         default=None,
         description=(
             "Optional category filter, e.g. 'museum', 'park', 'landmark', "
-            "'entertainment', 'shopping', 'nature'."
+            "'entertainment', 'shopping', 'nature'. "
+            "Pass this when the user has stated a preference to focus results."
         ),
     )
     free_only: bool = Field(
         default=False,
-        description="If true, only return free-entry attractions."
+        description="If true, only return free-entry attractions. Use when budget is tight."
+    )
+    max_results: int = Field(
+        default=10, ge=1, le=50,
+        description="Maximum number of results to return, sorted by popularity (highest first)."
     )
 
 
@@ -38,18 +43,21 @@ class SearchAttractions(BaseTool):
     tool_name = "search_attractions"
     tool_description = (
         "Search for tourist attractions and points of interest in a city. "
-        "Returns attraction name, category, ticket price, duration, popularity, "
-        "current crowding level, and wait time estimate. "
-        "Optionally filter by category or free_only."
+        "Returns up to 10 attractions sorted by popularity (highest first). "
+        "Pass 'category' to match user preferences (e.g. 'museum', 'park', 'landmark'). "
+        "Use 'free_only=true' when the user has a tight budget. "
+        "Returns name, category, ticket price, duration, and popularity."
     )
     input_schema = SearchAttractionsInput
 
     def _execute(self, validated_input: SearchAttractionsInput) -> Any:
-        return self._simulator.search_attractions(
+        results = self._simulator.search_attractions(
             city_id=validated_input.city_id,
             category=validated_input.category,
             free_only=validated_input.free_only,
         )
+        results.sort(key=lambda r: r.get("popularity_score", 0.0), reverse=True)
+        return results[: validated_input.max_results]
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (
