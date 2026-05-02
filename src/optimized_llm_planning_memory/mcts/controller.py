@@ -226,16 +226,37 @@ def _build_branching_prompt(node: MCTSNode, request: "UserRequest") -> str:
     request_text = getattr(request, "raw_text", str(request))
     traj_text = node.trajectory_snapshot.to_text()
     last_steps = "\n".join(traj_text.splitlines()[-30:])  # last ~30 lines
+    completed = _summarise_completed_calls(node.trajectory_snapshot)
 
     return (
         f"[USER REQUEST]\n{request_text}\n\n"
+        f"[ALREADY COMPLETED — do NOT repeat these]\n{completed}\n\n"
         f"[RECENT PLANNING STEPS]\n{last_steps}\n\n"
-        "Based on the planning progress above, what is the single most important "
-        "next tool call? Respond with ONLY:\n"
+        "Based on the planning progress above, what is the single NEXT tool call "
+        "that has NOT already been completed? Do NOT call a tool listed in "
+        "[ALREADY COMPLETED] with the same arguments.\n"
+        "Respond with ONLY:\n"
         "Thought: <one sentence>\n"
         "Action: tool_name({\"key\": \"value\"})\n"
         "Be specific about which tool to call and what arguments to use."
     )
+
+
+def _summarise_completed_calls(traj: TrajectoryModel) -> str:
+    """Return a compact list of successful tool calls already in the trajectory.
+
+    Used to prevent the MCTS branching LLM from suggesting actions that have
+    already been completed — the main source of redundant branch generation.
+    """
+    seen: set[str] = set()
+    lines: list[str] = []
+    for step in traj.steps:
+        if step.action and step.observation and step.observation.success:
+            key = f"{step.action.tool_name}({json.dumps(step.action.arguments, sort_keys=True)})"
+            if key not in seen:
+                seen.add(key)
+                lines.append(f"  - {step.action.tool_name} [step {step.step_index}]")
+    return "\n".join(lines) if lines else "  (none yet)"
 
 
 def _make_synthetic_step(step_index: int, action_text: str) -> ReActStep:

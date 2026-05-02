@@ -361,7 +361,11 @@ def _steps_to_text(steps: list) -> str:
             )
         if step.observation is not None:
             if step.observation.success:
-                lines.append(f"Observation: {step.observation.result}")
+                result = step.observation.result
+                if isinstance(result, (dict, list)):
+                    lines.append(f"Observation: {json.dumps(result)}")
+                else:
+                    lines.append(f"Observation: {result}")
             else:
                 lines.append(f"Observation: ERROR — {step.observation.error_message}")
         lines.append("")

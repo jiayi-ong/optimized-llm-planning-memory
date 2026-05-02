@@ -25,7 +25,7 @@ import uuid
 from datetime import datetime, timezone
 
 import litellm
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from optimized_llm_planning_memory.compressor.base import CompressorBase
 from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
@@ -51,6 +51,16 @@ class _CompressorLLMResponse(BaseModel):
     open_questions: list[str]
     key_discoveries: list[str]
     current_itinerary_sketch: str
+
+    @field_validator("decisions_made", "open_questions", "key_discoveries", mode="before")
+    @classmethod
+    def _coerce_to_str_list(cls, v: object) -> list[str]:
+        if not isinstance(v, list):
+            return [str(v)] if v else []
+        return [
+            json.dumps(item) if isinstance(item, (dict, list)) else str(item)
+            for item in v
+        ]
 
 
 # ── LLMCompressor ─────────────────────────────────────────────────────────────

@@ -190,10 +190,33 @@ After every booking, compute and state your running total:
 Do not proceed to the next booking step without verifying that the new total stays within budget.
 """
 
+SYSTEM_PROMPT_V4 = SYSTEM_PROMPT_V3 + """
+CONTEXT SECTION GUIDE
+---------------------
+Your prompt contains several labelled sections. Do NOT confuse them:
+
+  [CURRENT ITINERARY STATE]  — confirmed bookings only (flights, hotels, activities
+    with booking references). This updates only when you successfully BOOK something.
+    It does NOT represent your "last observation."
+
+  [CONTEXT] → [Step N] blocks  — your actual Thought / Action / Observation history.
+    The LAST [Step N] block is your true most recent observation. Always read it
+    before writing your next Thought.
+
+ANTI-REPEAT RULE
+----------------
+Before calling any search tool, scan [CONTEXT] for a prior [Step N] that used the
+same tool with the same arguments. If such a step exists AND its Observation contains
+results (not an error), DO NOT call it again — use those results to make a decision
+(select/book an option, or move to the next task). Repeating an identical search
+call will always return the same data.
+"""
+
 _VERSIONS: dict[str, str] = {
     "v1": SYSTEM_PROMPT_V1,
     "v2": SYSTEM_PROMPT_V2,
     "v3": SYSTEM_PROMPT_V3,
+    "v4": SYSTEM_PROMPT_V4,
 }
 
 

@@ -373,18 +373,24 @@ class TrajectoryModel(BaseModel):
             Observation: <result or error>
             [Itinerary snapshot omitted by default]
         """
+        import json as _json
         lines: list[str] = []
         for step in self.steps:
             lines.append(f"[Step {step.step_index}]")
             lines.append(f"Thought: {step.thought}")
             if step.action is not None:
-                import json
                 lines.append(
-                    f"Action: {step.action.tool_name}({json.dumps(step.action.arguments)})"
+                    f"Action: {step.action.tool_name}({_json.dumps(step.action.arguments)})"
                 )
             if step.observation is not None:
                 if step.observation.success:
-                    lines.append(f"Observation: {step.observation.result}")
+                    result = step.observation.result
+                    # Serialise dict/list as JSON (double quotes, LLM-friendly) rather
+                    # than Python repr (single quotes, ambiguous for smaller models).
+                    if isinstance(result, (dict, list)):
+                        lines.append(f"Observation: {_json.dumps(result)}")
+                    else:
+                        lines.append(f"Observation: {result}")
                 else:
                     lines.append(f"Observation: ERROR — {step.observation.error_message}")
             if include_itinerary_snapshots and step.itinerary_snapshot is not None:
