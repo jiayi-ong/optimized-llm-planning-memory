@@ -1,53 +1,101 @@
 {
   "request_id": "TEMPLATE",
-  "raw_text": "Plan a 7-day trip from Aeloria to Brindor and Caelum for 2 adults with a budget of $5000. We prefer boutique hotels, love art museums, and need vegetarian dining options.",
+  "raw_text": "Plan a 7-day trip from Aeloria to Brindor and Caelum for 1 adult with a budget of $2500. I prefer boutique hotels, love art museums, and need vegetarian dining options.",
   "origin_city": "Aeloria",
   "destination_cities": ["Brindor", "Caelum"],
   "start_date": "2026-06-01",
   "end_date": "2026-06-07",
-  "budget_usd": 5000.0,
+  "budget_usd": 2500.0,
   "traveler_profile": {
-    "num_adults": 2,
+    "num_adults": 1,
     "num_children": 0,
     "accessibility_needs": [],
     "dietary_restrictions": ["vegetarian"]
   },
   "hard_constraints": [
     {
-      "constraint_id": "hc_budget",
+      "constraint_id": "hc-budget-9d6a6e",
       "constraint_type": "hard",
       "category": "budget",
-      "description": "Total trip cost must not exceed $5000",
-      "value": 5000.0,
+      "description": "Total trip cost must not exceed $2500 USD.",
+      "value": 2500.0,
       "unit": "USD"
     },
     {
-      "constraint_id": "hc_dates",
+      "constraint_id": "hc-dates-c291b2",
       "constraint_type": "hard",
       "category": "date",
       "description": "Trip must start on 2026-06-01 and end on 2026-06-07",
       "value": "2026-06-01 to 2026-06-07",
+      "unit": "date_range"
+    },
+    {
+      "constraint_id": "hc-duration-08b187",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 7 days long.",
+      "value": 7,
+      "unit": "days"
+    },
+    {
+      "constraint_id": "hc-group-b2698e",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 1,
+      "unit": "people"
+    },
+    {
+      "constraint_id": "hc-activity-07090a",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one hiking activity.",
+      "value": "hiking",
       "unit": null
     }
   ],
   "soft_constraints": [
     {
-      "constraint_id": "sc_hotel",
+      "constraint_id": "sc-accommodation-7838bf",
       "constraint_type": "soft",
       "category": "accommodation",
-      "description": "Prefer boutique hotels over large chains",
-      "value": "boutique",
-      "unit": null
+      "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+      "value": 1,
+      "unit": "min_stars"
     },
     {
-      "constraint_id": "sc_food",
+      "constraint_id": "sc-activity-569992",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one outdoor or adventure activity per day.",
+      "value": "outdoor",
+      "unit": "preference"
+    },
+    {
+      "constraint_id": "sc-preference-9bc8f7",
       "constraint_type": "soft",
       "category": "preference",
-      "description": "Vegetarian dining options at all meal stops",
-      "value": "vegetarian",
-      "unit": null
+      "description": "Favour local community experiences over tourist-trap attractions.",
+      "value": "local_authentic",
+      "unit": "preference"
     }
   ],
-  "preferences": ["art museums", "walking tours", "local cuisine"],
-  "metadata": {"template_version": "1.0"}
+  "preferences": [
+    "hiking",
+    "local cuisine",
+    "cultural sites",
+    "photography",
+    "street art"
+  ],
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "solo_adventurer",
+    "tone_variant": 1,
+    "origin_name": "Aeloria",
+    "dest_names": [
+      "Brindor",
+      "Caelum"
+    ]
+  }
 }

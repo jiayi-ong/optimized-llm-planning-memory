@@ -152,11 +152,18 @@ def run_scripted_episode(request, simulator, registry=None, compressor=None):
                "Searching for 3-star+ hotels within my budget.")
     booked_hotel = None
     if r2.success and isinstance(r2.result, list):
-        # Pick cheapest hotel that fits in budget (hotel cost ≤ 50% of total budget)
-        # Pick cheapest qualifying hotel regardless of price;
-        # budget_adherence metric in the evaluator handles overspend.
-        candidates = [h for h in r2.result
-                      if isinstance(h, dict) and h.get("star_rating", 0) >= 3]
+        # Reserve 30% of budget for activities, dining, and events; hotel must fit in 70%.
+        hotel_budget = request.budget_usd * 0.70
+        candidates = [
+            h for h in r2.result
+            if isinstance(h, dict)
+            and h.get("star_rating", 0) >= 3
+            and h.get("total_cost", 9999) <= hotel_budget
+        ]
+        if not candidates:
+            # Fallback: cheapest 3-star regardless — evaluator will flag the overspend.
+            candidates = [h for h in r2.result
+                          if isinstance(h, dict) and h.get("star_rating", 0) >= 3]
         candidates.sort(key=lambda h: h.get("total_cost", 9999))
         if candidates:
             booked_hotel = candidates[0]
@@ -226,18 +233,22 @@ def run_scripted_episode(request, simulator, registry=None, compressor=None):
             meal_cost = float(
                 rest.get("avg_meal_cost_per_person") or rest.get("avg_cost_per_person") or 20.0
             )
+            # Get the day first so we can check existing activity end times.
+            # Restaurants start no earlier than 12:00 but shift later if an
+            # attraction on the same day runs past noon.
+            day = _get_or_create_day(final_itinerary, target_date, city_name)
+            rest_start = _earliest_free_slot(day.activities, min_hour=12.0)
             restaurant_activity = ActivityBooking(
                 activity_id=rest.get("restaurant_id", str(uuid.uuid4())),
                 activity_name=rest.get("name", "Restaurant"),
                 location=rest.get("district_name", city_name),
                 city=city_name,
-                start_datetime=f"{target_date}T12:00:00",
+                start_datetime=f"{target_date}T{rest_start}",
                 duration_hours=1.5,
                 cost_usd=meal_cost * 2,  # 2 adults
                 category="restaurant",
                 booking_ref=None,
             )
-            day = _get_or_create_day(final_itinerary, target_date, city_name)
             day.activities.append(restaurant_activity)
 
     # ── Step 6: event search ───────────────────────────────────────────────────
@@ -301,6 +312,7 @@ def run_scripted_episode(request, simulator, registry=None, compressor=None):
         episode_id=episode_id,
         request_id=request.request_id,
         agent_mode="scripted_baseline",
+        world_seed=simulator.get_world_seed() if simulator is not None else None,
         trajectory=trajectory.to_model(),
         compressed_states=(),
         final_itinerary=final_itinerary,
@@ -319,6 +331,34 @@ def run_scripted_episode(request, simulator, registry=None, compressor=None):
         config_hash="scripted",
         created_at=datetime.now(tz=timezone.utc).isoformat(),
     )
+
+
+def _earliest_free_slot(activities, min_hour: float = 12.0) -> str:
+    """
+    Return the start time (HH:MM:SS) for the next activity on a day.
+
+    Scans existing timed activities, finds the latest end time, then returns
+    max(that end, min_hour) rounded up to the next 15-minute boundary.
+    Capped at 21:00 to keep activities in a reasonable evening window.
+    """
+    latest_end_minutes = int(min_hour * 60)
+    for act in activities:
+        start = getattr(act, "start_datetime", None)
+        dur = getattr(act, "duration_hours", None)
+        if start and dur:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(start)
+                end_minutes = dt.hour * 60 + dt.minute + int(float(dur) * 60)
+                latest_end_minutes = max(latest_end_minutes, end_minutes)
+            except (ValueError, TypeError):
+                pass
+    remainder = latest_end_minutes % 15
+    if remainder:
+        latest_end_minutes += 15 - remainder
+    latest_end_minutes = min(latest_end_minutes, 21 * 60)
+    h, m = divmod(latest_end_minutes, 60)
+    return f"{h:02d}:{m:02d}:00"
 
 
 def _get_or_create_day(itinerary, date: str, city: str):

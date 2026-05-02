@@ -20,6 +20,9 @@ outputs/
 multirun/
 .hydra/
 
+# Generated simulator worlds (deterministic from seed — never commit)
+worlds/
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb~
