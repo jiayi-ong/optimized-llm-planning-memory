@@ -105,11 +105,14 @@ class GenerationConfig(BaseModel):
 class CompressorConfig(BaseModel):
     type: str = Field(
         default="transformer",
-        description="'llm' | 'transformer' | 'hybrid'",
+        description=(
+            "'llm' | 'transformer' | 'hybrid' | 'llm_mcts' | "
+            "'structured_selective' | 'mcts_gat'"
+        ),
     )
     model_name_or_path: str = Field(
         default="google/flan-t5-small",
-        description="HuggingFace model ID or local path. Only used when type='transformer'.",
+        description="HuggingFace model ID or local path. Used by transformer-based types.",
     )
     llm_model_id: str = Field(
         default="openai/gpt-4o-mini",
@@ -122,6 +125,16 @@ class CompressorConfig(BaseModel):
     lora: LoRAConfig = Field(default_factory=LoRAConfig)
     freeze_base_layers: bool = False
     generation: GenerationConfig = Field(default_factory=GenerationConfig)
+    # structured_selective specific
+    max_step_tokens: int = Field(
+        default=128, ge=16,
+        description="Max tokens per individual step. Only used by structured_selective.",
+    )
+    # mcts_gat specific
+    top_k_paths: int = Field(
+        default=3, ge=1,
+        description="Gumbel top-K path count for TGAD. Only used by mcts_gat.",
+    )
 
 
 # ── Training ──────────────────────────────────────────────────────────────────

@@ -26,11 +26,26 @@ Why two levels instead of one?
 
 Contents
 --------
-base.py                    — CompressorBase ABC
-trainable_base.py          — TrainableCompressorBase ABC
-llm_compressor.py          — LLMCompressor (litellm + instructor; not trainable)
-transformer_compressor.py  — TransformerCompressor (HF model; T5/BART/decoder)
-hybrid_compressor.py       — HybridCompressor (slot extraction + free-form)
-template.py                — CompressedStateTemplate (section definitions + renderer)
-lora_utils.py              — inject_lora(), freeze_base_layers() helpers
+base.py                            — CompressorBase ABC
+trainable_base.py                  — TrainableCompressorBase ABC
+mcts_aware.py                      — MCTSAwareCompressor ABC (tree-aware opt-in)
+llm_compressor.py                  — LLMCompressor (litellm + instructor; not trainable)
+transformer_compressor.py          — TransformerCompressor (HF model; T5/BART/decoder)
+hybrid_compressor.py               — HybridCompressor (slot extraction + free-form)
+llm_mcts_compressor.py             — LLMMCTSCompressor (non-trainable MCTS baseline)
+structured_selective_distiller.py  — StructuredSelectiveDistiller (Design 1: standalone)
+mcts_gat_distiller.py              — MCTSGraphAttentionDistiller (Design 2: MCTS-aware)
+tree_gat.py                        — PathSetEncoder (shared GAT for Design 2)
+template.py                        — CompressedStateTemplate (section definitions + renderer)
+lora_utils.py                      — inject_lora(), freeze_base_layers() helpers
+
+Config types (configs/compressor/*.yaml)
+-----------------------------------------
+transformer          — plain T5 seq2seq baseline
+llm                  — frozen LLM via litellm (not trainable)
+hybrid               — slot extraction + narrative generation
+llm_mcts             — LLM-based MCTS tree distillation (not trainable)
+structured_selective — Design 1: section-aware cross-attention routing
+mcts_gat             — Design 2: path-set attention over MCTS tree
+identity             — pass-through (for ablation)
 """

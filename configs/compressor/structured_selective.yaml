@@ -1,0 +1,25 @@
+# configs/compressor/structured_selective.yaml
+# @package compressor
+#
+# Design 1: StructuredSelectiveDistiller
+# Section-aware cross-attention routing for standalone (no-MCTS) episodes.
+# Recommended for AgentMode.COMPRESSOR.
+#
+# Colab T4 memory budget: ~600 MB (well within 16 GB limit).
+type: structured_selective
+model_name_or_path: google/flan-t5-small
+max_input_tokens: 2048   # Used only if TransformerCompressor is swapped in
+max_output_tokens: 512
+device: auto
+use_lora: true
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: [q, v]
+freeze_base_layers: false  # LoRA injection freezes base layers automatically
+generation:
+  num_beams: 4
+  early_stopping: true
+  no_repeat_ngram_size: 3
+  max_new_tokens: 512
