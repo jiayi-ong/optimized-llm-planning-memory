@@ -557,6 +557,10 @@ class EpisodeLog(BaseModel):
         default=None,
         description="MCTS search statistics per episode. None for non-MCTS episodes.",
     )
+    world_seed: int | None = Field(
+        default=None,
+        description="Simulator seed used to generate this episode's world. None for episodes predating this field.",
+    )
     success: bool
     error: str | None = None
     termination_reason: str | None = Field(

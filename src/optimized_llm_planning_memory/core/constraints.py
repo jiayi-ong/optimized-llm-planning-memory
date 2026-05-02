@@ -192,6 +192,9 @@ class ConstraintSatisfactionEngine:
         satisfied = actual_days == required_days
         score = 1.0 - abs(actual_days - required_days) / max(required_days, 1)
         score = max(0.0, score)
+        # Hard constraints must be binary — partial credit only meaningful for soft
+        if not satisfied and constraint.constraint_type == ConstraintType.HARD:
+            score = 0.0
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
             satisfied=satisfied,

@@ -21,3 +21,8 @@ project:
   seed: 42
   output_dir: outputs
   run_name: "run_${now:%Y%m%d_%H%M%S}"
+
+data:
+  n_train: 5
+  n_val: 5
+  n_test: 5

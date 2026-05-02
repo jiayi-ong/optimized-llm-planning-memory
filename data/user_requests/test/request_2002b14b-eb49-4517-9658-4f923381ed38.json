@@ -1,0 +1,118 @@
+{
+  "request_id": "2002b14b-eb49-4517-9658-4f923381ed38",
+  "raw_text": "Quick 2-day trip from City 8 to City 5, very tight $900 total. We want street food and free attractions. As cheap as possible.",
+  "origin_city": "city_008",
+  "destination_cities": [
+    "city_005"
+  ],
+  "start_date": "2026-01-29",
+  "end_date": "2026-01-31",
+  "budget_usd": 900.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-1a1a73",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $900 USD.",
+      "value": 900.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-7d9648",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-01-29 and end by 2026-01-31.",
+      "value": "2026-01-29 to 2026-01-31",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-496a96",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 2 days long.",
+      "value": 2,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-7cec37",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-transport-27e02d",
+      "constraint_type": "hard",
+      "category": "transport",
+      "description": "Trip must use bus or public transit for at least one journey leg.",
+      "value": "bus",
+      "unit": "mode",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-f4ca7e",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Budget accommodation only — hostels or 1-2 star hotels.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-1d3dd7",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Prioritise free or low-cost attractions (under $20 per person per activity).",
+      "value": "free_or_cheap",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-659c3e",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Maximise the number of distinct locations visited within the time and budget.",
+      "value": "coverage",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "street food",
+    "free attractions",
+    "walking tours",
+    "local markets",
+    "public transit"
+  ],
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "short_budget_stay",
+    "tone_variant": 0,
+    "origin_name": "City 8",
+    "dest_names": [
+      "City 5"
+    ]
+  }
+}

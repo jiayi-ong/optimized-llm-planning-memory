@@ -228,6 +228,16 @@ class EvalConfig(BaseModel):
         default="openai/gpt-4o",
         description="Fixed across all evaluation runs for fair comparison.",
     )
+    world_seeds: list[int] = Field(
+        default_factory=lambda: [
+            42, 100, 200, 300, 400
+        ],
+        description=(
+            "Canonical 20-seed set for multi-seed evaluation. "
+            "Must be identical across every baseline type (scripted, raw, "
+            "llm_summary, compressor) so that cross-run comparisons are valid."
+        ),
+    )
     rubric_path: str = Field(default="data/rubrics/itinerary_rubric_v1.md")
     rubric_dimensions: list[str] = Field(
         default_factory=lambda: [

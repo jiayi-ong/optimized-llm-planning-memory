@@ -1,11 +1,13 @@
 {
-  "request_id": "TEMPLATE",
-  "raw_text": "Plan a 7-day trip from Aeloria to Brindor and Caelum for 1 adult with a budget of $2500. I prefer boutique hotels, love art museums, and need vegetarian dining options.",
-  "origin_city": "Aeloria",
-  "destination_cities": ["Brindor", "Caelum"],
-  "start_date": "2026-06-01",
-  "end_date": "2026-06-07",
-  "budget_usd": 2500.0,
+  "request_id": "aabfda62-ed34-489d-a79a-dec347212c28",
+  "raw_text": "Solo trip from City 7 to City 3 — 9 days, $1200. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+  "origin_city": "city_007",
+  "destination_cities": [
+    "city_003"
+  ],
+  "start_date": "2027-07-30",
+  "end_date": "2027-08-08",
+  "budget_usd": 1200.0,
   "traveler_profile": {
     "num_adults": 1,
     "num_children": 0,
@@ -14,70 +16,86 @@
   },
   "hard_constraints": [
     {
-      "constraint_id": "hc-budget-9d6a6e",
+      "constraint_id": "hc-budget-a85746",
       "constraint_type": "hard",
       "category": "budget",
-      "description": "Total trip cost must not exceed $2500 USD.",
-      "value": 2500.0,
-      "unit": "USD"
+      "description": "Total trip cost must not exceed $1200 USD.",
+      "value": 1200.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-dates-c291b2",
+      "constraint_id": "hc-dates-b1f1c6",
       "constraint_type": "hard",
       "category": "date",
-      "description": "Trip must start on 2026-06-01 and end on 2026-06-07",
-      "value": "2026-06-01 to 2026-06-07",
-      "unit": "date_range"
+      "description": "Trip must start on 2027-07-30 and end by 2027-08-08.",
+      "value": "2027-07-30 to 2027-08-08",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-duration-08b187",
+      "constraint_id": "hc-duration-3b1a06",
       "constraint_type": "hard",
       "category": "duration",
-      "description": "Trip must be exactly 7 days long.",
-      "value": 7,
-      "unit": "days"
+      "description": "Trip must be exactly 9 days long.",
+      "value": 9,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-group-b2698e",
+      "constraint_id": "hc-group-b43434",
       "constraint_type": "hard",
       "category": "group",
       "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
       "value": 1,
-      "unit": "people"
+      "unit": "people",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-activity-07090a",
+      "constraint_id": "hc-activity-021292",
       "constraint_type": "hard",
       "category": "activity",
       "description": "Itinerary must include at least one hiking activity.",
       "value": "hiking",
-      "unit": null
+      "unit": null,
+      "satisfied": null,
+      "score": null
     }
   ],
   "soft_constraints": [
     {
-      "constraint_id": "sc-accommodation-7838bf",
+      "constraint_id": "sc-accommodation-cba76b",
       "constraint_type": "soft",
       "category": "accommodation",
       "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
       "value": 1,
-      "unit": "min_stars"
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "sc-activity-569992",
+      "constraint_id": "sc-activity-e214ef",
       "constraint_type": "soft",
       "category": "activity",
       "description": "Include at least one outdoor or adventure activity per day.",
       "value": "outdoor",
-      "unit": "preference"
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "sc-preference-9bc8f7",
+      "constraint_id": "sc-preference-8d7aa8",
       "constraint_type": "soft",
       "category": "preference",
       "description": "Favour local community experiences over tourist-trap attractions.",
       "value": "local_authentic",
-      "unit": "preference"
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
     }
   ],
   "preferences": [
@@ -91,11 +109,10 @@
     "generated_by": "generate_user_requests.py",
     "template_version": "3.0",
     "archetype": "solo_adventurer",
-    "tone_variant": 1,
-    "origin_name": "Aeloria",
+    "tone_variant": 0,
+    "origin_name": "City 7",
     "dest_names": [
-      "Brindor",
-      "Caelum"
+      "City 3"
     ]
   }
 }
