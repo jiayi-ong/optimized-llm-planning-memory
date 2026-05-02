@@ -21,6 +21,9 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from optimized_llm_planning_memory.tools.base import BaseTool
+from optimized_llm_planning_memory.tools.events import EventBus
+from optimized_llm_planning_memory.tools.tracker import ToolCallTracker
+from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
 
 
 # ── Input schemas ─────────────────────────────────────────────────────────────
@@ -89,6 +92,17 @@ class SearchFlights(BaseTool):
     )
     input_schema = SearchFlightsInput
 
+    def __init__(
+        self,
+        simulator: SimulatorProtocol,
+        tracker: ToolCallTracker,
+        event_bus: EventBus,
+        flight_cache: dict[str, dict] | None = None,
+    ) -> None:
+        super().__init__(simulator, tracker, event_bus)
+        # Shared with SelectFlight so it can look up full flight details by edge_id
+        self._flight_cache: dict[str, dict] = flight_cache if flight_cache is not None else {}
+
     def _execute(self, validated_input: SearchFlightsInput) -> Any:
         results = self._simulator.search_flights(
             origin_city_id=validated_input.origin_city_id,
@@ -97,6 +111,11 @@ class SearchFlights(BaseTool):
             passengers=validated_input.passengers,
         )
         results.sort(key=lambda r: r.get("total_price", float("inf")))
+        # Cache every result so SelectFlight can look up full details by edge_id
+        for r in results:
+            eid = r.get("edge_id")
+            if eid:
+                self._flight_cache[eid] = r
         return results[: validated_input.max_results]
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
@@ -122,24 +141,48 @@ class SelectFlight(BaseTool):
     tool_name = "select_flight"
     tool_description = (
         "Confirm a flight selection using an edge_id from a prior search_flights call. "
+        "Pass only edge_id — all other fields are auto-filled from the search result. "
         "Returns a booking confirmation for itinerary tracking. "
         "NOTE: Flights in this world are scheduled routes — call select_flight to "
         "record your choice; no seats are decremented."
     )
     input_schema = SelectFlightInput
 
+    def __init__(
+        self,
+        simulator: SimulatorProtocol,
+        tracker: ToolCallTracker,
+        event_bus: EventBus,
+        flight_cache: dict[str, dict] | None = None,
+    ) -> None:
+        super().__init__(simulator, tracker, event_bus)
+        # Same shared cache populated by SearchFlights
+        self._flight_cache: dict[str, dict] = flight_cache if flight_cache is not None else {}
+
     def _execute(self, validated_input: SelectFlightInput) -> Any:
-        # Pseudo-booking: validate format and return synthetic confirmation
         if not validated_input.edge_id:
             raise ValueError("edge_id must not be empty.")
+
+        # Look up the cached search result to fill any fields the LLM omitted.
+        # The simulator returns origin_city_id / destination_city_id (which are
+        # human-readable names in this world, e.g. "aeloria"), so they double as
+        # display names for the itinerary.
+        cached = self._flight_cache.get(validated_input.edge_id, {})
+
+        origin = validated_input.origin_city_name or cached.get("origin_city_id", "")
+        destination = validated_input.destination_city_name or cached.get("destination_city_id", "")
+        departure_dt = validated_input.departure_datetime or cached.get("departure_datetime", "")
+        arrival_dt = validated_input.arrival_datetime or cached.get("arrival_datetime", "")
+        price = validated_input.total_price or cached.get("total_price", 0.0)
+
         return {
             "booking_id": f"FLT-{str(uuid.uuid4())[:8].upper()}",
             "edge_id": validated_input.edge_id,
-            "origin_city_name": validated_input.origin_city_name,
-            "destination_city_name": validated_input.destination_city_name,
-            "departure_datetime": validated_input.departure_datetime,
-            "arrival_datetime": validated_input.arrival_datetime,
-            "total_price": validated_input.total_price,
+            "origin_city_name": origin,
+            "destination_city_name": destination,
+            "departure_datetime": departure_dt,
+            "arrival_datetime": arrival_dt,
+            "total_price": price,
             "status": "selected",
             "confirmation_datetime": datetime.now(tz=timezone.utc).isoformat(),
         }

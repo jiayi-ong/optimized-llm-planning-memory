@@ -28,6 +28,7 @@ Attractions:  search_attractions, get_attraction_detail
 Restaurants:  search_restaurants
 Events:       search_events, book_event
 Routing:      plan_route
+Itinerary:    cancel_booking
 """
 
 from __future__ import annotations
@@ -141,6 +142,7 @@ class ToolRegistry:
             SearchHotels,
         )
         from optimized_llm_planning_memory.tools.info_tools import GetAvailableRoutes
+        from optimized_llm_planning_memory.tools.itinerary_tools import CancelBooking
         from optimized_llm_planning_memory.tools.restaurant_tools import SearchRestaurants
         from optimized_llm_planning_memory.tools.routing_tools import PlanRoute
 
@@ -164,11 +166,25 @@ class ToolRegistry:
             BookEvent,
             # Routing
             PlanRoute,
+            # Itinerary manipulation
+            CancelBooking,
         ]
+
+        # Shared cache so SearchFlights can store results and SelectFlight can
+        # look them up by edge_id — prevents empty fields when the LLM omits them.
+        flight_cache: dict = {}
 
         registry = cls()
         for tool_cls in all_tool_classes:
-            instance = tool_cls(simulator=simulator, tracker=tracker, event_bus=event_bus)
+            if tool_cls in (SearchFlights, SelectFlight):
+                instance = tool_cls(
+                    simulator=simulator,
+                    tracker=tracker,
+                    event_bus=event_bus,
+                    flight_cache=flight_cache,
+                )
+            else:
+                instance = tool_cls(simulator=simulator, tracker=tracker, event_bus=event_bus)
             if enabled_tools is None or instance.tool_name in enabled_tools:
                 registry.register(instance)
 
