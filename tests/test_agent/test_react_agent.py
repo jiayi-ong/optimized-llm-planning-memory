@@ -112,33 +112,39 @@ class TestParseResponse:
             'Action: search_flights({"origin": "NYC", "destination": "Paris", '
             '"date": "2025-06-01", "num_passengers": 1})'
         )
-        thought, tool_call = agent._parse_response(text)
+        thought, tool_call, is_done, exit_reason = agent._parse_response(text)
         assert "Paris" in thought
         assert tool_call is not None
         assert tool_call.tool_name == "search_flights"
         assert tool_call.arguments["destination"] == "Paris"
+        assert not is_done
+        assert exit_reason is None
 
     def test_done_signal_returns_none_action(self, agent):
         text = "Thought: Planning is complete.\nAction: DONE"
-        thought, tool_call = agent._parse_response(text)
+        thought, tool_call, is_done, exit_reason = agent._parse_response(text)
         assert "complete" in thought.lower()
         assert tool_call is None
+        assert is_done
+        assert exit_reason is None
 
     def test_done_case_insensitive(self, agent):
         text = "Thought: Done.\nAction: done"
-        _, tool_call = agent._parse_response(text)
+        _, tool_call, is_done, _ = agent._parse_response(text)
         assert tool_call is None
+        assert is_done
 
     def test_no_action_returns_none(self, agent):
         text = "Thought: Just thinking, no action needed."
-        thought, tool_call = agent._parse_response(text)
+        thought, tool_call, is_done, exit_reason = agent._parse_response(text)
         assert thought != ""
         assert tool_call is None
+        assert not is_done
 
     def test_malformed_json_stored_in_raw(self, agent):
         """Bad JSON in arguments should not raise — stored as _raw key."""
         text = "Thought: Testing.\nAction: search_hotels(city: Paris, date: today)"
-        _, tool_call = agent._parse_response(text)
+        _, tool_call, _, _ = agent._parse_response(text)
         assert tool_call is not None
         assert "_raw" in tool_call.arguments
 
@@ -148,14 +154,17 @@ class TestParseResponse:
             "Then I should search for flights.\n"
             "Action: DONE"
         )
-        thought, tool_call = agent._parse_response(text)
+        thought, tool_call, is_done, _ = agent._parse_response(text)
         assert "budget" in thought
         assert tool_call is None
+        assert is_done
 
     def test_empty_response_returns_empty_thought(self, agent):
-        thought, tool_call = agent._parse_response("")
+        thought, tool_call, is_done, exit_reason = agent._parse_response("")
         assert thought == ""
         assert tool_call is None
+        assert not is_done
+        assert exit_reason is None
 
     def test_action_args_parsed_correctly(self, agent):
         text = (
@@ -163,7 +172,7 @@ class TestParseResponse:
             'Action: book_flight({"flight_id": "FL001", "passenger_details": '
             '{"num_passengers": 2}})'
         )
-        _, tool_call = agent._parse_response(text)
+        _, tool_call, _, _ = agent._parse_response(text)
         assert tool_call.tool_name == "book_flight"
         assert tool_call.arguments["flight_id"] == "FL001"
         assert tool_call.arguments["passenger_details"]["num_passengers"] == 2

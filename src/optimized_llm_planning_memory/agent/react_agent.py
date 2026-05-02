@@ -312,7 +312,6 @@ class ReActAgent:
                     if compressed is not None:
                         current_compressed = compressed
                         compressed_states.append(compressed)
-                        trajectory.mark_compression()
                         log.info(
                             "react.compress.complete",
                             episode_id=episode_id,
@@ -322,6 +321,16 @@ class ReActAgent:
                         )
                         if live_writer is not None:
                             live_writer.write_compression(compressed)
+                    else:
+                        log.warning(
+                            "react.compress.failed_advancing_window",
+                            episode_id=episode_id,
+                            step=step_index,
+                        )
+                    # Always advance the compression marker — even on failure — so the
+                    # next trigger fires after another compress_every_n_steps steps rather
+                    # than on every subsequent step (cascade bug fix).
+                    trajectory.mark_compression()
             else:
                 # Loop exhausted without terminal signal → max_steps reached
                 success = False

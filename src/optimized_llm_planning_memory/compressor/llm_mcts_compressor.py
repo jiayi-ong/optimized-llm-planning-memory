@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import litellm
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
 from optimized_llm_planning_memory.compressor.mcts_aware import MCTSAwareCompressor
@@ -64,6 +64,16 @@ class _MCTSCompressorLLMResponse(BaseModel):
     # MCTS-specific
     top_candidates: list[str]
     tradeoffs: str
+
+    @field_validator("decisions_made", "open_questions", "key_discoveries", "top_candidates", mode="before")
+    @classmethod
+    def _coerce_to_str_list(cls, v: object) -> list[str]:
+        if not isinstance(v, list):
+            return [str(v)] if v else []
+        return [
+            json.dumps(item) if isinstance(item, (dict, list)) else str(item)
+            for item in v
+        ]
 
 
 # ── LLMMCTSCompressor ─────────────────────────────────────────────────────────
