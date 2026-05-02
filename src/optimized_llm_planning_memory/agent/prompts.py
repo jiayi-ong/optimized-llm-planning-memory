@@ -140,6 +140,17 @@ CONSTRAINT TRACKING
 -------------------
 At each step, mentally track which hard constraints are satisfied and which
 are not yet addressed. Prioritise unsatisfied hard constraints.
+
+ITINERARY STATE
+---------------
+Your current confirmed bookings are always shown in [CURRENT ITINERARY STATE]
+at the top of this prompt. Each item shows its booking_ref (e.g. FLT-XXXX,
+HTL-XXXX). Use this as your source of truth — never re-book something already
+listed here.
+
+To remove an incorrect booking before re-booking, call:
+  Action: cancel_booking({"booking_ref": "<ref-from-itinerary-state>"})
+Only cancel when you need to fix a mistake (wrong city, wrong dates, over budget).
 """
 
 SYSTEM_PROMPT_V3 = SYSTEM_PROMPT_V2 + """
