@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from optimized_llm_planning_memory.utils.logging import configure_logging, get_logger
 from optimized_llm_planning_memory.utils.seed import set_seed
@@ -42,7 +42,12 @@ from optimized_llm_planning_memory.utils.seed import set_seed
 
 @hydra.main(config_path="../configs", config_name="config", version_base="1.3")
 def main(cfg: DictConfig) -> None:
-    configure_logging(level=cfg.logging.level)
+    import datetime as _dt
+    _ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    _log_file = OmegaConf.select(cfg, "logging.log_file") or str(
+        Path(cfg.project.output_dir) / "logs" / f"run_evaluation_{_ts}.log"
+    )
+    configure_logging(level=cfg.logging.level, log_file=_log_file)
     log = get_logger(__name__)
     set_seed(cfg.project.seed)
 
@@ -72,23 +77,88 @@ def main(cfg: DictConfig) -> None:
     from optimized_llm_planning_memory.agent.react_agent import ReActAgent
     from optimized_llm_planning_memory.agent.modes import AgentMode
     from optimized_llm_planning_memory.agent.context_builder import ContextBuilder
-    from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
+    from optimized_llm_planning_memory.agent.prompts import get_system_prompt
     from optimized_llm_planning_memory.core.config import AgentConfig
     from optimized_llm_planning_memory.utils.episode_io import save_episode
 
-    compressor = LLMCompressor(model_id=cfg.compressor.model_name_or_path)
+    compressor_type = cfg.compressor.type
+    if compressor_type == "identity":
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        compressor = IdentityCompressor()
+    elif compressor_type == "llm":
+        from optimized_llm_planning_memory.compressor.llm_compressor import LLMCompressor
+        compressor = LLMCompressor(
+            model_id=OmegaConf.select(cfg, "compressor.llm_model_id",
+                                       default=OmegaConf.select(cfg, "compressor.model_name_or_path",
+                                                                  default="openai/gpt-4o-mini"))
+        )
+    elif compressor_type == "llm_mcts":
+        from optimized_llm_planning_memory.compressor.llm_mcts_compressor import LLMMCTSCompressor
+        compressor = LLMMCTSCompressor(
+            llm_model_id=OmegaConf.select(cfg, "compressor.llm_model_id", default="openai/gpt-4o-mini"),
+            max_output_tokens=OmegaConf.select(cfg, "compressor.max_output_tokens", default=1024),
+        )
+    elif compressor_type == "transformer":
+        from optimized_llm_planning_memory.compressor.transformer_compressor import TransformerCompressor
+        compressor = TransformerCompressor(
+            model_name_or_path=cfg.compressor.model_name_or_path,
+            device=OmegaConf.select(cfg, "compressor.device", default="auto"),
+        )
+    elif compressor_type == "dummy":
+        from optimized_llm_planning_memory.compressor.dummy_compressor import DummyCompressor
+        compressor = DummyCompressor()
+    else:
+        from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
+        compressor = IdentityCompressor()
+
+    # Warn on inconsistent compressor/agent-mode combinations.
+    if compressor_type == "llm_mcts" and cfg.agent.mode != "mcts_compressor":
+        log.warning(
+            "config.mismatch",
+            detail=(
+                f"compressor=llm_mcts requires agent mode 'mcts_compressor', "
+                f"but agent.mode='{cfg.agent.mode}'. "
+                f"Use: agent=react_mcts compressor=llm_mcts"
+            ),
+        )
+
+    # Build MCTSController when running in mcts_compressor mode.
+    mcts_controller = None
+    mcts_cfg_node = OmegaConf.select(cfg, "agent.mcts")
+    if cfg.agent.mode == "mcts_compressor" and mcts_cfg_node is not None:
+        from optimized_llm_planning_memory.mcts.config import MCTSConfig
+        from optimized_llm_planning_memory.mcts.controller import MCTSController
+        from optimized_llm_planning_memory.mcts.node_evaluator import NodeEvaluator
+        mcts_cfg = MCTSConfig(**OmegaConf.to_container(mcts_cfg_node, resolve=True))
+        evaluator = NodeEvaluator(model_id=mcts_cfg.evaluator_model_id, config=mcts_cfg)
+        mcts_controller = MCTSController(
+            evaluator=evaluator,
+            llm_model_id=cfg.agent.llm_model_id,
+            config=mcts_cfg,
+        )
+
     agent_config = AgentConfig(
         mode=cfg.agent.mode,
         llm_model_id=cfg.agent.llm_model_id,
         max_steps=cfg.agent.max_steps,
         compress_every_n_steps=cfg.agent.compress_every_n_steps,
     )
+    system_prompt = get_system_prompt(
+        OmegaConf.select(cfg, "agent.system_prompt_version", default="v1")
+    )
+
+    worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
+    world_params = (
+        OmegaConf.to_container(cfg.simulator.world_params, resolve=True)
+        if OmegaConf.select(cfg, "simulator.world_params") else None
+    )
 
     episodes_dir = Path(cfg.project.output_dir) / "episodes"
     episode_logs = []
 
     for i, user_request in enumerate(user_requests):
-        sim = SimulatorAdapter(seed=cfg.project.seed + i)
+        sim = SimulatorAdapter(seed=cfg.project.seed + i, worlds_dir=worlds_dir,
+                               world_config=world_params)
         tracker = ToolCallTracker()
         event_bus = EventBus()
         registry = ToolRegistry.from_config(simulator=sim, tracker=tracker, event_bus=event_bus)
@@ -96,9 +166,14 @@ def main(cfg: DictConfig) -> None:
             llm_model_id=cfg.agent.llm_model_id,
             tool_registry=registry,
             compressor=compressor,
-            context_builder=ContextBuilder(),
+            context_builder=ContextBuilder(
+                system_prompt=system_prompt,
+                tool_registry=registry,
+                llm_model_id=cfg.agent.llm_model_id,
+            ),
             config=agent_config,
             mode=AgentMode(cfg.agent.mode),
+            mcts_controller=mcts_controller,
         )
         episode_log = agent.run_episode(request=user_request, simulator=sim)
         episode_logs.append(episode_log)
@@ -111,7 +186,6 @@ def main(cfg: DictConfig) -> None:
     from optimized_llm_planning_memory.evaluation.deterministic import DeterministicEvaluator
     from optimized_llm_planning_memory.evaluation.llm_judge import LLMJudge
     from optimized_llm_planning_memory.core.config import EvalConfig
-    from omegaconf import OmegaConf
 
     eval_cfg = EvalConfig(**OmegaConf.to_container(cfg.eval, resolve=True))
     det_eval = DeterministicEvaluator()
