@@ -562,6 +562,10 @@ class EpisodeLog(BaseModel):
             "NO_AVAILABILITY, REPEATED_DEAD_END."
         ),
     )
+    user_request: "UserRequest | None" = Field(
+        default=None,
+        description="The UserRequest that prompted this episode. Stored for UI display and offline analysis.",
+    )
     config_hash: str
     created_at: str = Field(description="ISO 8601 datetime.")
 
