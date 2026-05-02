@@ -402,7 +402,14 @@ class StructuredSelectiveDistiller(TrainableCompressorBase):
         import os
         try:
             self._tokenizer = AutoTokenizer.from_pretrained(path)
-            self._model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self._device)
+            # PEFT-format checkpoint (saved after apply_lora): adapter_config.json present.
+            # Must load base model first, then attach the saved LoRA adapters.
+            if os.path.exists(os.path.join(path, "adapter_config.json")):
+                from peft import PeftModel
+                base = AutoModelForSeq2SeqLM.from_pretrained(self._model_name).to(self._device)
+                self._model = PeftModel.from_pretrained(base, path)
+            else:
+                self._model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self._device)
             extras = torch.load(
                 os.path.join(path, "ssd_extra_modules.pt"),
                 map_location=self._device,
@@ -446,19 +453,18 @@ class StructuredSelectiveDistiller(TrainableCompressorBase):
             return torch.zeros(1, hidden_dim, device=self._device)
 
         step_embs: list[torch.Tensor] = []
-        with torch.set_grad_enabled(True):
-            for idx, text in enumerate(step_texts):
-                input_ids = self._tokenizer.encode(
-                    text,
-                    return_tensors="pt",
-                    max_length=self._max_step_tokens,
-                    truncation=True,
-                ).to(self._device)
+        for idx, text in enumerate(step_texts):
+            input_ids = self._tokenizer.encode(
+                text,
+                return_tensors="pt",
+                max_length=self._max_step_tokens,
+                truncation=True,
+            ).to(self._device)
 
-                enc_out = self._model.encoder(input_ids=input_ids)
-                # Mean-pool over token dimension → [H]
-                step_emb = enc_out.last_hidden_state.squeeze(0).mean(dim=0)
-                step_embs.append(step_emb)
+            enc_out = self._model.encoder(input_ids=input_ids)
+            # Mean-pool over token dimension → [H]
+            step_emb = enc_out.last_hidden_state.squeeze(0).mean(dim=0)
+            step_embs.append(step_emb)
 
         embs = torch.stack(step_embs, dim=0)   # [N, H]
 
@@ -475,8 +481,7 @@ class StructuredSelectiveDistiller(TrainableCompressorBase):
             max_length=64,
             truncation=True,
         ).to(self._device)
-        with torch.set_grad_enabled(True):
-            enc_out = self._model.encoder(input_ids=input_ids)
+        enc_out = self._model.encoder(input_ids=input_ids)
         emb = enc_out.last_hidden_state.squeeze(0).mean(dim=0)  # [H]
         return emb.unsqueeze(0)                                  # [1, H]
 

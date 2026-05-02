@@ -206,9 +206,16 @@ class TransformerCompressor(TrainableCompressorBase):
 
     def load_checkpoint(self, path: str) -> None:
         """Load model and tokenizer from ``path``."""
+        import os
         try:
             self._tokenizer = AutoTokenizer.from_pretrained(path)
-            self._model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self._device)
+            # PEFT-format checkpoint (saved after apply_lora): adapter_config.json present.
+            if os.path.exists(os.path.join(path, "adapter_config.json")):
+                from peft import PeftModel
+                base = AutoModelForSeq2SeqLM.from_pretrained(self._model_name).to(self._device)
+                self._model = PeftModel.from_pretrained(base, path)
+            else:
+                self._model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self._device)
         except Exception as exc:
             raise CompressorCheckpointError(
                 f"Failed to load checkpoint from '{path}': {exc}"

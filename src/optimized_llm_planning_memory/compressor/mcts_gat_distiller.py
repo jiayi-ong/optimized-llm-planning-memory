@@ -504,8 +504,15 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
         import os
         try:
             self._tokenizer = AutoTokenizer.from_pretrained(path)
-            self._model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self._device)
-            # Re-freeze encoder after reload
+            # PEFT-format checkpoint (saved after _apply_decoder_lora): adapter_config.json present.
+            # Reload the base model from HuggingFace then attach the saved LoRA adapter weights.
+            if os.path.exists(os.path.join(path, "adapter_config.json")):
+                from peft import PeftModel
+                base = AutoModelForSeq2SeqLM.from_pretrained(self._model_name).to(self._device)
+                self._model = PeftModel.from_pretrained(base, path)
+            else:
+                self._model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self._device)
+            # Re-freeze encoder regardless of checkpoint format
             for param in self._model.encoder.parameters():
                 param.requires_grad_(False)
             extras = torch.load(
