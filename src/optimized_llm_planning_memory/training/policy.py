@@ -39,6 +39,7 @@ from gymnasium import spaces
 from stable_baselines3.common.policies import BasePolicy
 from stable_baselines3.common.type_aliases import Schedule
 
+from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
 from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
 
 
@@ -76,6 +77,7 @@ class CompressorPolicy(BasePolicy):
         )
         self.compressor = compressor
         self._value_hidden_dim = value_hidden_dim
+        self._cs_template = CompressedStateTemplate()
 
         # Value network: embed token IDs → mean-pool → MLP → scalar
         # Token IDs are categorical, not ordinal; a plain Linear over raw IDs
@@ -217,8 +219,12 @@ class CompressorPolicy(BasePolicy):
         Generate compressed state tokens by calling the compressor on the observation.
 
         Wraps obs_text in a minimal single-step TrajectoryModel so it can be passed
-        to ``compressor.compress()``. The resulting CompressedState is tokenized into
-        the action tensor, and ``get_log_probs()`` gives the scalar log-prob for PPO.
+        to ``compressor.compress()``. The resulting CompressedState is rendered to
+        template text (``## SECTION_NAME ##`` format) — matching the exact token
+        sequence the decoder generates — and tokenized into the action tensor.
+        ``get_log_probs()`` receives the same template text as its target, ensuring
+        PPO's ratio r_t(θ) = exp(log_π_new - log_π_old) is computed on the correct
+        action representation.
 
         Returns (action_tensor, scalar_log_prob).
         """
@@ -248,7 +254,11 @@ class CompressorPolicy(BasePolicy):
 
             # Generate the compressed state (inference mode inside compress())
             compressed_state = self.compressor.compress(traj, previous_state=None)
-            compressed_text = compressed_state.model_dump_json()
+            # Render to template text — the exact token sequence the decoder produced.
+            # Using model_dump_json() here would create a mismatch: the decoder generates
+            # ## SECTION_NAME ## format but get_log_probs() would receive JSON, making
+            # PPO's log-prob ratio meaningless.
+            compressed_text = self._cs_template.render(compressed_state)
 
             # Tokenize compressed state text → action token IDs
             tokenizer = getattr(self.compressor, "_tokenizer", None)

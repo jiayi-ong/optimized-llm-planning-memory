@@ -108,7 +108,11 @@ class TrainableCompressorBase(CompressorBase):
         from optimized_llm_planning_memory.compressor.lora_utils import inject_lora
 
         model = self._get_nn_module()
-        inject_lora(model, lora_config)
+        # inject_lora returns the PeftModel wrapper — assign it back so that
+        # save_pretrained/load_checkpoint and get_trainable_parameters() all see
+        # the correct object.  Without this, the PeftModel is discarded and
+        # apply_lora() becomes a no-op (base weights frozen, adapters lost).
+        self._model = inject_lora(model, lora_config)
 
     def freeze_base_layers(self, freeze: bool = True) -> None:
         """

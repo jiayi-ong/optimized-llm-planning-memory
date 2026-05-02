@@ -93,6 +93,35 @@ def main(cfg: DictConfig) -> None:
             compressor.apply_lora(lora_cfg)
         if OmegaConf.select(cfg, "compressor.freeze_base_layers", default=False):
             compressor.freeze_base_layers(freeze=True)
+    elif compressor_type == "structured_selective":
+        from optimized_llm_planning_memory.compressor.structured_selective_distiller import (
+            StructuredSelectiveDistiller,
+        )
+        from optimized_llm_planning_memory.core.config import LoRAConfig
+        lora_cfg = LoRAConfig(**OmegaConf.to_container(cfg.compressor.lora, resolve=True))
+        compressor = StructuredSelectiveDistiller(
+            model_name_or_path=cfg.compressor.model_name_or_path,
+            max_step_tokens=OmegaConf.select(cfg, "compressor.max_step_tokens", default=128),
+            max_output_tokens=cfg.compressor.max_output_tokens,
+            device=cfg.compressor.device or "auto",
+            use_lora=OmegaConf.select(cfg, "compressor.use_lora", default=True),
+            lora_config=lora_cfg,
+        )
+    elif compressor_type == "mcts_gat":
+        from optimized_llm_planning_memory.compressor.mcts_gat_distiller import (
+            MCTSGraphAttentionDistiller,
+        )
+        from optimized_llm_planning_memory.core.config import LoRAConfig
+        lora_cfg = LoRAConfig(**OmegaConf.to_container(cfg.compressor.lora, resolve=True))
+        compressor = MCTSGraphAttentionDistiller(
+            model_name_or_path=cfg.compressor.model_name_or_path,
+            max_path_tokens=OmegaConf.select(cfg, "compressor.max_input_tokens", default=256),
+            max_output_tokens=cfg.compressor.max_output_tokens,
+            device=cfg.compressor.device or "auto",
+            use_lora=OmegaConf.select(cfg, "compressor.use_lora", default=True),
+            lora_config=lora_cfg,
+            top_k_paths=OmegaConf.select(cfg, "compressor.top_k_paths", default=3),
+        )
     else:
         from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
         compressor = IdentityCompressor()
