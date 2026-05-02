@@ -10,7 +10,7 @@
     "num_adults": 1,
     "num_children": 0,
     "accessibility_needs": [],
-    "dietary_restrictions": []
+    "dietary_restrictions": ["vegetarian"]
   },
   "hard_constraints": [
     {
