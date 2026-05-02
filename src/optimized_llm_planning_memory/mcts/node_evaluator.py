@@ -149,7 +149,7 @@ class NodeEvaluator:
         if self._request is None:
             return 0.5
 
-        constraints = [c for c in self._request.constraints]
+        constraints = list(self._request.hard_constraints) + list(self._request.soft_constraints)
         if not constraints:
             return 0.5
 
