@@ -140,3 +140,30 @@ if sel_rows:
                 f"Itinerary: {len(it.days)} days · ${it.total_cost_usd:.2f} · "
                 f"Complete: {it.is_complete}"
             )
+
+        req = sel_ep.user_request
+        if req is not None:
+            with st.expander("User Request", expanded=True):
+                rc1, rc2, rc3 = st.columns(3)
+                rc1.markdown(
+                    f"**Route**  \n{req.origin_city} → {', '.join(req.destination_cities)}"
+                )
+                rc2.markdown(
+                    f"**Dates**  \n{req.start_date} → {req.end_date}"
+                )
+                rc3.markdown(
+                    f"**Budget**  \n${req.budget_usd:,.2f} USD"
+                )
+                st.caption(req.raw_text)
+                if req.hard_constraints:
+                    st.markdown(
+                        "**Hard constraints:** "
+                        + " · ".join(c.description for c in req.hard_constraints)
+                    )
+                if req.soft_constraints:
+                    st.markdown(
+                        "**Soft constraints:** "
+                        + " · ".join(c.description for c in req.soft_constraints)
+                    )
+        else:
+            st.caption(f"Request ID: `{sel_ep.request_id}` (full request not stored in this episode)")

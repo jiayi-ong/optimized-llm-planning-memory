@@ -46,10 +46,22 @@ except FileNotFoundError:
     st.stop()
 
 if not ep.compressed_states:
-    st.warning(
-        f"Episode `{ep.episode_id}` has no compression events (mode: `{ep.agent_mode}`). "
-        "Compression is only active in `compressor` and `mcts_compressor` modes."
-    )
+    _compression_modes = ("compressor", "mcts_compressor")
+    if ep.agent_mode in _compression_modes:
+        st.warning(
+            f"Episode `{ep.episode_id}` ran **{ep.total_steps}** step(s) in "
+            f"`{ep.agent_mode}` mode but produced **no compression events**.  \n"
+            f"Compression fires every 5 steps by default — this episode terminated "
+            f"before reaching that threshold.  \n"
+            f"Termination reason: `{ep.termination_reason or 'unknown'}`"
+        )
+    else:
+        st.info(
+            f"Episode `{ep.episode_id}` used mode `{ep.agent_mode}`. "
+            "Compression is only active in `compressor` and `mcts_compressor` modes.  \n"
+            "Re-run with `agent=react_default` (or `agent=react_mcts compressor=llm_mcts`) "
+            "to see compressed states."
+        )
     st.stop()
 
 # ── Compression selector ──────────────────────────────────────────────────────
