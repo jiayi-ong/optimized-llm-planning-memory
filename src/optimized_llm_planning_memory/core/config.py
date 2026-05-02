@@ -245,6 +245,10 @@ class LoggingConfig(BaseModel):
     wandb_project: str = Field(default="optllm-planning")
     wandb_entity: str | None = None
     log_every_n_steps: int = Field(default=10, ge=1)
+    log_file: str | None = Field(
+        default=None,
+        description="Optional path for a file sink. When null, logs go to stdout only.",
+    )
 
 
 # ── Root ──────────────────────────────────────────────────────────────────────
