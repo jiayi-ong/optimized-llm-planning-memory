@@ -15,6 +15,7 @@ Pages (defined in app/pages/):
     3. Compression Viewer   — side-by-side trajectory vs CompressedState
     4. MCTS Viewer          — MCTS stats, top candidates, tradeoffs
     5. Training Dashboard   — PPO convergence charts from JSONL + TensorBoard
+    6. Itinerary Viewer     — day-by-day itinerary cards (flights, hotels, activities)
 
 Architecture
 ------------
@@ -53,6 +54,7 @@ Use the sidebar to navigate between views.
 | **Compression Viewer** | Compare trajectory text with the resulting CompressedState |
 | **MCTS Viewer** | Explore MCTS search statistics and top candidate plans |
 | **Training Dashboard** | PPO convergence curves, reward trends, episode diagnostics |
+| **Itinerary Viewer** | Day-by-day view of the agent's final itinerary (flights, hotels, activities) |
 """
 )
 

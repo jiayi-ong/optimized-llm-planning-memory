@@ -7,7 +7,12 @@
 #   - compress_with_tree() → sends MCTSTreeRepresentation to an LLM that produces
 #                            structured output including top_candidates and tradeoffs.
 #
-# Pair with agent=react_mcts for full MCTS-augmented evaluation.
+# IMPORTANT: This compressor requires agent=react_mcts (mode: mcts_compressor) to
+# actually run MCTS search. Using it with agent=react_default will fall back to
+# standard LLM compression (no MCTS search, no MCTSStats in the episode).
+#
+# Correct usage:
+#   python scripts/run_episode.py agent=react_mcts compressor=llm_mcts
 #
 # @package compressor
 

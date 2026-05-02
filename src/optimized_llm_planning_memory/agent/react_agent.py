@@ -192,12 +192,13 @@ class ReActAgent:
             for step_index in range(self._config.max_steps):
                 log.info("react.step.start", episode_id=episode_id, step=step_index)
 
-                # Build context for this step
+                # Build context for this step (includes current partial itinerary)
                 context = self._context_builder.build(
                     trajectory=trajectory,
                     compressed_state=current_compressed,
                     mode=self._mode,
                     request=request,
+                    itinerary=final_itinerary,
                 )
 
                 # Call the LLM (with format-reminder retries on parse failure)
@@ -355,6 +356,7 @@ class ReActAgent:
             success=success,
             error=error_msg,
             termination_reason=termination_reason,
+            user_request=request,
             config_hash=self._compute_config_hash(),
             created_at=_now(),
         )
@@ -418,6 +420,7 @@ class ReActAgent:
                 compressed_state=compressed_state,
                 mode=self._mode,
                 request=request,
+                itinerary=final_itinerary,
             )
 
             try:
@@ -543,23 +546,28 @@ class ReActAgent:
             action_text = re.sub(r"^```(?:\w+)?\s*", "", action_text)
             action_text = re.sub(r"\s*```$", "", action_text).strip()
 
-            # Parse tool_name(json_args) format
-            call_match = re.match(r"(\w+)\((.+)\)$", action_text, re.DOTALL)
+            # Parse tool_name(json_args) format.
+            # Use (.*) not (.+) so that no-arg calls like get_available_routes() match.
+            call_match = re.match(r"(\w+)\((.*)\)\s*$", action_text, re.DOTALL)
             if call_match:
                 tool_name = call_match.group(1)
                 args_str = call_match.group(2).strip()
                 # Strip code fences inside the args block too
                 args_str = re.sub(r"^```(?:json)?\s*", "", args_str)
                 args_str = re.sub(r"\s*```$", "", args_str).strip()
-                try:
-                    arguments = json.loads(args_str)
-                except json.JSONDecodeError:
-                    log.warning(
-                        "react.parse.json_error",
-                        action_text=action_text[:120],
-                        args_preview=args_str[:80],
-                    )
-                    arguments = {"_raw": args_str}
+                if not args_str:
+                    # LLM omitted the braces entirely: get_available_routes() → {}
+                    arguments = {}
+                else:
+                    try:
+                        arguments = json.loads(args_str)
+                    except json.JSONDecodeError:
+                        log.warning(
+                            "react.parse.json_error",
+                            action_text=action_text[:120],
+                            args_preview=args_str[:80],
+                        )
+                        arguments = {"_raw": args_str}
 
                 tool_call = ToolCall(
                     tool_name=tool_name,
@@ -734,6 +742,14 @@ class ReActAgent:
                 except Exception:
                     return current_itinerary
 
+        # Unwrap the redundancy-warning envelope BaseTool.call() injects on 3+ repeat calls.
+        # Without this, result.get("booking_id") returns None (keys are nested one level down).
+        if "result" in result and "agent_warning" in result:
+            inner = result["result"]
+            if not isinstance(inner, dict):
+                return current_itinerary
+            result = inner
+
         itinerary = current_itinerary or Itinerary(
             itinerary_id=request_id,
             request_id=request_id,
@@ -810,6 +826,14 @@ class ReActAgent:
             day = self._find_or_create_day(itinerary, dep_date, origin)
             day.transport_segments.append(segment)
 
+        elif tool_name == "cancel_booking":
+            booking_ref = result.get("cancelled_booking_ref")
+            if not booking_ref or current_itinerary is None:
+                return current_itinerary  # nothing to remove from
+            _remove_booking(itinerary, booking_ref)
+            itinerary.recompute_total_cost()
+            return itinerary
+
         else:
             return current_itinerary
 
@@ -833,6 +857,35 @@ class ReActAgent:
         """Compute a short hash of the config for reproducibility tracking."""
         config_str = json.dumps(self._config.model_dump(), sort_keys=True)
         return hashlib.md5(config_str.encode()).hexdigest()[:8]
+
+
+def _remove_booking(itinerary: "Itinerary", booking_ref: str) -> None:
+    """
+    Remove the first item matching ``booking_ref`` from the itinerary in place.
+
+    Checks transport_segments, accommodation, and activities across all days.
+    Days that become empty after removal are retained (they may still be
+    meaningful calendar placeholders).
+    """
+    for day in itinerary.days:
+        # Transport segments
+        before = len(day.transport_segments)
+        day.transport_segments = [
+            s for s in day.transport_segments if s.booking_ref != booking_ref
+        ]
+        if len(day.transport_segments) < before:
+            return
+
+        # Accommodation
+        if day.accommodation is not None and day.accommodation.booking_ref == booking_ref:
+            day.accommodation = None
+            return
+
+        # Activities
+        before = len(day.activities)
+        day.activities = [a for a in day.activities if a.booking_ref != booking_ref]
+        if len(day.activities) < before:
+            return
 
 
 def _now() -> str:

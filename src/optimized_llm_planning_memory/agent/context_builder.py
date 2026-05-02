@@ -24,6 +24,12 @@ All modes produce a string with the structure::
 
     [USER REQUEST]
     <user_request.raw_text>
+    --- Structured trip details (authoritative) ---
+    Route / Dates / Budget / Travelers
+    Hard constraints / Soft constraints / Preferences
+
+    [CURRENT ITINERARY STATE]
+    <confirmed bookings so far, or "No bookings confirmed yet.">
 
     [CONTEXT]
     <mode-specific history>
@@ -39,7 +45,7 @@ import litellm
 from optimized_llm_planning_memory.agent.modes import AgentMode
 from optimized_llm_planning_memory.agent.trajectory import Trajectory
 from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
-from optimized_llm_planning_memory.core.models import CompressedState, UserRequest
+from optimized_llm_planning_memory.core.models import CompressedState, Itinerary, UserRequest
 from optimized_llm_planning_memory.tools.registry import ToolRegistry
 
 
@@ -80,6 +86,7 @@ class ContextBuilder:
         compressed_state: CompressedState | None,
         mode: AgentMode,
         request: UserRequest,
+        itinerary: Itinerary | None = None,
     ) -> str:
         """
         Assemble the full context string for the current ReAct step.
@@ -90,6 +97,9 @@ class ContextBuilder:
         compressed_state : Latest CompressedState (None if no compression yet).
         mode             : Which context-assembly strategy to use.
         request          : The user's travel request.
+        itinerary        : Current partial itinerary (None if no bookings yet).
+                           Injected as [CURRENT ITINERARY STATE] so the agent
+                           always knows what has been confirmed.
 
         Returns
         -------
@@ -98,13 +108,18 @@ class ContextBuilder:
         """
         history = self._build_history(trajectory, compressed_state, mode)
         tools_section = self._build_tools_section()
+        itinerary_section = self._build_itinerary_section(itinerary)
+        request_section = self._build_request_section(request)
 
         parts = [
             "[SYSTEM]",
             self._system_prompt,
             "",
             "[USER REQUEST]",
-            request.raw_text,
+            request_section,
+            "",
+            "[CURRENT ITINERARY STATE]",
+            itinerary_section,
             "",
             "[CONTEXT]",
             history,
@@ -245,6 +260,84 @@ class ContextBuilder:
             max_tokens=self._summary_max_tokens,
         )
         return response.choices[0].message.content or ""
+
+    def _build_request_section(self, request: UserRequest) -> str:
+        """
+        Render the user request as raw_text PLUS a structured fact block.
+
+        The structured block ensures the agent always sees the exact trip dates
+        and budget even when raw_text is vague or omits the year.
+        """
+        profile = request.traveler_profile
+        travelers = f"{profile.num_adults} adult{'s' if profile.num_adults != 1 else ''}"
+        if profile.num_children:
+            travelers += f", {profile.num_children} child{'ren' if profile.num_children != 1 else ''}"
+
+        route = f"{request.origin_city} → {', '.join(request.destination_cities)}"
+
+        lines = [
+            request.raw_text,
+            "",
+            "--- Structured trip details (authoritative) ---",
+            f"Route:   {route}",
+            f"Dates:   {request.start_date} to {request.end_date}  [USE THESE EXACT DATES FOR ALL BOOKINGS]",
+            f"Budget:  ${request.budget_usd:,.2f} USD (total)",
+            f"Travelers: {travelers}",
+        ]
+
+        if request.hard_constraints:
+            lines.append("Hard constraints (must satisfy all):")
+            for c in request.hard_constraints:
+                lines.append(f"  - {c.description}")
+
+        if request.soft_constraints:
+            lines.append("Soft constraints (satisfy where possible):")
+            for c in request.soft_constraints:
+                lines.append(f"  - {c.description}")
+
+        if request.preferences:
+            lines.append("Preferences: " + "; ".join(request.preferences))
+
+        return "\n".join(lines)
+
+    def _build_itinerary_section(self, itinerary: Itinerary | None) -> str:
+        """
+        Render the current partial itinerary as readable text for the agent.
+
+        Gives the agent an unambiguous view of what has already been confirmed
+        so it does not double-book or forget prior bookings. Each booking shows
+        its booking_ref so the agent can use cancel_booking() if needed.
+        """
+        if itinerary is None or not itinerary.days:
+            return "No bookings confirmed yet."
+
+        lines: list[str] = [f"Total confirmed cost: ${itinerary.total_cost_usd:.2f}"]
+        for day in sorted(itinerary.days, key=lambda d: d.date):
+            lines.append(f"\n[{day.date}] {day.city}")
+            for seg in day.transport_segments:
+                ref = seg.booking_ref or "no-ref"
+                lines.append(
+                    f"  FLIGHT: {seg.from_location} → {seg.to_location} "
+                    f"dep={seg.departure_datetime} "
+                    f"arr={seg.arrival_datetime} "
+                    f"${seg.cost_usd:.2f} (ref={ref})"
+                )
+            if day.accommodation:
+                acc = day.accommodation
+                ref = acc.booking_ref or "no-ref"
+                lines.append(
+                    f"  HOTEL: {acc.hotel_name} ({acc.city}) "
+                    f"{acc.check_in} to {acc.check_out} "
+                    f"${acc.total_cost_usd:.2f} (ref={ref})"
+                )
+            for act in day.activities:
+                ref = act.booking_ref or "no-ref"
+                lines.append(
+                    f"  ACTIVITY: {act.activity_name} @ {act.location} "
+                    f"{act.start_datetime} "
+                    f"${act.cost_usd:.2f} (ref={ref})"
+                )
+        return "\n".join(lines)
 
     def _build_tools_section(self) -> str:
         """Format the tool list for injection into the system prompt."""

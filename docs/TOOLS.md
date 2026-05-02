@@ -19,6 +19,7 @@ The tools module wraps the `travel_world` simulator with validation, call tracki
 | `tools/event_tools.py` | `SearchEvents`, `BookEvent` |
 | `tools/routing_tools.py` | `PlanRoute` |
 | `tools/info_tools.py` | `GetAvailableRoutes` |
+| `tools/itinerary_tools.py` | `CancelBooking` — agent-side itinerary manipulation (no simulator call) |
 
 ---
 
@@ -220,6 +221,22 @@ Returns: list of transport options, one per available mode (walking/taxi/transit
 
 ---
 
+### `cancel_booking`
+
+Remove a confirmed item from the current itinerary by its `booking_ref`. Use this to fix a mistake (wrong city, wrong dates, over budget) before re-booking the correct item. Do **not** use it to cancel items that should remain in the itinerary.
+
+```
+Input:
+  booking_ref  str — the booking reference shown in [CURRENT ITINERARY STATE]
+                     (format: FLT-XXXX for flights, HTL-XXXX for hotels, EVT-XXXX for events)
+
+Returns: {cancelled_booking_ref, status: "cancelled"}
+```
+
+**Important:** `cancel_booking` does not call the simulator. The removal happens in the agent middleware's `_try_extract_itinerary()` handler, which scans the in-memory `Itinerary` object and removes the matching item. Always check `[CURRENT ITINERARY STATE]` after calling this to confirm the item is gone before re-booking.
+
+---
+
 ## ToolRegistry
 
 `ToolRegistry` is the single source of truth for which tools exist.
@@ -356,7 +373,9 @@ stats = tracker.get_stats()
 #  redundant_call_count, total_latency_ms, avg_latency_ms}
 ```
 
-A call is counted as **redundant** when the same tool is called with identical arguments more than once in the same episode. Starting from the third identical call, `BaseTool.call()` appends an `agent_warning` key to the result directing the agent to `Action: EXIT(reason=REPEATED_DEAD_END)`. The call still executes — no hard block — so evaluation metrics remain unbiased.
+A call is counted as **redundant** when the same tool is called with identical arguments more than once in the same episode. Starting from the third identical call, `BaseTool.call()` wraps the result as `{"result": <original_result>, "agent_warning": "..."}` — a redundancy envelope that directs the agent to `Action: EXIT(reason=REPEATED_DEAD_END)`. The call still executes — no hard block — so evaluation metrics remain unbiased.
+
+**Itinerary extraction and the redundancy envelope:** `ReActAgent._try_extract_itinerary()` checks for this envelope and unwraps it before looking for booking confirmation keys (`booking_ref`, `hotel_id`, etc.). This unwrapping is required: if the envelope is not removed, the key lookups return `None` and the booking is silently dropped from the `Itinerary` object.
 
 ---
 

@@ -29,6 +29,7 @@ from typing import TextIO
 from optimized_llm_planning_memory.core.models import (
     CompressedState,
     EpisodeLog,
+    Itinerary,
     ReActStep,
     RewardComponents,
 )
@@ -62,10 +63,8 @@ def print_episode(
     print("\n  REWARD COMPONENTS", file=file)
     print_reward_components(episode_log.reward_components, file=file)
 
-    if episode_log.final_itinerary:
-        it = episode_log.final_itinerary
-        print(f"\n  FINAL ITINERARY: {len(it.days)} days  |  "
-              f"Total cost: ${it.total_cost_usd:.2f}  |  Complete: {it.is_complete}", file=file)
+    print("\n  FINAL ITINERARY", file=file)
+    _print_itinerary(episode_log.final_itinerary, file=file)
     print(_SEP, file=file)
 
 
@@ -119,6 +118,42 @@ def episode_to_string(episode_log: EpisodeLog, **kwargs) -> str:
     buf = StringIO()
     print_episode(episode_log, file=buf, **kwargs)
     return buf.getvalue()
+
+
+def _print_itinerary(itinerary: Itinerary | None, file: TextIO = sys.stdout) -> None:
+    """Print the full itinerary content including all flights, hotels, and activities."""
+    if itinerary is None or not itinerary.days:
+        print("  (No confirmed bookings)", file=file)
+        return
+
+    print(f"  {len(itinerary.days)} days  |  Total cost: ${itinerary.total_cost_usd:.2f}"
+          f"  |  Complete: {itinerary.is_complete}", file=file)
+    for day in sorted(itinerary.days, key=lambda d: d.date):
+        print(f"\n  [{day.date}] {day.city}", file=file)
+        for seg in day.transport_segments:
+            ref = seg.booking_ref or "no-ref"
+            print(
+                f"    ✈ FLIGHT  {seg.from_location} → {seg.to_location}  "
+                f"dep={seg.departure_datetime}  arr={seg.arrival_datetime}  "
+                f"${seg.cost_usd:.2f}  (ref={ref})",
+                file=file,
+            )
+        if day.accommodation:
+            acc = day.accommodation
+            ref = acc.booking_ref or "no-ref"
+            print(
+                f"    🏨 HOTEL   {acc.hotel_name} ({acc.city})  "
+                f"{acc.check_in} → {acc.check_out}  "
+                f"${acc.total_cost_usd:.2f}  (ref={ref})",
+                file=file,
+            )
+        for act in day.activities:
+            ref = act.booking_ref or "no-ref"
+            print(
+                f"    📍 {act.category.upper():<9} {act.activity_name} @ {act.location}  "
+                f"{act.start_datetime}  ${act.cost_usd:.2f}  (ref={ref})",
+                file=file,
+            )
 
 
 # ── Private helpers ────────────────────────────────────────────────────────────

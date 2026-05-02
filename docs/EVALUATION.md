@@ -15,6 +15,7 @@ Evaluation runs in two independent layers. Layer 1 (deterministic) is fast, free
 | `evaluation/manifest.py` | `EvalRunManifest` — run metadata and result index |
 | `evaluation/ablation.py` | `AblationRunner` — Cartesian product sweeps |
 | `data/rubrics/itinerary_rubric_v1.md` | Human-readable rubric shown to the LLM judge |
+| `utils/itinerary_export.py` | `to_itinerary_manifest()` — converts agent-internal `Itinerary` → `ItineraryManifest` for compatibility with the `my-travel-world` evaluation UI |
 
 ---
 
@@ -115,6 +116,27 @@ from optimized_llm_planning_memory.utils.episode_io import load_eval_run, list_e
 manifests = list_eval_runs("outputs/eval_results/")       # newest first
 manifest, results = load_eval_run("abc12345", "outputs/eval_results/")
 ```
+
+### Converting to `ItineraryManifest` for the travel world UI
+
+`EpisodeLog.final_itinerary` uses the agent-internal `Itinerary` model. To display the result in the `my-travel-world` evaluation UI (which expects an `ItineraryManifest`), use the conversion utility:
+
+```python
+from optimized_llm_planning_memory.utils.itinerary_export import to_itinerary_manifest
+
+manifest = to_itinerary_manifest(
+    itinerary=episode_log.final_itinerary,
+    request=user_request,
+    world_id="world-001",
+    episode_id=episode_log.episode_id,
+    simulator=sim,   # optional; enables location_id/coordinates lookup
+)
+```
+
+**Fidelity notes:**
+- `location_id` and `coordinates` on each `ItineraryItem` require the optional `simulator` argument. Without it they default to `""` and `{"lat": 0.0, "lon": 0.0}`.
+- `transit_segments` is always empty — the agent does not track explicit transit legs between bookings.
+- `trip_date_range` is derived from the earliest and latest dates across all days in the itinerary.
 
 ---
 

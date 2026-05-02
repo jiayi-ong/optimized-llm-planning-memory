@@ -37,7 +37,7 @@ Three prompt versions are stored in `agent/prompts.py`. The active version is se
 | Version | Config key | What it adds over the previous |
 |---|---|---|
 | `v1` | `"v1"` | Base ReAct instructions plus: WORLD CONTEXT (synthetic city names, no `get_city_info`), PLANNING PHASE (required execution order), BOOKING RULE (commit before proceeding), THOUGHT DISCIPLINE (`"The last observation showed..."` opener), LETHAL SCENARIOS (EXIT codes for unresolvable episodes) |
-| `v2` | `"v2"` | + explicit **constraint tracking** guidance (track satisfied vs. open constraints at each step) |
+| `v2` | `"v2"` | + explicit **constraint tracking** guidance (track satisfied vs. open constraints at each step); + **ITINERARY STATE** section instructing the agent to use `[CURRENT ITINERARY STATE]` as source of truth and to call `cancel_booking` to remove an incorrect item before re-booking |
 | `v3` | `"v3"` | + strict format requirement with inline example; error-recovery and budget-tracking guidance; city-not-found → `EXIT(reason=CITY_NOT_FOUND)` |
 
 `v2` is the default for all configs (including `react_default.yaml`). Do not change an existing config to `v1` — it regresses planning quality.
@@ -117,13 +117,18 @@ The best way to generate examples is to run a live episode with `agent.mode=raw`
 ### Prompt structure (all modes)
 
 ```
-[SYSTEM PROMPT]          ← versioned (v1/v2/v3)
-[USER REQUEST]           ← hard constraints, dates, budget, soft constraints
-[MEMORY SECTION]         ← varies by mode (see below)
-[TOOL SCHEMA]            ← auto-generated from ToolRegistry
-[FEW-SHOT EXAMPLES]      ← loaded from react_tool_use.json
-[CURRENT STEP HEADER]    ← "Step N:"
+[SYSTEM PROMPT]            ← versioned (v1/v2/v3)
+[USER REQUEST]             ← hard constraints, dates, budget, soft constraints
+[CURRENT ITINERARY STATE]  ← confirmed bookings with booking_refs and costs
+                              (injected by ContextBuilder from the live Itinerary object;
+                               shows "No bookings confirmed yet." until a booking succeeds)
+[MEMORY SECTION]           ← varies by mode (see below)
+[TOOL SCHEMA]              ← auto-generated from ToolRegistry
+[FEW-SHOT EXAMPLES]        ← loaded from react_tool_use.json
+[CURRENT STEP HEADER]      ← "Step N:"
 ```
+
+`[CURRENT ITINERARY STATE]` is always present, even on the first step. It is the agent's authoritative view of what has been booked — the agent uses it to avoid re-booking items already confirmed. Each entry shows the `booking_ref` (e.g., `FLT-XXXX`, `HTL-XXXX`) needed to call `cancel_booking`.
 
 ### Memory section per mode
 

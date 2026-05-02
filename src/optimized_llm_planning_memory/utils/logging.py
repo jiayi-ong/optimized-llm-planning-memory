@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from pathlib import Path
 from typing import Any
 
 _CONFIGURED = False
@@ -37,6 +38,7 @@ _CONFIGURED = False
 def configure_logging(
     level: str = "INFO",
     json_output: bool = False,
+    log_file: str | None = None,
 ) -> None:
     """
     Configure structlog (and the stdlib root logger) for the project.
@@ -47,6 +49,10 @@ def configure_logging(
     json_output : If True, render as newline-delimited JSON (suitable for
                   production log aggregators). If False, use colourful
                   console rendering for human readability.
+    log_file    : Optional path to a log file. When provided, all log
+                  records are written to both stdout and this file (tee).
+                  The file is opened in append mode; parent directories are
+                  created automatically.
     """
     global _CONFIGURED
     if _CONFIGURED:
@@ -61,6 +67,7 @@ def configure_logging(
             structlog.stdlib.add_logger_name,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
         ]
 
         if json_output:
@@ -81,20 +88,43 @@ def configure_logging(
             processor=renderer,
             foreign_pre_chain=shared_processors,
         )
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(formatter)
 
         root_logger = logging.getLogger()
         root_logger.handlers.clear()
-        root_logger.addHandler(handler)
+
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setFormatter(formatter)
+        root_logger.addHandler(stdout_handler)
+
+        if log_file is not None:
+            log_path = Path(log_file)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+            # File sink: plain text (no ANSI colour codes)
+            file_renderer = structlog.processors.KeyValueRenderer(
+                key_order=["level", "logger", "timestamp", "event"],
+                drop_missing=True,
+            )
+            file_formatter = structlog.stdlib.ProcessorFormatter(
+                processor=file_renderer,
+                foreign_pre_chain=shared_processors,
+            )
+            file_handler.setFormatter(file_formatter)
+            root_logger.addHandler(file_handler)
+
         root_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
     except ImportError:
         # Fallback to stdlib logging if structlog is not installed
+        handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+        if log_file is not None:
+            log_path = Path(log_file)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            handlers.append(logging.FileHandler(log_path, mode="a", encoding="utf-8"))
         logging.basicConfig(
             level=getattr(logging, level.upper(), logging.INFO),
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
-            stream=sys.stdout,
+            handlers=handlers,
         )
 
     _CONFIGURED = True

@@ -49,8 +49,9 @@ except FileNotFoundError:
 
 if ep.agent_mode != "mcts_compressor":
     st.warning(
-        f"Episode `{ep.episode_id}` used mode `{ep.agent_mode}`. "
-        "MCTS data is only present for `mcts_compressor` mode episodes."
+        f"Episode `{ep.episode_id}` used mode `{ep.agent_mode}` — "
+        "MCTS data is only present for `mcts_compressor` mode episodes.  \n"
+        "Correct command: `python scripts/run_episode.py agent=react_mcts compressor=llm_mcts`"
     )
 
 # ── MCTSStats ─────────────────────────────────────────────────────────────────
@@ -58,7 +59,20 @@ if ep.agent_mode != "mcts_compressor":
 st.subheader("Search Statistics")
 
 if ep.mcts_stats is None:
-    st.info("No ``MCTSStats`` in this episode (MCTS may not have run).")
+    if ep.agent_mode == "mcts_compressor" and ep.total_steps < 6:
+        st.warning(
+            f"Episode ran only **{ep.total_steps}** step(s) — MCTS fires at compression "
+            f"events, which require at least **5 steps** by default (first fires at step 5).  \n"
+            f"Termination reason: `{ep.termination_reason or 'unknown'}`.  \n"
+            "Run a longer episode to see MCTS statistics."
+        )
+    elif ep.agent_mode == "mcts_compressor":
+        st.warning(
+            "This episode ran in `mcts_compressor` mode but MCTSStats were not recorded.  \n"
+            "Verify that both `agent=react_mcts` **and** `compressor=llm_mcts` were specified."
+        )
+    else:
+        st.info("MCTSStats are only present for `mcts_compressor` mode episodes.")
 else:
     stats = ep.mcts_stats
     c1, c2, c3, c4, c5 = st.columns(5)
@@ -77,10 +91,17 @@ st.divider()
 mcts_states = [cs for cs in ep.compressed_states if cs.top_candidates or cs.tradeoffs]
 
 if not mcts_states:
-    st.info(
-        "No CompressedState with MCTS fields (top_candidates / tradeoffs) found. "
-        "These are only populated by ``MCTSAwareCompressor`` implementations."
-    )
+    if ep.agent_mode == "mcts_compressor" and not ep.compressed_states:
+        st.info(
+            "No compression events occurred — MCTS fields are populated at each "
+            "compression event. See the note above about episode length."
+        )
+    else:
+        st.info(
+            "No CompressedState with MCTS fields (top_candidates / tradeoffs) found. "
+            "These are populated by `LLMMCTSCompressor.compress_with_tree()` — "
+            "ensure `compressor=llm_mcts` was used alongside `agent=react_mcts`."
+        )
 else:
     options = [
         f"Compression @ step {cs.step_index} ({cs.compression_method})"
