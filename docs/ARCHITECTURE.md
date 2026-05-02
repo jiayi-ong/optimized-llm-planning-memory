@@ -12,8 +12,10 @@ This document covers the full data flow, design patterns, and invariants that ho
 
 2. EPISODE LOOP (ReActAgent.run_episode)
    for step in range(max_steps):
-       a. ContextBuilder.build(trajectory, user_request, mode, compressed_state)
-              → builds prompt string
+       a. ContextBuilder.build(trajectory, user_request, mode, compressed_state, itinerary)
+              → builds prompt string:
+                [SYSTEM] + [USER REQUEST] + [CURRENT ITINERARY STATE]
+                + [MEMORY] + [TOOL SCHEMA] + [FEW-SHOT EXAMPLES]
        b. LLM call (litellm) → "Thought: ... Action: tool_name({...})"
        c. parse response → (thought, tool_name, arguments)  OR  DONE
        d. ToolRegistry.call(tool_name, arguments)
@@ -156,6 +158,12 @@ class MockSimulator:
 
 Decouples `ReActAgent` from knowing which tools exist. The agent asks for a tool by name string; the registry handles lookup and raises `ToolNotFoundError` for unknown names. The registry also generates the tool schema section of the system prompt automatically.
 
+### Optional MCTS path — `MCTSController`
+
+When `agent.mode == "mcts_compressor"` (set by `configs/agent/react_mcts.yaml`), each of the three run scripts constructs a `MCTSController` and passes it to `ReActAgent`. At each compression event, the agent calls `mcts_controller.search(trajectory)` to produce a `MCTSTreeRepresentation`, which is forwarded to `LLMMCTSCompressor.compress_with_tree()` instead of the standard `compress()`. The resulting `CompressedState` carries `top_candidates` and `tradeoffs` fields derived from the MCTS tree.
+
+`MCTSController` is `None` in all other modes — the standard `compress()` path is used. The config pairing is enforced by startup warnings in each script: `agent=react_mcts` must be paired with `compressor=llm_mcts`.
+
 ### Composition — `RewardFunction` holds `ConstraintSatisfactionEngine`
 
 `RewardFunction` does not inherit from the engine; it holds an instance. This makes the engine mockable in tests and allows different reward configurations to use the same engine instance.
@@ -192,7 +200,11 @@ A compressor that omits any section raises `CompressedStateRenderError` at compr
 
 **Test:** `tests/test_compressor/test_template.py` — missing section tests.
 
-### 5. `CompressorBase.get_log_probs()` raises for non-trainable compressors
+### 5. `cancel_booking` is a meta-tool — state change happens in middleware, not the simulator
+
+`CancelBooking._execute()` returns only a confirmation token `{"cancelled_booking_ref": ref, "status": "cancelled"}`. The actual removal from the `Itinerary` object happens in `ReActAgent._try_extract_itinerary()` (via `_remove_booking()`), which handles `cancel_booking` as a special branch alongside `select_flight` / `book_hotel` / `book_event`. This keeps all itinerary state mutations going through the same `_try_extract_itinerary` pipeline and avoids giving tools direct mutable access to agent state.
+
+### 6. `CompressorBase.get_log_probs()` raises for non-trainable compressors
 
 Non-trainable compressors raise `LogProbsNotSupportedError` when `get_log_probs()` is called. The training loop checks `compressor.is_trainable()` before calling this.
 
@@ -273,6 +285,8 @@ All `outputs/` is gitignored. Use Google Drive mounting in Colab to persist outp
 | New reward component | `training/reward.py` + `core/models.py` (RewardComponents) + `configs/reward/` |
 | New deterministic metric | `evaluation/deterministic.py` + version bump + `configs/eval/` |
 | New rubric dimension | `data/rubrics/*.md` + `evaluation/rubrics.py` + `evaluation/llm_judge.py` |
+| Itinerary state visibility | `agent/context_builder.py` (`_build_itinerary_section`) + `agent/react_agent.py` (pass `itinerary=` to every `build()` call) |
+| MCTS wiring in scripts | All three scripts: `llm_mcts` compressor branch + `MCTSController` construction + `mcts_controller=` passed to `ReActAgent` |
 
 ---
 

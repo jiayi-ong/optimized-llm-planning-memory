@@ -278,6 +278,10 @@ os.environ["ANTHROPIC_API_KEY"] = userdata.get("ANTHROPIC_API_KEY")
 
 # Train (Colab-friendly config: 50k steps, 2 envs)
 !python scripts/run_training.py compressor=identity training=ppo_colab
+
+# MCTS-augmented run (higher API cost — each compression event calls the LLM for tree search)
+# agent=react_mcts and compressor=llm_mcts must always be paired
+!python scripts/run_training.py agent=react_mcts compressor=llm_mcts training=ppo_colab
 ```
 
 ### Resume after session reset

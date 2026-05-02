@@ -169,6 +169,20 @@ Combines structured slot-filling (budget remaining, constraint statuses extracte
 
 Extends `LLMCompressor` with MCTS tree information injected into the compression prompt. Used with `agent=react_mcts`. Not trainable.
 
+**Required config pairing:** `LLMMCTSCompressor` only produces MCTS-enriched compressions when run with `agent=react_mcts` (which sets `mode: mcts_compressor` and provides the `agent.mcts` config sub-tree for `MCTSController`). Using it with any other agent config logs a startup warning and falls back to standard LLM compression — the MCTS search never runs.
+
+```bash
+# Correct — MCTS search runs, MCTSStats populated in EpisodeLog
+python scripts/run_episode.py agent=react_mcts compressor=llm_mcts
+
+# Incorrect — MCTS search does NOT run (warning logged at startup)
+python scripts/run_episode.py agent=react_default compressor=llm_mcts
+```
+
+**Architectural role — "lookahead-informed compression":** MCTS in this project is not a step-level action selector. It runs at each compression event (every `compress_every_n_steps` steps) and generates a shallow tree of synthetic candidate trajectories using the LLM. Each candidate is scored heuristically (tool success rate, booking depth, constraint coverage). The resulting `MCTSTreeRepresentation` is passed to `compress_with_tree()`, which distills the best-path and alternatives into `CompressedState.top_candidates` and `.tradeoffs`. This enriched compressed state is then injected into the agent's context for the next planning window.
+
+MCTS does not execute real tool calls — all branches are synthetic. The tree is therefore a lookahead over plausible (but unconfirmed) futures, not ground-truth outcomes. With a 5-step compression window, the tree explores shallow futures. Moving compression (and MCTS) to run before every action would increase signal fidelity at higher API cost.
+
 ---
 
 ## Adding a New Compressor
