@@ -70,6 +70,38 @@ def load_episode(path: str | Path) -> EpisodeLog:
     return EpisodeLog.model_validate_json(data)
 
 
+def list_episodes_by_request(
+    directory: str | Path,
+    request_ids: set[str],
+) -> list[EpisodeLog]:
+    """Load only episodes whose ``request_id`` is in the given set.
+
+    More efficient than ``list_episodes()`` when evaluating a targeted subset
+    of requests, because it skips loading and parsing unrelated episode files.
+
+    Parameters
+    ----------
+    directory   : Directory containing ``ep_*.json`` files.
+    request_ids : Set of request IDs to filter by.
+
+    Returns
+    -------
+    List of matching EpisodeLog objects, in filename order.
+    """
+    dir_path = Path(directory)
+    if not dir_path.exists():
+        return []
+    matches: list[EpisodeLog] = []
+    for json_file in sorted(dir_path.glob("ep_*.json")):
+        try:
+            ep = load_episode(json_file)
+            if ep.request_id in request_ids:
+                matches.append(ep)
+        except Exception:
+            continue
+    return matches
+
+
 def list_episodes(directory: str | Path) -> list[EpisodeLog]:
     """
     Load all episode JSON files from a directory.

@@ -108,7 +108,79 @@ Score 0.25 — Minimal personalisation; off-the-shelf tourist checklist.
 Score 0.0  — No personalisation; entirely generic or irrelevant suggestions.
 """
 
-# Master rubric combining all dimensions
+PACING_AND_REST = """\
+Dimension: Pacing and Rest
+
+Evaluate whether the trip has a healthy energy rhythm:
+- Physically demanding or multi-activity days are followed by lighter days.
+- The trip does not front-load all activities and leave empty days at the end.
+- For trips longer than 5 days, there is at least one noticeably lighter day.
+
+Score 1.0 — Excellent pacing; rest/recovery days follow demanding stretches;
+             energy is well-managed across the full trip.
+Score 0.75 — Good pacing overall with one minor imbalance.
+Score 0.5  — Adequate but noticeable imbalance; e.g., 4 demanding days in a row
+             with no lighter day.
+Score 0.25 — Poor pacing; trip feels rushed or exhausting with no downtime.
+Score 0.0  — No discernible structure; every day is maximal or every day is empty.
+"""
+
+PRACTICAL_LOGISTICS = """\
+Dimension: Practical Logistics
+
+Evaluate whether the itinerary is executable as written:
+- Hotel check-in times align with arrival times (not arriving at 11pm after a
+  full day of activities and expecting check-in before that).
+- Flight or transport departure times allow realistic airport/station arrival.
+- Activity start times give enough buffer after the previous commitment.
+- No double-booked time slots or impossibly short transfers.
+
+Score 1.0 — Fully executable; all timings are realistic and consistent.
+Score 0.75 — One minor timing issue that a traveler could easily work around.
+Score 0.5  — One clearly impractical transition (e.g., 10-minute airport transfer).
+Score 0.25 — Multiple logistical failures that would require significant replanning.
+Score 0.0  — Itinerary cannot be executed as written due to timing contradictions.
+"""
+
+LOCAL_EXPERIENCE_QUALITY = """\
+Dimension: Local Experience Quality
+
+Evaluate whether the itinerary offers authentic local experiences rather than
+just generic tourist attractions:
+- Includes neighbourhood-level exploration, local markets, or community events.
+- Recommends locally-known restaurants and food experiences, not only hotel dining.
+- Avoids filling every slot with only the most-visited tourist checklist items.
+- Activity selection reflects the specific character and culture of each city.
+
+Score 1.0 — Rich local character; most activities feel genuinely place-specific
+             and culturally immersive.
+Score 0.75 — Good local flavour with some generic filler.
+Score 0.5  — Mix of local and generic; itinerary could apply to many destinations.
+Score 0.25 — Mostly generic; a few local references but largely interchangeable.
+Score 0.0  — Entirely generic tourist checklist with no local character.
+"""
+
+PREFERENCE_EMBODIMENT = """\
+Dimension: Preference Embodiment
+
+Evaluate how well the overall character of the trip reflects the traveler's
+stated preferences (from the user request):
+- Activity choices align with the stated interests (e.g., a hiker gets outdoor
+  activities, not museum tours).
+- Accommodation style fits the stated preference (budget traveler vs luxury).
+- Dining choices match dietary restrictions and stated food interests.
+- The trip feels tailored to this specific traveler, not generic.
+
+Score 1.0 — Every major element of the trip clearly reflects the stated preferences;
+             feels made for this specific traveler.
+Score 0.75 — Strong alignment with minor gaps.
+Score 0.5  — Some preference alignment but several missed opportunities.
+Score 0.25 — Weak alignment; most elements feel generic or mismatched.
+Score 0.0  — Stated preferences are ignored; trip is completely disconnected from
+             what the traveler asked for.
+"""
+
+# Master rubric combining all v1 dimensions
 ITINERARY_RUBRIC_V1 = "\n\n---\n\n".join([
     CONSTRAINT_ADHERENCE,
     LOGICAL_COHERENCE,
@@ -118,7 +190,7 @@ ITINERARY_RUBRIC_V1 = "\n\n---\n\n".join([
     CREATIVITY,
 ])
 
-# Registry: dimension name → rubric text
+# Registry: dimension name → rubric text (includes all v1 + v2 dimensions)
 RUBRIC_DIMENSIONS: dict[str, str] = {
     "constraint_adherence": CONSTRAINT_ADHERENCE,
     "logical_coherence": LOGICAL_COHERENCE,
@@ -126,6 +198,21 @@ RUBRIC_DIMENSIONS: dict[str, str] = {
     "budget_efficiency": BUDGET_EFFICIENCY,
     "feasibility": FEASIBILITY,
     "creativity": CREATIVITY,
+    "pacing_and_rest": PACING_AND_REST,
+    "practical_logistics": PRACTICAL_LOGISTICS,
+    "local_experience_quality": LOCAL_EXPERIENCE_QUALITY,
+    "preference_embodiment": PREFERENCE_EMBODIMENT,
 }
 
-DEFAULT_RUBRIC_DIMENSIONS = list(RUBRIC_DIMENSIONS.keys())
+# Callers that have not opted in to the expanded rubric use the original 6 dimensions
+DEFAULT_RUBRIC_DIMENSIONS = [
+    "constraint_adherence",
+    "logical_coherence",
+    "activity_diversity",
+    "budget_efficiency",
+    "feasibility",
+    "creativity",
+]
+
+# Full 10-dimension rubric for v2 evaluations
+RUBRIC_DIMENSIONS_V2 = list(RUBRIC_DIMENSIONS.keys())

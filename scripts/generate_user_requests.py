@@ -45,6 +45,7 @@ Usage
 
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
 import random
@@ -385,6 +386,114 @@ _ARCHETYPES: list[dict] = [
 ]
 
 
+# ── World-aware helpers ────────────────────────────────────────────────────────
+
+def load_world_cities(world_path: Path) -> tuple[str, str, dict[str, str]]:
+    """Read a world folder directly (no simulator needed).
+
+    Returns (world_id, sim_date, {city_id: city_name}) sourced from
+    meta.json and geo_layer.json. This is the canonical way to bind
+    generated requests to a specific reproducible world.
+
+    The geo_layer stores cities under geo["data"]["cities"] as either a
+    dict {city_id: city_obj} or a list[city_obj] — both are handled.
+    """
+    meta = json.loads((world_path / "meta.json").read_text(encoding="utf-8"))
+    geo = json.loads((world_path / "geo_layer.json").read_text(encoding="utf-8"))
+
+    cities_raw = geo.get("data", geo).get("cities", {})
+    if isinstance(cities_raw, dict):
+        registry = {cid: city["name"] for cid, city in cities_raw.items() if "name" in city}
+    else:
+        registry = {c["city_id"]: c["name"] for c in cities_raw if "city_id" in c and "name" in c}
+
+    return meta["world_id"], meta["sim_date"], registry
+
+
+def _anchor_date_range(
+    sim_date: str, duration_days: int, rng: random.Random
+) -> tuple[str, str]:
+    """Start date is sim_date + 7..60 days so trips are temporally coherent with the world."""
+    base = datetime.fromisoformat(sim_date)
+    offset = rng.randint(7, 60)
+    start = base + timedelta(days=offset)
+    end = start + timedelta(days=duration_days - 1)
+    return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+
+
+def generate_from_world_dir(
+    world_path: Path,
+    n: int,
+    split: str,
+    output_dir: Path,
+    rng: random.Random,
+    log,
+) -> None:
+    """Generate ``n`` UserRequest JSON files bound to the given world directory.
+
+    Unlike the Hydra ``main()`` path, this function reads city data directly
+    from ``geo_layer.json`` without instantiating the simulator. All generated
+    requests store ``world_id`` so evaluations can be traced back to the exact
+    world that produced them.
+    """
+    from optimized_llm_planning_memory.core.models import UserRequest
+
+    world_id, sim_date, city_registry = load_world_cities(world_path)
+
+    if len(city_registry) < 2:
+        raise ValueError(
+            f"World at {world_path} has fewer than 2 cities ({len(city_registry)}). "
+            "Cannot generate city pairs."
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    city_ids = list(city_registry.keys())
+    rng.shuffle(city_ids)
+
+    city_pairs: list[CityPair] = [
+        CityPair(
+            origin_id=city_ids[i],
+            origin_name=city_registry[city_ids[i]],
+            dest_ids=[city_ids[(i + 1) % len(city_ids)]],
+            dest_names=[city_registry[city_ids[(i + 1) % len(city_ids)]]],
+        )
+        for i in range(len(city_ids))
+        if city_ids[i] != city_ids[(i + 1) % len(city_ids)]
+    ]
+
+    pairs_cycle = itertools.cycle(city_pairs)
+    n_archetypes = len(_ARCHETYPES)
+    saved = 0
+
+    for i in range(n):
+        pair = next(pairs_cycle)
+        archetype = _ARCHETYPES[i % n_archetypes]
+        tone_idx = i // n_archetypes
+        budget = rng.choice(archetype["budget_usd"])
+        duration = rng.choice(archetype["duration_days"])
+        start_date, end_date = _anchor_date_range(sim_date, duration, rng)
+
+        req_dict = _make_request(pair, archetype, budget, start_date, end_date, tone_idx)
+        req_dict["world_id"] = world_id
+        req_dict["metadata"]["world_id"] = world_id  # belt-and-suspenders for raw JSON readers
+
+        try:
+            req = UserRequest.model_validate(req_dict)
+            out_path = output_dir / f"request_{req.request_id}.json"
+            out_path.write_text(req.model_dump_json(indent=2), encoding="utf-8")
+            saved += 1
+        except Exception as exc:
+            log.warning(
+                "request_validation_failed",
+                split=split,
+                archetype=archetype["label"],
+                error=str(exc),
+            )
+
+    log.info("split_generated", split=split, n=saved, world_id=world_id)
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _random_date_range(rng: random.Random, duration_days: int) -> tuple[str, str]:
@@ -666,5 +775,58 @@ def main(cfg: DictConfig) -> None:
     log.info("done", total=n_train + n_val + n_test)
 
 
+def cli_main() -> None:
+    """Argparse entry point for world-aligned request generation.
+
+    Use when you already have a world folder and want requests that reference
+    real city names and dates from that specific world.
+
+    Example
+    -------
+    python scripts/generate_user_requests.py \\
+        --world_dir worlds/world_42_20260502_084804 \\
+        --n_train 40 --n_val 10 --n_test 10 --seed 42
+    """
+    parser = argparse.ArgumentParser(
+        description="Generate world-aligned UserRequest JSON files.",
+        add_help=True,
+    )
+    parser.add_argument(
+        "--world_dir",
+        type=Path,
+        required=True,
+        help="Path to a world folder (e.g. worlds/world_42_20260502_084804).",
+    )
+    parser.add_argument("--n_train", type=int, default=40)
+    parser.add_argument("--n_val", type=int, default=10)
+    parser.add_argument("--n_test", type=int, default=10)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default=Path("data/user_requests"),
+        help="Base output directory; split sub-dirs are created automatically.",
+    )
+
+    # When Hydra is invoked it injects its own sys.argv. Guard against that here.
+    args, _ = parser.parse_known_args()
+
+    configure_logging(level="INFO")
+    log = get_logger(__name__)
+    set_seed(args.seed)
+    rng = random.Random(args.seed)
+
+    log.info("world_dir_mode", world_dir=str(args.world_dir))
+    for split, n in [("train", args.n_train), ("val", args.n_val), ("test", args.n_test)]:
+        log.info("generating_split", split=split, n=n)
+        generate_from_world_dir(args.world_dir, n, split, args.output_dir / split, rng, log)
+    log.info("done", total=args.n_train + args.n_val + args.n_test)
+
+
 if __name__ == "__main__":
-    main()
+    # When --world_dir is present, use the world-aligned path; otherwise fall
+    # back to Hydra for backward compatibility with the config-driven workflow.
+    if "--world_dir" in sys.argv:
+        cli_main()
+    else:
+        main()

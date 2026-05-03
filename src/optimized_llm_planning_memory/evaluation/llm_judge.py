@@ -183,10 +183,22 @@ class LLMJudge:
     def _build_prompt(
         self, itinerary_text: str, request_text: str, rubric_text: str
     ) -> str:
+        dim_list = ", ".join(f'"{d}"' for d in self._dimensions)
+        example_entry = '{"dimension": "constraint_adherence", "score": 0.85, "reasoning": "Brief explanation."}'
         return f"""\
 You are an expert travel itinerary evaluator. Score the following itinerary
-across the rubric dimensions below. Return a structured JSON with one score
-per dimension in [0.0, 1.0] and a brief reasoning.
+across the rubric dimensions listed below.
+
+Return ONLY a JSON object in exactly this structure — no markdown, no extra keys:
+{{
+  "scores": [
+    {example_entry},
+    ... one entry per dimension ...
+  ]
+}}
+
+Use these exact dimension name strings: {dim_list}
+Each score must be a float in [0.0, 1.0]. Reasoning must be one concise sentence.
 
 === USER REQUEST ===
 {request_text}
@@ -197,5 +209,5 @@ per dimension in [0.0, 1.0] and a brief reasoning.
 === RUBRIC ===
 {rubric_text}
 
-Score each dimension independently. Be precise and consistent.
+Score each dimension independently. Return only the JSON object described above.
 """

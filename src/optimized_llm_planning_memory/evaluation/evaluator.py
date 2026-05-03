@@ -106,6 +106,7 @@ class Evaluator:
             judge_model=judge_model,
             created_at=datetime.now(timezone.utc).isoformat(),
             metric_version=METRIC_VERSION,
+            world_seed=episode_log.world_seed,
         )
 
     def evaluate_dataset(

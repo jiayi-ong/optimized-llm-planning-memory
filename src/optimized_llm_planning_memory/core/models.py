@@ -36,7 +36,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 if TYPE_CHECKING:
     # Avoid a circular import at runtime: MCTSStats is only referenced in
@@ -179,6 +179,13 @@ class UserRequest(BaseModel):
     soft_constraints: list[Constraint] = Field(default_factory=list)
     preferences: list[str] = Field(default_factory=list,
                                    description="Free-form preference strings, e.g. 'prefer window seats'.")
+    world_id: str | None = Field(
+        default=None,
+        description=(
+            "ID of the travel_world world used to generate this request, "
+            "e.g. 'world_42_20260502_084804'. None for requests predating this field."
+        ),
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -632,6 +639,23 @@ class EvalResult(BaseModel):
         default="v1",
         description="Version tag of the metric schema that produced these scores.",
     )
+    world_seed: int | None = Field(
+        default=None,
+        description="Simulator seed from the linked EpisodeLog. Stored here for grouping/filtering.",
+    )
+
+    @computed_field
+    @property
+    def eval_key(self) -> str:
+        """Stable unique identifier for this evaluation record.
+
+        Format: '{request_id}::{world_seed}::{agent_mode}::{metric_version}'
+
+        Use this key to deduplicate results across runs, detect when a record has
+        been superseded by a newer metric version, and group by configuration.
+        """
+        seed_str = str(self.world_seed) if self.world_seed is not None else "none"
+        return f"{self.request_id}::{seed_str}::{self.agent_mode}::{self.metric_version}"
 
 # mcts.node has no dependency on core.models, so this import is safe here.
 # Calling model_rebuild() resolves the "MCTSStats | None" forward reference in
