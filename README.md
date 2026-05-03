@@ -50,8 +50,8 @@ EpisodeLog ◄──────────────────────
     │       uses ConstraintSatisfactionEngine
     │
     └─► Evaluator
-            DeterministicEvaluator   (8 metrics, no LLM)
-            LLMJudge                 (6 rubric dimensions)
+            DeterministicEvaluator   (14 metrics: 8 v1 + 6 v2, no LLM)
+            LLMJudge                 (up to 10 rubric dimensions)
 ```
 
 ### Critical Design Invariants
@@ -117,6 +117,7 @@ optimized-llm-planning-memory/
 │   ├── run_training.py         # PPO training with Hydra config
 │   ├── run_evaluation.py       # batch evaluation
 │   ├── run_baseline_eval.py    # quick no-LLM baseline
+│   ├── run_eval.py             # standalone eval CLI (re-score saved episodes)
 │   └── generate_user_requests.py
 ├── app/                        # Streamlit developer UI (5 pages)
 ├── notebooks/                  # 7 interactive development notebooks
@@ -218,6 +219,47 @@ Checkpoints land in `outputs/checkpoints/` every `training.checkpoint_every_n_st
 
 ### Evaluation
 
+#### Generate world-aligned requests
+
+Create requests anchored to a specific saved world so city names and dates match the world's actual data:
+
+```bash
+python scripts/generate_user_requests.py \
+    --world_dir worlds/world_42_20260502_084804 \
+    --n_train 40 --n_val 10 --n_test 10 --seed 42
+```
+
+Every generated `UserRequest` has `world_id` set and uses real city names from `geo_layer.json`. See [docs/EVALUATION.md — World-Aligned Request Generation](docs/EVALUATION.md#world-aligned-request-generation).
+
+#### Re-score saved episodes (standalone CLI)
+
+Apply the current metrics to any previously saved `EpisodeLog` files without re-running the agent — useful when bumping `METRIC_VERSION` or fixing a constraint engine bug.
+
+Three mutually-exclusive selection flags (`--all`, `--episode_ids`, `--request_ids`):
+
+```bash
+# Score ALL episodes, both layers (requires API key in .env)
+python scripts/run_eval.py --all
+
+# Score ALL episodes, deterministic only — no API key needed
+python scripts/run_eval.py --all --deterministic_only
+
+# Score specific episodes by UUID, write logs to file
+python scripts/run_eval.py --episode_ids 08dff70b-548a-... --log_file outputs/logs/run_eval.log
+
+# Score all episodes for specific requests, deterministic only
+python scripts/run_eval.py --request_ids req-abc req-def --deterministic_only
+
+# Combine any selection flag with --agent_mode for an extra filter
+python scripts/run_eval.py --all --agent_mode raw --note "baseline re-eval after v2 metrics"
+```
+
+API keys are loaded automatically from `.env`. Use `--log_file` to persist structured logs alongside the eval output.
+
+Output: `outputs/eval_results/{YYYYMMDD_HHMMSS}_{run_id}/manifest.json` + `results.jsonl`.
+
+#### Full pipeline eval (Hydra)
+
 ```bash
 # RAW baseline (no API key needed for deterministic-only)
 python scripts/run_evaluation.py agent=react_baseline_raw eval.deterministic_only=true
@@ -227,7 +269,9 @@ python scripts/run_evaluation.py compressor=identity eval.deterministic_only=tru
     training.resume_from=outputs/checkpoints/final/ppo_model.zip
 ```
 
-Results: `outputs/eval_results/{run_id}/manifest.json` + `results.jsonl`.
+#### Comparing runs with eval_key
+
+Every `EvalResult` carries an `eval_key` = `{request_id}::{world_seed}::{agent_mode}::{metric_version}`. Two results with the same key are directly comparable. The eval viewer (`app/pages/6_eval_viewer.py`) uses this key for deduplication and cross-mode comparison. See [docs/EVALUATION.md — Eval Key](docs/EVALUATION.md#eval-key-and-uniqueness-contract).
 
 ### Interactive notebooks
 

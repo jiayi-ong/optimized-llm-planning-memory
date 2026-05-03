@@ -25,10 +25,12 @@ logical_consistency     — date ordering + no double-bookings [0, 1]
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from optimized_llm_planning_memory.core.constraints import ConstraintSatisfactionEngine
 from optimized_llm_planning_memory.core.models import EpisodeLog, Itinerary, UserRequest
 
-METRIC_VERSION = "v1"
+METRIC_VERSION = "v2"
 
 METRIC_CHANGELOG: dict[str, str] = {
     "v1": (
@@ -36,6 +38,12 @@ METRIC_CHANGELOG: dict[str, str] = {
         "tool_efficiency, tool_failure_rate, avg_tool_latency_ms, "
         "steps_per_episode, budget_adherence, logical_consistency. "
         "Constraint evaluation via ConstraintSatisfactionEngine."
+    ),
+    "v2": (
+        "Added 6 trip-quality metrics: destination_coverage_ratio, "
+        "accommodation_coverage_ratio, activity_density_score, rest_day_ratio, "
+        "schedule_overlap_score, intra_city_feasibility. "
+        "Fixed multi-hotel star-rating bug in ConstraintSatisfactionEngine."
     ),
 }
 
@@ -77,6 +85,7 @@ class DeterministicEvaluator:
         stats = episode_log.tool_stats
 
         return {
+            # ── v1 metrics (unchanged) ───────────────────────────────────────
             "hard_constraint_ratio": self._hard_constraint_ratio(itinerary, user_request),
             "soft_constraint_score": self._soft_constraint_score(itinerary, user_request),
             "tool_efficiency": self._tool_efficiency(stats),
@@ -85,6 +94,13 @@ class DeterministicEvaluator:
             "steps_per_episode": float(episode_log.total_steps),
             "budget_adherence": self._budget_adherence(itinerary, user_request),
             "logical_consistency": self._logical_consistency(itinerary),
+            # ── v2 metrics (trip quality) ────────────────────────────────────
+            "destination_coverage_ratio": self._destination_coverage_ratio(itinerary, user_request),
+            "accommodation_coverage_ratio": self._accommodation_coverage_ratio(itinerary),
+            "activity_density_score": self._activity_density_score(itinerary),
+            "rest_day_ratio": self._rest_day_ratio(itinerary),
+            "schedule_overlap_score": self._schedule_overlap_score(itinerary),
+            "intra_city_feasibility": self._intra_city_feasibility(itinerary),
         }
 
     # ── Component scorers ─────────────────────────────────────────────────────
@@ -226,3 +242,142 @@ class DeterministicEvaluator:
                         pass
 
         return max(0.0, 1.0 - issues / checks) if checks > 0 else 1.0
+
+    # ── v2 metrics ────────────────────────────────────────────────────────────
+
+    def _destination_coverage_ratio(
+        self, itinerary: Itinerary | None, request: UserRequest
+    ) -> float:
+        """Fraction of required destination cities with ≥1 itinerary day planned.
+
+        Uses case-insensitive substring matching between ItineraryDay.city (human
+        name) and metadata.dest_names (list[str] injected at generation time).
+        Falls back to checking destination_cities IDs directly if dest_names is absent.
+        """
+        if itinerary is None or not itinerary.days:
+            return 0.0
+        dest_names: list[str] = request.metadata.get("dest_names", [])
+        if not dest_names:
+            dest_names = [n.lower() for n in request.destination_cities]
+        visited = {d.city.lower() for d in itinerary.days}
+        covered = sum(
+            1 for name in dest_names
+            if any(name.lower() in v or v in name.lower() for v in visited)
+        )
+        return covered / len(dest_names) if dest_names else 1.0
+
+    def _accommodation_coverage_ratio(self, itinerary: Itinerary | None) -> float:
+        """Fraction of non-departure days with an accommodation booking.
+
+        The last day is excluded since travellers depart rather than check in.
+        Returns 1.0 for single-day itineraries (no overnight stay expected).
+        """
+        if itinerary is None or not itinerary.days:
+            return 0.0
+        nights = itinerary.days[:-1]  # exclude departure day
+        if not nights:
+            return 1.0
+        booked = sum(1 for d in nights if d.accommodation is not None)
+        return booked / len(nights)
+
+    def _activity_density_score(self, itinerary: Itinerary | None) -> float:
+        """Score activity count per day against the optimal range [2, 4].
+
+        Per-day scoring:
+          0 activities  → 0.0  (empty day)
+          1 activity    → 0.5  (under-scheduled)
+          2–4 activities → 1.0  (optimal)
+          5+ activities → max(0, 1.0 - 0.2 × (count − 4))  (over-packed)
+
+        Final score is the mean across all days.
+        """
+        if itinerary is None or not itinerary.days:
+            return 0.0
+
+        def _day_score(n: int) -> float:
+            if n == 0:
+                return 0.0
+            if n == 1:
+                return 0.5
+            if n <= 4:
+                return 1.0
+            return max(0.0, 1.0 - 0.2 * (n - 4))
+
+        scores = [_day_score(len(d.activities)) for d in itinerary.days]
+        return sum(scores) / len(scores)
+
+    def _rest_day_ratio(self, itinerary: Itinerary | None) -> float:
+        """Fraction of days classified as light (≤1 activity) relative to a target.
+
+        Target: 1 rest day per every 4 travel days. Returns 1.0 for trips ≤5 days
+        where continuous activity is expected and no rest days are required.
+        """
+        if itinerary is None or not itinerary.days:
+            return 0.0
+        total = len(itinerary.days)
+        if total <= 5:
+            return 1.0
+        rest_days = sum(1 for d in itinerary.days if len(d.activities) <= 1)
+        target = max(1, total // 4)
+        return min(1.0, rest_days / target)
+
+    def _schedule_overlap_score(self, itinerary: Itinerary | None) -> float:
+        """Fraction of same-day activity pairs that do NOT have overlapping time windows.
+
+        Complements logical_consistency check 3 by returning a continuous score
+        rather than a binary flag. Returns 1.0 if no time data is available.
+        """
+        if itinerary is None or not itinerary.days:
+            return 1.0
+        total_pairs = 0
+        non_overlapping = 0
+        for day in itinerary.days:
+            slots: list[tuple[datetime, datetime]] = []
+            for act in day.activities:
+                start = getattr(act, "start_datetime", None)
+                dur = getattr(act, "duration_hours", None)
+                if start and dur:
+                    try:
+                        s = datetime.fromisoformat(start)
+                        e = s + timedelta(hours=float(dur))
+                        slots.append((s, e))
+                    except (ValueError, TypeError):
+                        pass
+            slots.sort()
+            for i in range(len(slots) - 1):
+                total_pairs += 1
+                if slots[i][1] <= slots[i + 1][0]:
+                    non_overlapping += 1
+        return non_overlapping / total_pairs if total_pairs > 0 else 1.0
+
+    def _intra_city_feasibility(self, itinerary: Itinerary | None) -> float:
+        """Fraction of consecutive same-city activity gaps that are ≥15 minutes.
+
+        A gap shorter than 15 minutes between the end of one activity and the
+        start of the next is flagged as infeasible (no time to travel/transition).
+        Returns 1.0 if fewer than 2 timed activities exist.
+        """
+        if itinerary is None or not itinerary.days:
+            return 1.0
+        _MIN_GAP = timedelta(minutes=15)
+        total_gaps = 0
+        feasible_gaps = 0
+        for day in itinerary.days:
+            timed: list[tuple[datetime, datetime]] = []
+            for act in day.activities:
+                start = getattr(act, "start_datetime", None)
+                dur = getattr(act, "duration_hours", None)
+                if start and dur:
+                    try:
+                        s = datetime.fromisoformat(start)
+                        e = s + timedelta(hours=float(dur))
+                        timed.append((s, e))
+                    except (ValueError, TypeError):
+                        pass
+            timed.sort()
+            for i in range(len(timed) - 1):
+                total_gaps += 1
+                gap = timed[i + 1][0] - timed[i][1]
+                if gap >= _MIN_GAP:
+                    feasible_gaps += 1
+        return feasible_gaps / total_gaps if total_gaps > 0 else 1.0
