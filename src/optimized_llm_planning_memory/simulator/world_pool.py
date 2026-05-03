@@ -108,11 +108,11 @@ class WorldPool:
                 log.warning("world_pool.build.error", seed=seed, error=str(exc))
         log.info("world_pool.build.done", built=len(self._pool))
 
-    def sample(self, _seed: int | None = None) -> SimulatorProtocol:
+    def sample(self, seed: int | None = None) -> SimulatorProtocol:
         """
         Return a random world from the pool.
 
-        The ``_seed`` parameter is accepted for API compatibility with the
+        The ``seed`` parameter is accepted for API compatibility with the
         ``simulator_factory(seed)`` signature used by ``CompressionEnv``, but
         is ignored — the pool's internal RNG controls selection.  Ignoring the
         per-episode seed here is intentional: seeding every sample identically

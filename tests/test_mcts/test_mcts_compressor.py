@@ -14,6 +14,7 @@ All LLM calls are mocked. The tests verify:
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
@@ -28,6 +29,9 @@ from optimized_llm_planning_memory.core.models import (
     TrajectoryModel,
 )
 from optimized_llm_planning_memory.mcts.node import MCTSStats, MCTSTreeRepresentation
+
+# Resolve TYPE_CHECKING forward reference so MCTSTreeRepresentation validates fields.
+MCTSTreeRepresentation.model_rebuild()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -68,23 +72,36 @@ def _make_tree_repr() -> MCTSTreeRepresentation:
     )
 
 
-def _make_valid_llm_response():
-    """Simulated structured response from instructor."""
-    resp = MagicMock()
-    resp.satisfied_constraint_ids = []
-    resp.violated_constraint_ids = []
-    resp.unknown_constraint_ids = ["hc_budget"]
-    resp.soft_constraints_summary = "Prefers boutique hotels in city centre."
-    resp.decisions_made = ["Searched flights Paris 2025-06-01"]
-    resp.open_questions = ["Which hotel to book?"]
-    resp.key_discoveries = ["Flights from $450 one-way"]
-    resp.current_itinerary_sketch = "Day 1: arrive Paris, check in. Day 2: museums."
-    resp.top_candidates = [
-        "Option 1: Book Hotel Lumiere (Q=0.70)",
-        "Option 2: Book Hotel Etoile (Q=0.55)",
-    ]
-    resp.tradeoffs = "Hotel Lumiere is pricier but closer to Louvre."
-    return resp
+def _make_litellm_mock(is_mcts: bool = True) -> MagicMock:
+    """
+    Return a mock that mimics litellm.completion's return value.
+
+    Both LLMMCTSCompressor and LLMCompressor use litellm.completion with
+    response_format=json_object, then parse choices[0].message.content as JSON.
+    This replaces the old instructor-based mock.
+    """
+    payload: dict = {
+        "satisfied_constraint_ids": [],
+        "violated_constraint_ids": [],
+        "unknown_constraint_ids": ["hc_budget"],
+        "soft_constraints_summary": "Prefers boutique hotels in city centre.",
+        "decisions_made": ["Searched flights Paris 2025-06-01"],
+        "open_questions": ["Which hotel to book?"],
+        "key_discoveries": ["Flights from $450 one-way"],
+        "current_itinerary_sketch": "Day 1: arrive Paris, check in. Day 2: museums.",
+    }
+    if is_mcts:
+        payload["top_candidates"] = [
+            "Option 1: Book Hotel Lumiere (Q=0.70)",
+            "Option 2: Book Hotel Etoile (Q=0.55)",
+        ]
+        payload["tradeoffs"] = "Hotel Lumiere is pricier but closer to Louvre."
+
+    choice = MagicMock()
+    choice.message.content = json.dumps(payload)
+    mock_resp = MagicMock()
+    mock_resp.choices = [choice]
+    return mock_resp
 
 
 # ── MCTSAwareCompressor abstract interface ────────────────────────────────────
@@ -115,47 +132,34 @@ class TestLLMMCTSCompressorCompressWithTree:
         from optimized_llm_planning_memory.compressor.llm_mcts_compressor import LLMMCTSCompressor
         return LLMMCTSCompressor(llm_model_id="openai/gpt-4o-mini")
 
-    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.instructor")
-    def test_compress_with_tree_returns_compressed_state(self, mock_instructor):
+    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.litellm.completion")
+    def test_compress_with_tree_returns_compressed_state(self, mock_completion):
         """compress_with_tree() should return a valid CompressedState."""
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _make_valid_llm_response()
-        mock_instructor.from_litellm.return_value = mock_client
+        mock_completion.return_value = _make_litellm_mock(is_mcts=True)
 
         compressor = self._get_compressor()
-        compressor._client = mock_client  # inject mock directly
-
         tree_repr = _make_tree_repr()
         result = compressor.compress_with_tree(tree_repr, previous_state=None)
 
         assert isinstance(result, CompressedState)
         assert result.compression_method == "llm_mcts"
 
-    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.instructor")
-    def test_compress_with_tree_passes_template_validation(self, mock_instructor):
+    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.litellm.completion")
+    def test_compress_with_tree_passes_template_validation(self, mock_completion):
         """All 6 standard template sections must be non-empty."""
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _make_valid_llm_response()
-        mock_instructor.from_litellm.return_value = mock_client
+        mock_completion.return_value = _make_litellm_mock(is_mcts=True)
 
         compressor = self._get_compressor()
-        compressor._client = mock_client
-
         result = compressor.compress_with_tree(_make_tree_repr())
 
-        # Must not raise
         TEMPLATE.validate(result)
 
-    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.instructor")
-    def test_compress_with_tree_populates_mcts_fields(self, mock_instructor):
+    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.litellm.completion")
+    def test_compress_with_tree_populates_mcts_fields(self, mock_completion):
         """top_candidates and tradeoffs should be populated from LLM response."""
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _make_valid_llm_response()
-        mock_instructor.from_litellm.return_value = mock_client
+        mock_completion.return_value = _make_litellm_mock(is_mcts=True)
 
         compressor = self._get_compressor()
-        compressor._client = mock_client
-
         result = compressor.compress_with_tree(_make_tree_repr())
 
         assert result.top_candidates is not None
@@ -163,16 +167,12 @@ class TestLLMMCTSCompressorCompressWithTree:
         assert result.tradeoffs is not None
         assert len(result.tradeoffs) > 0
 
-    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.instructor")
-    def test_compress_with_tree_sets_trajectory_id(self, mock_instructor):
+    @patch("optimized_llm_planning_memory.compressor.llm_mcts_compressor.litellm.completion")
+    def test_compress_with_tree_sets_trajectory_id(self, mock_completion):
         """state_id and trajectory_id should be populated."""
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _make_valid_llm_response()
-        mock_instructor.from_litellm.return_value = mock_client
+        mock_completion.return_value = _make_litellm_mock(is_mcts=True)
 
         compressor = self._get_compressor()
-        compressor._client = mock_client
-
         tree_repr = _make_tree_repr()
         result = compressor.compress_with_tree(tree_repr)
 
@@ -185,23 +185,12 @@ class TestLLMMCTSCompressorCompressWithTree:
 class TestLLMMCTSCompressorFallback:
     """Tests for the compress() non-MCTS path."""
 
-    @patch("optimized_llm_planning_memory.compressor.llm_compressor.instructor")
-    def test_compress_delegates_to_llm_compressor(self, mock_instructor):
+    @patch("optimized_llm_planning_memory.compressor.llm_compressor.litellm.completion")
+    def test_compress_delegates_to_llm_compressor(self, mock_completion):
         """compress() without a tree should behave like LLMCompressor."""
         from optimized_llm_planning_memory.compressor.llm_mcts_compressor import LLMMCTSCompressor
 
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.satisfied_constraint_ids = []
-        mock_response.violated_constraint_ids = []
-        mock_response.unknown_constraint_ids = []
-        mock_response.soft_constraints_summary = "No soft constraints."
-        mock_response.decisions_made = ["Booked flight."]
-        mock_response.open_questions = []
-        mock_response.key_discoveries = ["Price: $500"]
-        mock_response.current_itinerary_sketch = "Day 1: fly."
-        mock_client.chat.completions.create.return_value = mock_response
-        mock_instructor.from_litellm.return_value = mock_client
+        mock_completion.return_value = _make_litellm_mock(is_mcts=False)
 
         compressor = LLMMCTSCompressor(llm_model_id="openai/gpt-4o-mini")
         traj = _make_trajectory()

@@ -12,20 +12,23 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from optimized_llm_planning_memory.core.models import TrajectoryModel
 from optimized_llm_planning_memory.mcts.node import MCTSNode, MCTSStats, MCTSTreeRepresentation
+
+# Resolve TYPE_CHECKING forward reference so MCTSTreeRepresentation validates fields.
+MCTSTreeRepresentation.model_rebuild()
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
-def _make_traj():
-    """Return a minimal TrajectoryModel mock."""
-    traj = MagicMock()
-    traj.trajectory_id = str(uuid.uuid4())
-    traj.request_id = "req-001"
-    traj.total_steps = 0
-    traj.steps = ()
-    traj.to_text.return_value = ""
-    return traj
+def _make_traj() -> TrajectoryModel:
+    """Return a minimal real TrajectoryModel (no steps)."""
+    return TrajectoryModel(
+        trajectory_id=str(uuid.uuid4()),
+        request_id="req-001",
+        steps=(),
+        total_steps=0,
+    )
 
 
 def _make_node(depth: int = 0, visit_count: int = 0, value_sum: float = 0.0) -> MCTSNode:

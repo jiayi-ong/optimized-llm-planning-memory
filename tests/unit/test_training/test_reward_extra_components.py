@@ -108,7 +108,7 @@ def _make_episode_log(itinerary=None):
         trajectory_id=str(uuid.uuid4()),
         request_id="test-reward-req",
         steps=(),
-        total_steps=5,
+        total_steps=0,
     )
     rc = RewardComponents(
         hard_constraint_score=0.0,

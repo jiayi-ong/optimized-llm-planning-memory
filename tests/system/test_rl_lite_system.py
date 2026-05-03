@@ -194,7 +194,8 @@ class TestRLRunLoggerSmokeWithJSONL:
             cb.globals = {}
             cb.num_timesteps = 1
             cb.model = MagicMock()
-            cb.logger = MagicMock()
+            # SB3's BaseCallback.logger is a read-only property (returns model.logger);
+            # setting cb.model already provides a mock logger via cb.model.logger.
 
             # Inject a fake info dict (as if returned by CompressionEnv.step())
             from optimized_llm_planning_memory.core.models import RewardComponents
