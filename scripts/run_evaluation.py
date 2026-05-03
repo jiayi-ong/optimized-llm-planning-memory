@@ -16,6 +16,11 @@ Usage
         agent.mode=compressor \\
         training.resume_from=outputs/checkpoints/final/ppo_model.zip
 
+    # Load checkpoint automatically from a training run_id (reads manifest.json)
+    python scripts/run_evaluation.py \\
+        +run_id=20260501_120000 \\
+        eval.deterministic_only=true
+
 Outputs
 -------
 - JSON file at ``outputs/eval_results/<run_name>.json`` with all EvalResult objects.
@@ -52,6 +57,32 @@ def main(cfg: DictConfig) -> None:
     set_seed(cfg.project.seed)
 
     log.info("evaluation.start", mode=cfg.agent.mode, deterministic_only=cfg.eval.deterministic_only)
+
+    # ── Auto-resolve checkpoint from run_id (--run-id / +run_id=...) ─────────
+    run_id = OmegaConf.select(cfg, "run_id")
+    if run_id:
+        from optimized_llm_planning_memory.training.run_manifest import (
+            load_manifest,
+            resolve_checkpoint,
+        )
+        manifest = load_manifest(run_id, training_dir=Path(cfg.project.output_dir) / "training")
+        if manifest:
+            log.info(
+                "eval.run_id.manifest_found",
+                run_id=run_id,
+                compressor_type=manifest.compressor_type,
+                n_train_requests=manifest.n_train_requests,
+            )
+            # Override compressor type from manifest if not explicitly set
+            if not OmegaConf.select(cfg, "compressor.type"):
+                log.info("eval.run_id.inferring_compressor", type=manifest.compressor_type)
+        ckpt = resolve_checkpoint(run_id, output_dir=cfg.project.output_dir)
+        if ckpt:
+            log.info("eval.run_id.checkpoint_resolved", path=str(ckpt))
+            # Inject as training.resume_from so the checkpoint-loading code below picks it up
+            OmegaConf.update(cfg, "training.resume_from", str(ckpt), merge=True)
+        else:
+            log.warning("eval.run_id.no_checkpoint_found", run_id=run_id)
 
     # ── Load test requests ────────────────────────────────────────────────────
     from optimized_llm_planning_memory.core.models import UserRequest

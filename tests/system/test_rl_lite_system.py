@@ -156,3 +156,86 @@ class TestCompressorPolicyCPU:
         assert dummy_compressor_cpu.is_trainable() is True
         params = dummy_compressor_cpu.get_trainable_parameters()
         assert len(params) > 0
+
+
+@pytest.mark.system_test
+class TestRLRunLoggerSmokeWithJSONL:
+    """End-to-end smoke: 2 env steps → JSONL is written → round-trips correctly."""
+
+    def test_episode_callback_writes_jsonl_on_step(
+        self, tmp_path, paris_request, reward_fn, env_config_small
+    ):
+        """EpisodeLogCallback must write a JSONL line after an episode completes."""
+        import json
+
+        from stable_baselines3.common.callbacks import CallbackList
+
+        from optimized_llm_planning_memory.training.run_logger import RLRunLogger, load_episode_metrics
+        from optimized_llm_planning_memory.training.trainer import EpisodeLogCallback
+
+        # Build a minimal env
+        agent = MagicMock()
+        agent.run_steps.return_value = (None, True, None)  # episode terminates immediately
+
+        env = CompressionEnv(
+            agent_factory=lambda: agent,
+            simulator_factory=lambda seed: MagicMock(),
+            reward_fn=reward_fn,
+            user_requests=[paris_request],
+            config=env_config_small,
+        )
+
+        run_id = "smoke_test_run"
+        with RLRunLogger(run_id=run_id, training_dir=tmp_path) as logger:
+            cb = EpisodeLogCallback(run_logger=logger, verbose=0)
+
+            # Simulate what SB3 does: set up the callback's internal state
+            cb.locals = {}
+            cb.globals = {}
+            cb.num_timesteps = 1
+            cb.model = MagicMock()
+            cb.logger = MagicMock()
+
+            # Inject a fake info dict (as if returned by CompressionEnv.step())
+            from optimized_llm_planning_memory.core.models import RewardComponents
+            fake_rc = RewardComponents(
+                hard_constraint_score=0.8,
+                soft_constraint_score=0.7,
+                tool_efficiency_score=0.9,
+                tool_failure_penalty=0.0,
+                logical_consistency_score=1.0,
+                total_reward=0.75,
+            )
+            cb.locals["infos"] = [
+                {
+                    "reward_components": fake_rc,
+                    "episode_log": None,
+                    "request_id": "req-001",
+                }
+            ]
+            cb._on_step()
+
+        records = load_episode_metrics(run_id, tmp_path)
+        assert len(records) >= 1
+        assert records[0].total_reward == pytest.approx(0.75, abs=1e-4)
+
+    def test_run_manifest_saved_alongside_jsonl(self, tmp_path):
+        """save_manifest() must create a valid manifest.json in the run directory."""
+        from optimized_llm_planning_memory.training.run_manifest import (
+            TrainingRunManifest,
+            load_manifest,
+            save_manifest,
+        )
+
+        manifest = TrainingRunManifest.create(
+            run_id="smoke_manifest",
+            compressor_type="IdentityCompressor",
+            n_train_requests=10,
+            checkpoint_dir=tmp_path / "checkpoints",
+        )
+        save_manifest(manifest, tmp_path / "training" / "smoke_manifest")
+        loaded = load_manifest("smoke_manifest", tmp_path / "training")
+
+        assert loaded is not None
+        assert loaded.compressor_type == "IdentityCompressor"
+        assert loaded.n_train_requests == 10

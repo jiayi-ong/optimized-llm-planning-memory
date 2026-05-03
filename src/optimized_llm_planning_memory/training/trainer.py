@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import numpy as np
+import torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import (
     BaseCallback,
@@ -44,9 +45,10 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecEnv
 
 from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
-from optimized_llm_planning_memory.core.config import EnvConfig, PPOHyperparams, RewardConfig, TrainingConfig
+from optimized_llm_planning_memory.core.config import EnvConfig, PPOHyperparams, RewardConfig, SimulatorConfig, TrainingConfig
 from optimized_llm_planning_memory.core.models import UserRequest
 from optimized_llm_planning_memory.simulator.protocol import SimulatorProtocol
+from optimized_llm_planning_memory.simulator.world_pool import WorldPool
 from optimized_llm_planning_memory.training.env import CompressionEnv
 from optimized_llm_planning_memory.training.policy import CompressorPolicy
 from optimized_llm_planning_memory.training.reward import RewardFunction
@@ -55,6 +57,13 @@ from optimized_llm_planning_memory.training.run_logger import (
     PPOUpdateMetrics,
     RLRunLogger,
 )
+from optimized_llm_planning_memory.training.run_manifest import (
+    TrainingRunManifest,
+    save_manifest,
+)
+from optimized_llm_planning_memory.utils.logging import get_logger
+
+log = get_logger(__name__)
 
 
 # ── Custom callbacks ───────────────────────────────────────────────────────────
@@ -75,11 +84,14 @@ class EpisodeLogCallback(BaseCallback):
 
     Parameters
     ----------
-    run_logger     : Optional ``RLRunLogger``.  When provided, each completed
-                     episode is also written to ``episode_metrics.jsonl``.
-    tb_log_prefix  : TensorBoard tag prefix.  Defaults to ``"episode"``.
-    rolling_window : Window size for the rolling reward mean.
-    verbose        : SB3 verbosity level.
+    run_logger        : Optional ``RLRunLogger``.  When provided, each completed
+                        episode is also written to ``episode_metrics.jsonl``.
+    tb_log_prefix     : TensorBoard tag prefix.  Defaults to ``"episode"``.
+    rolling_window    : Window size for the rolling reward mean.
+    episode_save_freq : Save a full EpisodeLog JSON every N episodes.
+                        0 = never (recommended for Colab to conserve storage).
+    episodes_dir      : Directory for full EpisodeLog JSON files.
+    verbose           : SB3 verbosity level.
     """
 
     def __init__(
@@ -87,6 +99,8 @@ class EpisodeLogCallback(BaseCallback):
         run_logger: "RLRunLogger | None" = None,
         tb_log_prefix: str = "episode",
         rolling_window: int = 20,
+        episode_save_freq: int = 0,
+        episodes_dir: str | Path = "outputs/episodes",
         verbose: int = 0,
     ) -> None:
         super().__init__(verbose=verbose)
@@ -94,6 +108,8 @@ class EpisodeLogCallback(BaseCallback):
         self._episode_count = 0
         self._run_logger = run_logger
         self._reward_window: deque[float] = deque(maxlen=rolling_window)
+        self._episode_save_freq = episode_save_freq
+        self._episodes_dir = Path(episodes_dir)
 
     def _on_step(self) -> bool:
         """Called after each env step. Returns True to continue training."""
@@ -170,6 +186,19 @@ class EpisodeLogCallback(BaseCallback):
                     reward_mean_20=reward_mean,
                 )
                 self._run_logger.log_episode_summary(summary)
+
+            # ── Optionally persist full EpisodeLog (storage-intensive) ─────────
+            if (
+                self._episode_save_freq > 0
+                and episode_log is not None
+                and self._episode_count % self._episode_save_freq == 0
+            ):
+                try:
+                    from optimized_llm_planning_memory.utils.episode_io import save_episode
+                    self._episodes_dir.mkdir(parents=True, exist_ok=True)
+                    save_episode(episode_log, self._episodes_dir)
+                except Exception:
+                    pass  # never crash training over a logging failure
 
             self._episode_count += 1
         return True
@@ -350,6 +379,22 @@ class PPOUpdateMetricsCallback(BaseCallback):
             val = log_values.get(key, default)
             return float(val) if val is not None else default
 
+        def _get_opt(key: str) -> float | None:
+            val = log_values.get(key)
+            return float(val) if val is not None else None
+
+        # Advantages mean/std from SB3's rollout buffer (available after collect_rollouts)
+        adv_mean: float | None = None
+        adv_std: float | None = None
+        try:
+            rollout_buf = self.model.rollout_buffer  # type: ignore[attr-defined]
+            advs = rollout_buf.advantages.flatten()
+            if len(advs) > 0:
+                adv_mean = float(advs.mean())
+                adv_std = float(advs.std())
+        except Exception:
+            pass
+
         metrics = PPOUpdateMetrics(
             update_step=self._update_count,
             policy_loss=_get("train/policy_gradient_loss"),
@@ -360,6 +405,10 @@ class PPOUpdateMetricsCallback(BaseCallback):
             approx_kl=_get("train/approx_kl"),
             explained_variance=_get("train/explained_variance"),
             learning_rate=_get("train/learning_rate"),
+            # grad_norm: SB3 logs this when max_grad_norm > 0
+            grad_norm=_get_opt("train/grad_norm"),
+            advantages_mean=adv_mean,
+            advantages_std=adv_std,
             num_timesteps=self.num_timesteps,
         )
 
@@ -367,6 +416,11 @@ class PPOUpdateMetricsCallback(BaseCallback):
         self.logger.record("train/approx_kl", metrics.approx_kl)
         self.logger.record("train/clip_fraction", metrics.clip_fraction)
         self.logger.record("train/explained_variance", metrics.explained_variance)
+        if metrics.grad_norm is not None:
+            self.logger.record("train/grad_norm", metrics.grad_norm)
+        if adv_mean is not None:
+            self.logger.record("train/advantages_mean", adv_mean)
+            self.logger.record("train/advantages_std", adv_std or 0.0)
 
         self._run_logger.log_ppo_update(metrics)
         self._update_count += 1
@@ -409,6 +463,7 @@ class RLTrainer:
         config: TrainingConfig | None = None,
         env_config: EnvConfig | None = None,
         reward_config: RewardConfig | None = None,
+        simulator_config: SimulatorConfig | None = None,
         tokenizer: Any = None,
         tensorboard_log: str | Path = "outputs/logs",
         checkpoint_dir: str | Path = "outputs/checkpoints",
@@ -423,6 +478,7 @@ class RLTrainer:
         self._config = config or TrainingConfig()
         self._env_config = env_config or EnvConfig()
         self._reward_config = reward_config or RewardConfig()
+        self._simulator_config = simulator_config or SimulatorConfig()
         self._tokenizer = tokenizer
         self._tensorboard_log = Path(tensorboard_log)
         self._checkpoint_dir = Path(checkpoint_dir)
@@ -431,6 +487,15 @@ class RLTrainer:
         self._reward_predictor_fit_every = reward_predictor_fit_every
 
         self._ppo: PPO | None = None
+        self._device = self._resolve_device(self._config.device)
+        log.info("trainer.device", device=self._device)
+
+    @staticmethod
+    def _resolve_device(device_cfg: str) -> str:
+        """Resolve 'auto' to 'cuda' or 'cpu' based on availability."""
+        if device_cfg == "auto":
+            return "cuda" if torch.cuda.is_available() else "cpu"
+        return device_cfg
 
     # ── Public interface ──────────────────────────────────────────────────────
 
@@ -454,14 +519,39 @@ class RLTrainer:
         run_id = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
         run_logger = RLRunLogger(run_id=run_id, training_dir=self._training_log_dir)
 
-        # Build vectorised env
+        # Save manifest immediately so post-processing tools can find this run.
+        run_dir = self._training_log_dir / run_id
+        manifest = TrainingRunManifest.create(
+            run_id=run_id,
+            compressor_type=type(self._compressor).__name__,
+            n_train_requests=len(self._user_requests),
+            checkpoint_dir=self._checkpoint_dir,
+            run_name=getattr(self._config, "run_name", "") or "",
+            reward_weights=self._reward_config.weights.model_dump(),
+            ppo_hyperparams=self._config.ppo.model_dump(),
+            n_envs=self._config.n_envs,
+            num_timesteps=n_steps,
+            extra={"device": self._device},
+        )
+        save_manifest(manifest, run_dir)
+        log.info("trainer.manifest.saved", run_id=run_id, path=str(run_dir / "manifest.json"))
+
+        # Build vectorised env (with WorldPool if configured)
         vec_env = self._make_vec_env()
 
-        # Build or restore PPO model
+        # Build or restore PPO model and move to device
         if self._config.resume_from:
             self._ppo = self._load_ppo(self._config.resume_from, vec_env)
         else:
             self._ppo = self._build_ppo(vec_env)
+
+        # Explicitly move the compressor to the training device.
+        # SB3 moves standard policy layers (token_embed, value_net) automatically,
+        # but the compressor's HF model is a nested object that needs explicit placement.
+        try:
+            self._compressor.to(self._device)  # type: ignore[attr-defined]
+        except AttributeError:
+            pass  # non-HF compressors (IdentityCompressor) may not expose .to()
 
         # Build callbacks
         callbacks = self._build_callbacks(run_logger=run_logger)
@@ -523,20 +613,37 @@ class RLTrainer:
         """
         Create a vectorised ``CompressionEnv`` using SB3's ``make_vec_env``.
 
-        Each parallel environment gets a fresh ``SimulatorAdapter`` and
-        ``ReActAgent`` on every ``reset()``, so there is no shared state.
+        Uses WorldPool when ``simulator_config.unique_per_episode=False`` (default)
+        to avoid regenerating a world on every reset.  Falls back to the raw
+        simulator_factory when unique_per_episode=True.
+
+        Each parallel environment gets its own ReActAgent on every reset(),
+        so there is no shared policy state across workers.
         """
         reward_fn = RewardFunction(config=self._reward_config)
         env_config = self._env_config
         tokenizer = self._tokenizer
         agent_factory = self._agent_factory
-        simulator_factory = self._simulator_factory
         user_requests = self._user_requests
+
+        # Choose simulator source: pool or fresh-per-episode
+        if self._simulator_config.unique_per_episode:
+            effective_factory = self._simulator_factory
+        else:
+            pool = WorldPool(
+                simulator_factory=self._simulator_factory,
+                pool_size=self._simulator_config.pool_size,
+                seed_range=tuple(self._simulator_config.seed_range),  # type: ignore[arg-type]
+                rng_seed=getattr(self._config, "seed", 42),
+            )
+            pool.build()
+            log.info("world_pool.ready", pool_size=len(pool))
+            effective_factory = pool.sample
 
         def env_factory() -> CompressionEnv:
             return CompressionEnv(
                 agent_factory=agent_factory,
-                simulator_factory=simulator_factory,
+                simulator_factory=effective_factory,
                 reward_fn=reward_fn,
                 user_requests=user_requests,
                 config=env_config,
@@ -546,9 +653,43 @@ class RLTrainer:
         vec_env = make_vec_env(
             env_factory,
             n_envs=self._config.n_envs,
-            seed=self._config.seed if hasattr(self._config, "seed") else None,
+            seed=getattr(self._config, "seed", None),
         )
         return vec_env
+
+    @staticmethod
+    def _make_lr_schedule(base_lr: float, schedule: str, num_timesteps: int) -> Any:
+        """
+        Build an SB3-compatible learning rate schedule callable.
+
+        Parameters
+        ----------
+        base_lr        : Starting learning rate.
+        schedule       : 'constant' | 'linear' | 'cosine'
+        num_timesteps  : Total training steps (used for decay schedules).
+
+        Returns
+        -------
+        Callable(progress_remaining: float) → float
+            SB3 passes ``progress_remaining`` which goes from 1.0 → 0.0.
+        """
+        import math as _math
+
+        if schedule == "linear":
+            def lr_fn(progress_remaining: float) -> float:
+                # Decays from base_lr to base_lr/10 as progress goes 1.0 → 0.0
+                return base_lr * (0.1 + 0.9 * progress_remaining)
+            return lr_fn
+
+        if schedule == "cosine":
+            def lr_fn(progress_remaining: float) -> float:
+                # Cosine annealing from base_lr to base_lr/10
+                cos_val = (1.0 + _math.cos(_math.pi * (1.0 - progress_remaining))) / 2.0
+                return base_lr * (0.1 + 0.9 * cos_val)
+            return lr_fn
+
+        # Default: constant
+        return base_lr
 
     def _build_ppo(self, vec_env: VecEnv) -> PPO:
         """
@@ -560,6 +701,12 @@ class RLTrainer:
         """
         hp: PPOHyperparams = self._config.ppo
 
+        lr_schedule = self._make_lr_schedule(
+            base_lr=hp.learning_rate,
+            schedule=getattr(hp, "lr_schedule", "constant"),
+            num_timesteps=self._config.num_timesteps,
+        )
+
         policy_kwargs: dict[str, Any] = {
             "compressor": self._compressor,
             "value_hidden_dim": 256,
@@ -568,7 +715,7 @@ class RLTrainer:
         ppo = PPO(
             policy=CompressorPolicy,
             env=vec_env,
-            learning_rate=hp.learning_rate,
+            learning_rate=lr_schedule,
             n_steps=hp.n_steps,
             batch_size=hp.batch_size,
             n_epochs=hp.n_epochs,
@@ -580,6 +727,7 @@ class RLTrainer:
             max_grad_norm=hp.max_grad_norm,
             tensorboard_log=str(self._tensorboard_log),
             policy_kwargs=policy_kwargs,
+            device=self._device,
             verbose=1,
         )
         return ppo
@@ -641,7 +789,12 @@ class RLTrainer:
             verbose=1,
         )
 
-        episode_log_cb = EpisodeLogCallback(run_logger=run_logger, verbose=0)
+        episode_log_cb = EpisodeLogCallback(
+            run_logger=run_logger,
+            episode_save_freq=getattr(self._config, "episode_save_freq", 0),
+            episodes_dir=Path(self._tensorboard_log).parent / "episodes",
+            verbose=0,
+        )
         ppo_metrics_cb = PPOUpdateMetricsCallback(run_logger=run_logger, verbose=0)
         mcts_metrics = MCTSMetricsCallback(verbose=0)  # no-op for non-MCTS runs
 

@@ -13,7 +13,10 @@ The RL training loop trains a compressor to produce `CompressedState` representa
 | `training/reward.py` | `RewardFunction` — multi-component shaped reward |
 | `training/trainer.py` | `RLTrainer` — orchestrates training, checkpointing, logging |
 | `training/episode_buffer.py` | `EpisodeBuffer` — collects and batches completed episodes |
-| `training/run_logger.py` | `RunLogger` — TensorBoard and structured JSONL logging |
+| `training/run_logger.py` | `RLRunLogger` — JSONL training diagnostics (per-episode + per-update) |
+| `training/run_manifest.py` | `TrainingRunManifest` — full resolved config captured at run start |
+| `simulator/world_pool.py` | `WorldPool` — pre-generated world pool to amortise per-episode cost |
+| `utils/colab_utils.py` | Bundle/upload/download helpers for Colab + Google Drive sharing |
 
 ---
 
@@ -58,6 +61,39 @@ Key config parameters from `configs/training/*.yaml`:
 
 Each parallel environment uses a different random seed for the travel world, giving the policy diverse training episodes.
 
+### Request sampling
+
+`CompressionEnv.reset()` cycles through training requests in round-robin order (`itertools.cycle`) rather than sampling randomly. This eliminates within-rollout serial correlation that would bias GAE advantage estimates when consecutive episodes share the same request.
+
+---
+
+## Simulator World Pool
+
+By default, `RLTrainer` pre-generates `pool_size` travel worlds at startup (configured in `configs/simulator/default.yaml`) rather than generating a fresh world for every `CompressionEnv.reset()` call.
+
+```yaml
+# configs/simulator/default.yaml
+pool_size: 20              # worlds generated at startup
+unique_per_episode: false  # true = fresh world per reset (slow, for debugging)
+```
+
+### Why a pool?
+
+| Approach | Startup cost | Per-episode cost | Memory |
+|---|---|---|---|
+| WorldPool (default) | 20 worlds × ~0.5 s = ~10 s | `O(1)` random dict lookup | ~4 MB (20 × ~200 KB) |
+| `unique_per_episode: true` | None | ~0.5 s per episode | Negligible |
+
+With 4 parallel envs × 10k episodes = 40k resets, the unique approach wastes ~5.5 hours of GPU time waiting for world generation. The pool amortises that to a one-time 10-second startup.
+
+### Thread safety
+
+`WorldPool.build()` runs before SB3 forks subprocesses. Each worker process receives a pickled copy of the pool, so no locks are needed during training.
+
+### Tuning pool_size
+
+`pool_size` controls diversity of the training distribution. Too small → the policy overfits to a narrow world. Too large → startup cost grows. 20 is a good default for 50k-step Colab runs.
+
 ---
 
 ## Reward Function
@@ -100,6 +136,38 @@ To add a new reward component:
 3. Add the corresponding weight to `RewardConfig` in `core/config.py`.
 4. Update `configs/reward/default.yaml`.
 5. Check that `DeterministicEvaluator` also exposes the equivalent metric (see [docs/EVALUATION.md](EVALUATION.md)) so training and evaluation remain aligned.
+
+### Optional reward components
+
+Three additional trip-quality signals can be toggled on via `configs/reward/*.yaml` without touching `reward.py`. They are disabled by default to preserve the standard training baseline.
+
+| Component | Config key | Description |
+|---|---|---|
+| Destination coverage | `optional.destination_coverage` | Fraction of required destination cities that appear in the itinerary. |
+| Activity density | `optional.activity_density` | Rewards itineraries that fill each day with 2–4 activities. |
+| Budget adherence | `optional.budget_adherence` | Already implicit in `hard_constraint`; disabled by default to avoid double-counting. |
+
+Enable one or more in a custom reward config:
+
+```yaml
+# configs/reward/coverage_heavy.yaml
+optional:
+  destination_coverage:
+    enabled: true
+    weight: 0.5
+  activity_density:
+    enabled: true
+    weight: 0.3
+```
+
+Run with:
+```bash
+python scripts/run_training.py reward=coverage_heavy compressor=identity
+```
+
+Each enabled component is computed by delegating to `DeterministicEvaluator` — the same implementation used in evaluation, preserving the training-evaluation invariant.
+
+**Ablation usage:** run once with `reward=default` and once with `reward=coverage_heavy` on the same seed set. Compare `hard_constraint_ratio` vs `destination_coverage_ratio` in the eval results to see the trade-off.
 
 ---
 
@@ -214,6 +282,161 @@ The starting point is the standard PPO recommendation for sparse-reward tasks. S
 | `ent_coef` | `[0.0, 0.01, 0.05]` | Exploration vs exploitation |
 
 Use the Colab config (50k steps, 2 envs) for all sweeps. Only promote to the full config once a good combination is found.
+
+---
+
+## GPU Device Configuration
+
+`RLTrainer` detects the best available device automatically:
+
+```yaml
+# configs/training/ppo_default.yaml
+device: auto   # "cuda" if GPU present, else "cpu"
+```
+
+Valid values: `"auto"`, `"cuda"`, `"cpu"`. Force CPU for debugging with `device: cpu` (see `configs/training/ppo_debug.yaml`).
+
+After SB3's PPO initialises, the compressor's PyTorch parameters are explicitly moved to the selected device:
+
+```python
+self._compressor.to(self._device)   # graceful no-op for non-HF compressors
+```
+
+SB3 handles its own internal tensors via the `device` argument passed to `PPO(...)`.
+
+---
+
+## TensorBoard vs JSONL Diagnostics
+
+Training produces two complementary log streams:
+
+| Stream | Location | Best for |
+|---|---|---|
+| TensorBoard events | `outputs/logs/` | Live monitoring in Colab during training (`%tensorboard --logdir outputs/logs`) |
+| JSONL logs | `outputs/training/<run_id>/` | Offline analysis: Streamlit Training Dashboard, `notebooks/08_run_comparison.ipynb`, pandas |
+
+The JSONL format — two files per run — does not require TensorBoard to read and works identically in Colab and locally:
+
+```
+outputs/training/<run_id>/
+├── manifest.json            # full resolved config
+├── episode_metrics.jsonl    # one JSON line per episode
+└── ppo_metrics.jsonl        # one JSON line per PPO update cycle
+```
+
+Load them directly in Python:
+
+```python
+from optimized_llm_planning_memory.training.run_logger import load_episode_metrics, load_ppo_metrics
+
+episodes = load_episode_metrics(run_id, training_dir="outputs/training")
+updates  = load_ppo_metrics(run_id, training_dir="outputs/training")
+```
+
+---
+
+## Run Manifests
+
+Every training run writes a `manifest.json` at startup, capturing the full resolved Hydra config alongside run metadata:
+
+```json
+{
+  "run_id": "20260501_120000",
+  "run_name": "alice_identity_v1",
+  "git_sha": "abc123",
+  "compressor_type": "identity",
+  "agent_mode": "compressor",
+  "reward_weights": { "hard_constraint": 2.0, "soft_constraint": 1.0, ... },
+  "ppo_hyperparams": { "learning_rate": 3e-4, "clip_epsilon": 0.2, ... },
+  "n_envs": 2,
+  "num_timesteps": 50000,
+  "n_train_requests": 40,
+  "checkpoint_dir": "outputs/checkpoints",
+  "created_at": "2026-05-01T12:00:00+00:00"
+}
+```
+
+### Reading manifests
+
+```python
+from optimized_llm_planning_memory.training.run_manifest import (
+    load_manifest, list_manifests, resolve_checkpoint,
+)
+
+# All manifests, newest first
+for m in list_manifests("outputs/training"):
+    print(m.run_id, m.compressor_type, m.run_name)
+
+# Load one specific run
+manifest = load_manifest("20260501_120000", training_dir="outputs/training")
+
+# Find checkpoint path automatically
+ckpt = resolve_checkpoint("20260501_120000", output_dir="outputs")
+# → Path("outputs/checkpoints/final/ppo_model.zip")  or a numbered zip
+```
+
+### Using manifests for evaluation
+
+```bash
+# Auto-resolves checkpoint + compressor type from manifest
+python scripts/run_evaluation.py \
+    +run_id=20260501_120000 \
+    eval.deterministic_only=true
+```
+
+See [docs/EVALUATION.md — Evaluating from a Training Run ID](EVALUATION.md#evaluating-from-a-training-run-id).
+
+### Run comparison
+
+`notebooks/08_run_comparison.ipynb` loads manifests and JSONL from multiple runs and produces:
+- A ranked summary table (sorted by final hard constraint score).
+- Side-by-side reward curves for all metrics.
+- PPO convergence diagnostics (KL divergence, clip fraction, explained variance).
+- A CSV export of the summary table.
+
+---
+
+## Artifact Storage Strategy
+
+Full `EpisodeLog` JSON files are large (~40 KB each). At 10k training episodes, saving every one would consume ~400 MB. The default is to save none during training:
+
+```yaml
+# configs/training/ppo_default.yaml
+episode_save_freq: 0   # 0 = never; 50 = save every 50th episode
+```
+
+The lean training log (JSONL) captures all diagnostics needed for post-training analysis in ~5 MB for 10k episodes.
+
+Enable episode saving during debugging or when you need full trajectory replay:
+
+```yaml
+# configs/training/ppo_debug.yaml
+episode_save_freq: 1   # save every episode (use for short runs only)
+```
+
+### Checkpoint cleanup
+
+Intermediate checkpoint zips (`outputs/checkpoints/ppo_*_steps.zip`) accumulate throughout training. Only `outputs/checkpoints/final/` is needed for sharing. Delete the intermediates before bundling if Drive space is a concern:
+
+```python
+import glob, os
+for z in glob.glob("outputs/checkpoints/ppo_*_steps.zip"):
+    os.remove(z)
+    print(f"Removed: {z}")
+```
+
+### Bundle and share
+
+After training, package everything into a single `.tar.gz` for sharing with teammates or downloading locally:
+
+```python
+from optimized_llm_planning_memory.utils.colab_utils import bundle_run, upload_to_drive
+
+bundle_path = bundle_run(run_id, output_dir="outputs", bundle_dir="outputs/bundles")
+upload_to_drive(bundle_path, drive_dir="/content/drive/MyDrive/optllm_team_bundles")
+```
+
+See [docs/COLAB_GUIDE.md](COLAB_GUIDE.md) for the full team collaboration workflow.
 
 ---
 

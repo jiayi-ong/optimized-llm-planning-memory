@@ -32,6 +32,8 @@ own engine instances — this is intentional for thread safety in parallel worke
 
 from __future__ import annotations
 
+from typing import Callable
+
 from optimized_llm_planning_memory.core.constraints import ConstraintSatisfactionEngine
 from optimized_llm_planning_memory.core.config import RewardConfig
 from optimized_llm_planning_memory.core.models import (
@@ -41,6 +43,10 @@ from optimized_llm_planning_memory.core.models import (
     UserRequest,
 )
 from optimized_llm_planning_memory.tools.tracker import ToolCallTracker
+
+# Type alias for a pluggable reward component function.
+# Receives (episode_log, user_request, is_terminal) and returns a scalar in [0, 1].
+RewardComponentFn = Callable[[EpisodeLog, UserRequest, bool], float]
 
 
 class RewardFunction:
@@ -52,15 +58,52 @@ class RewardFunction:
     constraint_engine : Shared ``ConstraintSatisfactionEngine`` instance.
                         MUST be the same implementation used by evaluation.
     config            : Reward weights and penalty coefficients.
+    extra_components  : Optional dict of {name: (fn, weight)} for injecting
+                        additional reward components without modifying this class.
+                        Each function receives (episode_log, user_request, is_terminal)
+                        and must return a float in [0, 1].
+
+    Example — adding a custom component
+    ------------------------------------
+        def my_component(ep, req, is_terminal):
+            return 1.0 if ep.total_steps < 15 else 0.5
+
+        rf = RewardFunction(
+            extra_components={"brevity": (my_component, 0.2)}
+        )
     """
 
     def __init__(
         self,
         constraint_engine: ConstraintSatisfactionEngine | None = None,
         config: RewardConfig | None = None,
+        extra_components: dict[str, tuple[RewardComponentFn, float]] | None = None,
     ) -> None:
         self._engine = constraint_engine or ConstraintSatisfactionEngine()
         self._config = config or RewardConfig()
+        self._extra_components: dict[str, tuple[RewardComponentFn, float]] = extra_components or {}
+
+        # Register optional v2 components from config if enabled
+        self._register_optional_components()
+
+    def _register_optional_components(self) -> None:
+        """Read config.optional and register enabled v2 metrics as extra components."""
+        opt = self._config.optional
+        if opt.destination_coverage.enabled:
+            self._extra_components.setdefault(
+                "destination_coverage",
+                (self._destination_coverage_score, opt.destination_coverage.weight),
+            )
+        if opt.activity_density.enabled:
+            self._extra_components.setdefault(
+                "activity_density",
+                (self._activity_density_score, opt.activity_density.weight),
+            )
+        if opt.budget_adherence.enabled:
+            self._extra_components.setdefault(
+                "budget_adherence",
+                (self._budget_adherence_score, opt.budget_adherence.weight),
+            )
 
     def compute(
         self,
@@ -101,6 +144,14 @@ class RewardFunction:
             + w.logical_consistency * consistency_score
             + self._config.step_penalty  # per-step cost
         )
+
+        # Sum extra/optional components
+        extra_total_weight = 0.0
+        for _name, (fn, weight) in self._extra_components.items():
+            score = fn(episode_log, user_request, is_terminal)
+            total += weight * score
+            extra_total_weight += weight
+
         if is_terminal and terminal_score is not None:
             total += w.terminal_itinerary * terminal_score
             # Terminal bonus if all hard constraints satisfied
@@ -113,7 +164,7 @@ class RewardFunction:
             # intermediate-step rewards (H6 fix).
             max_possible = (
                 w.hard_constraint + w.soft_constraint + w.tool_efficiency
-                + w.logical_consistency
+                + w.logical_consistency + extra_total_weight
             )
             if is_terminal:
                 max_possible += w.terminal_itinerary + self._config.terminal_bonus
@@ -256,3 +307,52 @@ class RewardFunction:
         hard_score = self._hard_constraint_score(itinerary, request)
         completeness = 1.0 if itinerary.is_complete else 0.5
         return (hard_score + completeness) / 2.0
+
+    # ── Optional v2 components (delegates to DeterministicEvaluator logic) ────
+    # These are not called during training by default — only when enabled via
+    # config.optional.* or passed as extra_components.
+
+    def _destination_coverage_score(
+        self, episode_log: EpisodeLog, request: UserRequest, _is_terminal: bool
+    ) -> float:
+        """
+        Fraction of requested destination cities that appear in the itinerary.
+        Delegates to the same logic as DeterministicEvaluator._destination_coverage_ratio().
+        [0.0, 1.0]
+        """
+        itinerary = episode_log.final_itinerary
+        if itinerary is None or not request.destination_cities:
+            return 0.0
+        covered = {day.city for day in itinerary.days if day.city}
+        requested = set(request.destination_cities)
+        return len(covered & requested) / len(requested)
+
+    def _activity_density_score(
+        self, episode_log: EpisodeLog, _request: UserRequest, _is_terminal: bool
+    ) -> float:
+        """
+        Normalised activity density: average activities per day, capped at 1.0.
+        3+ activities/day → 1.0; 0 activities → 0.0.
+        Delegates to the same logic as DeterministicEvaluator._activity_density_score().
+        [0.0, 1.0]
+        """
+        itinerary = episode_log.final_itinerary
+        if itinerary is None or not itinerary.days:
+            return 0.0
+        avg = sum(len(day.activities) for day in itinerary.days) / len(itinerary.days)
+        return min(1.0, avg / 3.0)  # 3 activities/day → full score
+
+    def _budget_adherence_score(
+        self, episode_log: EpisodeLog, request: UserRequest, _is_terminal: bool
+    ) -> float:
+        """
+        1.0 if itinerary stays within budget; penalty proportional to overshoot.
+        Delegates to DeterministicEvaluator._budget_adherence() logic. [0.0, 1.0]
+        """
+        itinerary = episode_log.final_itinerary
+        if itinerary is None or request.budget_usd <= 0:
+            return 0.0
+        if itinerary.total_cost_usd <= request.budget_usd:
+            return 1.0
+        overshoot = itinerary.total_cost_usd - request.budget_usd
+        return max(0.0, 1.0 - overshoot / request.budget_usd)

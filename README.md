@@ -68,14 +68,14 @@ EpisodeLog ◄──────────────────────
 | Module | Purpose | Deep-dive |
 |---|---|---|
 | `core/` | Pydantic v2 data models, constraint engine, config schema, exceptions | — |
-| `simulator/` | `SimulatorProtocol` structural interface + `SimulatorAdapter` thin wrapper | — |
+| `simulator/` | `SimulatorProtocol` structural interface + `SimulatorAdapter` + `WorldPool` | — |
 | `tools/` | `BaseTool` ABC, `ToolRegistry`, `ToolCallTracker`, `EventBus`, 14 concrete tools (incl. `cancel_booking`) | [docs/TOOLS.md](docs/TOOLS.md) |
 | `agent/` | `ReActAgent`, `Trajectory`, `ContextBuilder`, `AgentMode`, prompt templates | [docs/AGENT.md](docs/AGENT.md) |
 | `compressor/` | `CompressorBase` + `TrainableCompressorBase` ABCs; 6 implementations; `CompressedStateTemplate` | [docs/COMPRESSOR.md](docs/COMPRESSOR.md) |
-| `training/` | `CompressionEnv` (Gymnasium), `CompressorPolicy` (SB3), `RewardFunction`, `RLTrainer` | [docs/TRAINING.md](docs/TRAINING.md) |
+| `training/` | `CompressionEnv` (Gymnasium), `CompressorPolicy` (SB3), `RewardFunction`, `RLTrainer`, `RLRunLogger`, `TrainingRunManifest` | [docs/TRAINING.md](docs/TRAINING.md) |
 | `evaluation/` | `DeterministicEvaluator`, `LLMJudge`, `AblationRunner` | [docs/EVALUATION.md](docs/EVALUATION.md) |
 | `mcts/` | Optional MCTS search augmentation (tree, node, controller) | — |
-| `utils/` | structlog config, TensorBoard helpers, visualization, seed control, episode I/O, `itinerary_export` | — |
+| `utils/` | structlog config, visualization, seed control, episode I/O, `itinerary_export`, `colab_utils` | — |
 
 ---
 
@@ -87,10 +87,10 @@ optimized-llm-planning-memory/
 │   ├── config.yaml             #   root: defaults list
 │   ├── agent/                  #   react_baseline_raw, react_default, react_mcts
 │   ├── compressor/             #   identity, llm_prompt, transformer, hybrid, llm_mcts
-│   ├── training/               #   ppo_default, ppo_colab, ppo_mcts
-│   ├── reward/                 #   default (weights & shaping)
+│   ├── training/               #   ppo_default, ppo_colab, ppo_debug, ppo_sweep
+│   ├── reward/                 #   default, coverage_heavy (optional trip-quality signals)
 │   ├── eval/                   #   default (scoring_weights, judge_model)
-│   ├── simulator/              #   default (seed_range, world_params)
+│   ├── simulator/              #   default (seed_range, pool_size, world_params)
 │   └── logging/                #   default
 ├── src/
 │   └── optimized_llm_planning_memory/
@@ -127,9 +127,12 @@ optimized-llm-planning-memory/
 │   ├── compressor_dev/         #   4 pre-built trajectory contexts for dev
 │   └── rubrics/                #   itinerary_rubric_v1.md
 └── outputs/                    # runtime outputs (gitignored)
-    ├── episodes/               #   saved EpisodeLog JSONs
+    ├── episodes/               #   saved EpisodeLog JSONs (off during training by default)
     ├── checkpoints/            #   PPO .zip + compressor/ + reward_predictor/
-    ├── eval_results/           #   manifest.json + results.jsonl per run
+    ├── training/               #   per-run JSONL diagnostics + manifest.json
+    │   └── <run_id>/          #     episode_metrics.jsonl, ppo_metrics.jsonl, manifest.json
+    ├── bundles/                #   .tar.gz run archives for sharing
+    ├── eval_results/           #   manifest.json + results.jsonl per eval run
     └── logs/                   #   TensorBoard event files
 ```
 
@@ -204,18 +207,37 @@ python scripts/run_episode.py compressor=transformer \
 ### Training
 
 ```bash
-# Full run — identity compressor (GPU recommended)
+# Full run — identity compressor (GPU recommended; auto-detects CUDA)
 python scripts/run_training.py compressor=identity
 
-# Colab-friendly (50k steps, 2 parallel envs)
+# Colab-friendly (50k steps, 2 parallel envs, T4)
 python scripts/run_training.py compressor=identity training=ppo_colab
+
+# Named run — appears in manifest and Streamlit selector
+python scripts/run_training.py compressor=identity training=ppo_colab \
+    training.run_name=alice_identity_v1
+
+# Custom reward profile (adds destination coverage + activity density signals)
+python scripts/run_training.py reward=coverage_heavy compressor=identity
 
 # Resume from checkpoint
 python scripts/run_training.py compressor=identity training=ppo_colab \
     training.resume_from=outputs/checkpoints/ppo_compressor_10000_steps.zip
 ```
 
-Checkpoints land in `outputs/checkpoints/` every `training.checkpoint_every_n_steps` steps.
+Each run writes `outputs/training/<run_id>/manifest.json` (full resolved config), `episode_metrics.jsonl`, and `ppo_metrics.jsonl`. Checkpoints land in `outputs/checkpoints/` every `training.checkpoint_every_n_steps` steps.
+
+#### Artifact bundling
+
+After training, bundle the run for sharing with teammates:
+
+```python
+from optimized_llm_planning_memory.utils.colab_utils import bundle_run
+bundle_path = bundle_run("<run_id>", output_dir="outputs")
+# → outputs/bundles/<run_id>.tar.gz  (~5–30 MB)
+```
+
+See [docs/COLAB_GUIDE.md](docs/COLAB_GUIDE.md) for the full team collaboration workflow.
 
 ### Evaluation
 
@@ -264,10 +286,15 @@ Output: `outputs/eval_results/{YYYYMMDD_HHMMSS}_{run_id}/manifest.json` + `resul
 # RAW baseline (no API key needed for deterministic-only)
 python scripts/run_evaluation.py agent=react_baseline_raw eval.deterministic_only=true
 
-# Trained compressor
+# Trained compressor — auto-resolve checkpoint from training run manifest
+python scripts/run_evaluation.py +run_id=<run_id> eval.deterministic_only=true
+
+# Trained compressor — explicit checkpoint
 python scripts/run_evaluation.py compressor=identity eval.deterministic_only=true \
     training.resume_from=outputs/checkpoints/final/ppo_model.zip
 ```
+
+The `+run_id` flag reads `outputs/training/<run_id>/manifest.json`, infers the compressor type, and resolves the checkpoint path automatically.
 
 #### Comparing runs with eval_key
 
@@ -282,9 +309,10 @@ uv run jupyter lab notebooks/
 
 | Notebook | Purpose |
 |---|---|
-| `05_colab_rl_training.ipynb` | Full PPO training in Google Colab (GPU) |
+| `05_colab_rl_training.ipynb` | Full PPO training in Google Colab (GPU) — includes Section 12: bundle & share |
 | `06_evaluation.ipynb` | Interactive evaluation dashboard — compare conditions |
 | `07_compressor_dev.ipynb` | Step-by-step guide for building a new compressor |
+| `08_run_comparison.ipynb` | Load multiple run bundles and compare side-by-side — reward curves, summary table, PPO diagnostics |
 
 ### Developer UI (Streamlit)
 
@@ -318,15 +346,16 @@ Markers: `unit`, `slow`, `integration`, `module_test`, `system_test`.
 
 ## Google Colab Training
 
-See [docs/TRAINING.md](docs/TRAINING.md#google-colab) for the full setup guide.
+See [docs/COLAB_GUIDE.md](docs/COLAB_GUIDE.md) for the full team collaboration guide and [docs/TRAINING.md](docs/TRAINING.md#google-colab) for training details.
 
 Quick steps:
 1. Runtime → **GPU (T4)**
-2. Add your LLM API key to Colab Secrets
-3. Clone both repos, `pip install -e .[dev]`
-4. Mount Drive so `outputs/` persists across session resets
-5. `%tensorboard --logdir outputs/logs` before training
-6. `python scripts/run_training.py training=ppo_colab`
+2. Add `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` to Colab Secrets (`Tools → Secrets`)
+3. Clone both repos, `pip install -e ".[dev]"`
+4. Mount Drive and symlink `outputs/` → Drive folder so artifacts persist across resets
+5. `%tensorboard --logdir outputs/logs` **before** training
+6. `python scripts/run_training.py training=ppo_colab training.run_name=<your_name>_<config>`
+7. After training: `bundle_run(<run_id>)` + `upload_to_drive(...)` to share with teammates
 
 ---
 
@@ -339,7 +368,9 @@ Quick steps:
 | New deterministic metric | [docs/EVALUATION.md → Adding a Deterministic Metric](docs/EVALUATION.md#adding-a-deterministic-metric) |
 | New rubric dimension | [docs/EVALUATION.md → Adding a Rubric Dimension](docs/EVALUATION.md#adding-a-rubric-dimension) |
 | New agent mode or prompt version | [docs/AGENT.md → Extending the Agent](docs/AGENT.md#extending-the-agent) |
-| New reward component | [docs/TRAINING.md → Reward Shaping](docs/TRAINING.md#reward-shaping) |
+| New reward component (optional/pluggable) | [docs/TRAINING.md → Optional reward components](docs/TRAINING.md#optional-reward-components) |
+| New reward component (structural) | [docs/TRAINING.md → Reward Shaping](docs/TRAINING.md#reward-shaping) |
+| Colab team collaboration | [docs/COLAB_GUIDE.md](docs/COLAB_GUIDE.md) |
 
 ---
 

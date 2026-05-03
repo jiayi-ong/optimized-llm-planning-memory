@@ -205,6 +205,35 @@ API keys are loaded from `.env` at the repo root (same pattern as all other scri
 
 Output directory: `outputs/eval_results/{YYYYMMDD_HHMMSS}_{run_id}/`
 
+### Evaluating from a Training Run ID
+
+When you have a completed training run, use `+run_id=<run_id>` to auto-resolve the checkpoint and compressor type from `manifest.json` — no need to look up the checkpoint path manually:
+
+```bash
+# Deterministic only (no API key needed)
+python scripts/run_evaluation.py \
+    +run_id=20260501_120000 \
+    eval.deterministic_only=true
+
+# Full evaluation with LLM judge
+python scripts/run_evaluation.py \
+    +run_id=20260501_120000
+
+# Override any config value on top of manifest defaults
+python scripts/run_evaluation.py \
+    +run_id=20260501_120000 \
+    eval.deterministic_only=true \
+    eval.judge_model_id=openai/gpt-4o
+```
+
+`run_id` is the timestamped subdirectory name under `outputs/training/`. The script:
+1. Reads `outputs/training/<run_id>/manifest.json`.
+2. Infers `compressor.type` from `manifest.compressor_type` (if not explicitly overridden).
+3. Resolves the checkpoint path: prefers `checkpoints/final/ppo_model.zip`, falls back to the highest-numbered step checkpoint zip.
+4. Injects the resolved path as `training.resume_from` so the checkpoint-loading logic picks it up automatically.
+
+If no checkpoint is found (e.g., the run was interrupted), a warning is logged and evaluation proceeds without loading weights.
+
 ### Hydra-based eval (full pipeline)
 
 ```bash

@@ -49,7 +49,7 @@ This class satisfies all of these.
 
 from __future__ import annotations
 
-import random
+import itertools
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
@@ -144,6 +144,10 @@ class CompressionEnv(gymnasium.Env):
         self._episode_done: bool = False
         self._episode_id: str = ""
 
+        # Round-robin request iterator: prevents parallel envs from always
+        # picking the same request, reducing between-episode correlation.
+        self._request_cycle = itertools.cycle(self._user_requests)
+
     def reset(
         self,
         seed: int | None = None,
@@ -163,7 +167,9 @@ class CompressionEnv(gymnasium.Env):
         episode_seed = int(self.np_random.integers(0, 10000)) if seed is None else seed
         self._episode_id = str(uuid.uuid4())
 
-        self._current_request = random.choice(self._user_requests)
+        # Round-robin sampling: each env cycles through requests in order,
+        # ensuring all requests are seen before any repeats.
+        self._current_request = next(self._request_cycle)
         self._simulator = self._simulator_factory(episode_seed)
         self._agent = self._agent_factory()
 

@@ -3,6 +3,18 @@
 
 seed_range: [0, 9999]
 
+# WorldPool settings — controls how simulator instances are created for training.
+# Amortises world-generation cost across parallel environments.
+#
+# unique_per_episode: false (default) — use WorldPool; generate pool_size worlds
+#   at trainer startup and rotate them across episodes.  Much faster for large runs.
+# unique_per_episode: true — generate a fresh world on every CompressionEnv.reset().
+#   Use for debugging or when world generation is very fast.
+#
+# Memory: pool_size=20 worlds × ~200 KB/world ≈ 4 MB (negligible on T4).
+pool_size: 20
+unique_per_episode: false
+
 # World generation parameters — forwarded verbatim to WorldGenerator as world_config.
 # Keys must match WorldGenerator.DEFAULT_CONFIG in my-travel-world/travel_world/generation/world_generator.py.
 world_params:
