@@ -111,12 +111,14 @@ class SearchFlights(BaseTool):
             passengers=validated_input.passengers,
         )
         results.sort(key=lambda r: r.get("total_price", float("inf")))
-        # Cache every result so SelectFlight can look up full details by edge_id
-        for r in results:
+        returned = results[: validated_input.max_results]
+        # Cache only what was returned so SelectFlight sees the same price the
+        # caller saw — avoids stale overwrites from duplicate edge_ids in raw results.
+        for r in returned:
             eid = r.get("edge_id")
             if eid:
                 self._flight_cache[eid] = r
-        return results[: validated_input.max_results]
+        return returned
 
     def _generate_error_feedback(self, error: Exception, arguments: dict[str, Any]) -> str:
         return (

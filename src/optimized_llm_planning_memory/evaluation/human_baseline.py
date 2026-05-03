@@ -80,13 +80,14 @@ class HumanPlanningSession:
         user_request: UserRequest,
         seed: int = 42,
         output_dir: str | Path = "outputs/human_episodes",
+        world_config: dict | None = None,
     ) -> None:
         self._request = user_request
         self._output_dir = Path(output_dir)
         self._episode_id = uuid.uuid4().hex[:12]
 
         # Same infrastructure the ReAct agent uses — ensures comparable stats.
-        self._simulator = SimulatorAdapter(seed=seed)
+        self._simulator = SimulatorAdapter(seed=seed, world_config=world_config)
         self._tracker = ToolCallTracker()
         self._event_bus = EventBus()
         self._registry = ToolRegistry.from_config(
