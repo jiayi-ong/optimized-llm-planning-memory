@@ -729,6 +729,7 @@ class RLTrainer:
             ent_coef=hp.ent_coef,
             vf_coef=hp.vf_coef,
             max_grad_norm=hp.max_grad_norm,
+            normalize_advantage=hp.normalize_advantage,
             tensorboard_log=str(self._tensorboard_log),
             policy_kwargs=policy_kwargs,
             device=self._device,

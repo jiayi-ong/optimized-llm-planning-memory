@@ -279,27 +279,44 @@ class CompressorPolicy(BasePolicy):
 
         except Exception:
             action_tensor = torch.zeros(max_act, dtype=torch.int32)
-            log_prob = torch.tensor(0.0)
+            # Use a consistent fallback log_prob so the old/new ratio in PPO
+            # doesn't blow up.  log(1/32768) ≈ -10.4 is the uniform-distribution
+            # baseline for a 32K-vocab model; this is a safe lower bound.
+            try:
+                token_log_probs = self.compressor.get_log_probs(obs_text, "")
+                log_prob = token_log_probs.sum().detach()
+            except Exception:
+                log_prob = torch.tensor(-10.0)
 
         return action_tensor, log_prob
 
     def _compute_value(self, obs: torch.Tensor) -> torch.Tensor:
-        """Compute value estimates from mean-pooled token embeddings."""
-        embedded = self._token_embed(obs.long())  # (batch, obs_len, embed_dim)
-        pooled = embedded.mean(dim=1)              # (batch, embed_dim)
+        """Compute value estimates from mean-pooled token embeddings.
+
+        Masks padding zeros so the pool is over real tokens only.  Without
+        masking, 480+ zero-embedding positions overwhelm the 30-token signal,
+        driving value estimates toward a constant regardless of the observation.
+        """
+        mask = (obs != 0).float().unsqueeze(-1)    # (batch, obs_len, 1)
+        embedded = self._token_embed(obs.long())   # (batch, obs_len, embed_dim)
+        counts = mask.sum(dim=1).clamp(min=1)      # (batch, 1) — avoid div-by-zero
+        pooled = (embedded * mask).sum(dim=1) / counts  # (batch, embed_dim)
         return self._value_net(pooled)             # (batch, 1)
 
     def _decode_obs(self, obs_tokens: torch.Tensor) -> str:
         """Decode observation token IDs to text string."""
-        # Remove padding (zeros at the end)
-        tokens = obs_tokens[obs_tokens != 0].tolist()
+        # Box obs space stores floats; cast to int before tokenizer decode.
+        int_tokens = obs_tokens.long()
+        tokens = int_tokens[int_tokens != 0].tolist()
         if hasattr(self.compressor, "_tokenizer") and self.compressor._tokenizer is not None:
             return self.compressor._tokenizer.decode(tokens, skip_special_tokens=True)
         return " ".join(str(t) for t in tokens)
 
     def _decode_action(self, action_tokens: torch.Tensor) -> str:
         """Decode action token IDs to text string."""
-        tokens = action_tokens[action_tokens != 0].tolist()
+        # Box action space stores floats; cast to int before tokenizer decode.
+        int_tokens = action_tokens.long()
+        tokens = int_tokens[int_tokens != 0].tolist()
         if hasattr(self.compressor, "_tokenizer") and self.compressor._tokenizer is not None:
             return self.compressor._tokenizer.decode(tokens, skip_special_tokens=True)
         return " ".join(str(t) for t in tokens)

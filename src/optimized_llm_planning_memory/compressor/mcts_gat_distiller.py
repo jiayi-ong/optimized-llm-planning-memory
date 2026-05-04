@@ -608,6 +608,12 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
         """
         Encode a path's trajectory text via frozen T5 encoder.
         Returns [H] mean-pooled embedding.
+
+        The encoder parameters are frozen (requires_grad=False), so no encoder
+        weights are updated during backprop.  Running without torch.no_grad()
+        keeps the encoder output in the autograd graph, which allows gradient
+        to flow through path_emb into the downstream trainable modules
+        (struct_projector, path_encoder, importance_scorer) during PPO update.
         """
         input_ids = self._tokenizer.encode(
             text,
@@ -616,9 +622,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
             truncation=True,
         ).to(self._device)
 
-        # Encoder is frozen — no grad needed, saves memory
-        with torch.no_grad():
-            enc_out = self._model.encoder(input_ids=input_ids)
+        enc_out = self._model.encoder(input_ids=input_ids)
         return enc_out.last_hidden_state.squeeze(0).mean(dim=0)   # [H]
 
     def _pack_encoder_output(

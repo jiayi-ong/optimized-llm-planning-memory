@@ -34,8 +34,8 @@ from optimized_llm_planning_memory.core.models import (
     RewardComponents,
 )
 
-_SEP = "─" * 72
-_THIN = "·" * 72
+_SEP = "-" * 72
+_THIN = "." * 72
 
 
 def print_episode(
@@ -70,7 +70,7 @@ def print_episode(
 
 def print_step(step: ReActStep, file: TextIO = sys.stdout) -> None:
     """Print a single ReAct step."""
-    print(f"\n  ── Step {step.step_index} ──────────────────────", file=file)
+    print(f"\n  -- Step {step.step_index} --------------------", file=file)
     if step.thought:
         _print_wrapped("  Thought", step.thought, file=file)
     if step.action:
@@ -133,7 +133,7 @@ def _print_itinerary(itinerary: Itinerary | None, file: TextIO = sys.stdout) -> 
         for seg in day.transport_segments:
             ref = seg.booking_ref or "no-ref"
             print(
-                f"    ✈ FLIGHT  {seg.from_location} → {seg.to_location}  "
+                f"    [FLIGHT]  {seg.from_location} -> {seg.to_location}  "
                 f"dep={seg.departure_datetime}  arr={seg.arrival_datetime}  "
                 f"${seg.cost_usd:.2f}  (ref={ref})",
                 file=file,
@@ -142,15 +142,16 @@ def _print_itinerary(itinerary: Itinerary | None, file: TextIO = sys.stdout) -> 
             acc = day.accommodation
             ref = acc.booking_ref or "no-ref"
             print(
-                f"    🏨 HOTEL   {acc.hotel_name} ({acc.city})  "
-                f"{acc.check_in} → {acc.check_out}  "
+                f"    [HOTEL]   {acc.hotel_name} ({acc.city})  "
+                f"{acc.check_in} -> {acc.check_out}  "
                 f"${acc.total_cost_usd:.2f}  (ref={ref})",
                 file=file,
             )
         for act in day.activities:
             ref = act.booking_ref or "no-ref"
+            cat = (act.category or "").upper()
             print(
-                f"    📍 {act.category.upper():<9} {act.activity_name} @ {act.location}  "
+                f"    [ACT]  {cat:<9} {act.activity_name} @ {act.location}  "
                 f"{act.start_datetime}  ${act.cost_usd:.2f}  (ref={ref})",
                 file=file,
             )
@@ -168,7 +169,7 @@ def _print_wrapped(label: str, text: str, width: int = 80, file: TextIO = sys.st
 
 
 def _truncate(s: str, max_len: int) -> str:
-    return s if len(s) <= max_len else s[:max_len] + "…"
+    return s if len(s) <= max_len else s[:max_len] + "..."
 
 
 def _compact_dict(d: dict) -> str:
@@ -180,4 +181,4 @@ def _bar(value: float, width: int = 20) -> str:
     """Simple ASCII progress bar for [0, 1] values."""
     clamped = max(0.0, min(1.0, value))
     filled = int(round(clamped * width))
-    return "[" + "█" * filled + "░" * (width - filled) + "]"
+    return "[" + "#" * filled + "." * (width - filled) + "]"

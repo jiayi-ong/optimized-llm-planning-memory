@@ -148,12 +148,18 @@ def main(cfg: DictConfig) -> None:
 
     worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
     world_params = OmegaConf.to_container(cfg.simulator.world_params, resolve=True) if OmegaConf.select(cfg, "simulator.world_params") else None
+    world_id_override = OmegaConf.select(cfg, "simulator.world_id", default=None)
 
     def simulator_factory(seed: int) -> SimulatorAdapter:
-        return SimulatorAdapter(seed=seed, worlds_dir=worlds_dir, world_config=world_params)
+        return SimulatorAdapter(
+            seed=seed,
+            worlds_dir=worlds_dir,
+            world_config=world_params,
+            world_id=world_id_override or None,
+        )
 
     def agent_factory() -> ReActAgent:
-        sim = SimulatorAdapter(seed=0, world_config=world_params)  # placeholder; env overrides with fresh sim
+        sim = SimulatorAdapter(seed=0, world_config=world_params, world_id=world_id_override or None)  # placeholder; env overrides with fresh sim
         tracker = ToolCallTracker()
         event_bus = EventBus()
         registry = ToolRegistry.from_config(simulator=sim, tracker=tracker, event_bus=event_bus)

@@ -1,0 +1,52 @@
+# configs/training/ppo_probe.yaml
+# =================================
+# Probe config for local CPU robustness testing with mcts_gat compressor.
+#
+# Designed to run ~60 min on CPU. 10 PPO updates with meaningful learning signal.
+#
+# Key fixes vs original probe:
+#   normalize_advantage: false — prevents policy_loss ≈ 0 when ratio ≈ 1 (init)
+#   n_steps: 64              — larger rollout → more advantage variance
+#   batch_size: 16           — 4 mini-batches per rollout (vs 1 before)
+#   max_agent_steps: 24      — 4 compression windows of 6 steps each
+#
+# Math:
+#   n_envs=1, n_steps=64 → rollout buffer fills after 64 compression events
+#   steps_per_compression=6 → each compression event = 6 ReAct steps
+#   max_agent_steps=24 → each episode = up to 4 compression windows (24 steps)
+#   num_timesteps=640 → 10 rollout collections → 10 PPO updates
+#   Total LLM calls ≈ 640 * 6 = 3840 (moderate, ~$0.50 on gpt-4o-mini)
+#
+# Usage:
+#   python scripts/run_training.py training=ppo_probe agent=react_probe compressor=mcts_gat \
+#     +simulator.world_id=world_42_20260504_075144
+#
+# @package training
+
+num_timesteps: 640
+n_envs: 1
+checkpoint_every_n_steps: 640
+resume_from: null
+run_name: null
+device: cpu
+episode_save_freq: 1
+
+ppo:
+  learning_rate: 3.0e-5
+  n_steps: 64
+  batch_size: 16
+  n_epochs: 4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.2
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 1.0
+  normalize_advantage: false
+
+env:
+  max_obs_tokens: 512
+  max_action_tokens: 128
+  steps_per_compression: 6
+  max_agent_steps: 24
+  vocab_size: 32128

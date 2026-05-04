@@ -331,16 +331,24 @@ class RewardFunction:
         self, episode_log: EpisodeLog, _request: UserRequest, _is_terminal: bool
     ) -> float:
         """
-        Normalised activity density: average activities per day, capped at 1.0.
-        3+ activities/day → 1.0; 0 activities → 0.0.
-        Delegates to the same logic as DeterministicEvaluator._activity_density_score().
-        [0.0, 1.0]
+        Per-day step-function score averaged across all days.
+        Mirrors DeterministicEvaluator._activity_density_score() exactly. [0.0, 1.0]
         """
         itinerary = episode_log.final_itinerary
         if itinerary is None or not itinerary.days:
             return 0.0
-        avg = sum(len(day.activities) for day in itinerary.days) / len(itinerary.days)
-        return min(1.0, avg / 3.0)  # 3 activities/day → full score
+
+        def _day_score(n: int) -> float:
+            if n == 0:
+                return 0.0
+            if n == 1:
+                return 0.5
+            if n <= 4:
+                return 1.0
+            return max(0.0, 1.0 - 0.2 * (n - 4))
+
+        scores = [_day_score(len(day.activities)) for day in itinerary.days]
+        return sum(scores) / len(scores)
 
     def _budget_adherence_score(
         self, episode_log: EpisodeLog, request: UserRequest, _is_terminal: bool

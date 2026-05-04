@@ -138,7 +138,9 @@ class CompressionEnv(gymnasium.Env):
         self._current_request: UserRequest | None = None
         self._trajectory: Trajectory | None = None
         self._registry: ToolRegistry | None = None
+        self._tracker: ToolCallTracker | None = None
         self._current_compressed: CompressedState | None = None
+        self._compressed_states_log: list[CompressedState] = []
         self._final_itinerary: Itinerary | None = None
         self._agent_step_count: int = 0
         self._episode_done: bool = False
@@ -175,14 +177,15 @@ class CompressionEnv(gymnasium.Env):
 
         # Fresh per-episode state; trajectory is owned by the env, not the agent
         self._trajectory = Trajectory(request_id=self._current_request.request_id)
-        tracker = ToolCallTracker()
+        self._tracker = ToolCallTracker()
         event_bus = EventBus()
         self._registry = ToolRegistry.from_config(
             simulator=self._simulator,
-            tracker=tracker,
+            tracker=self._tracker,
             event_bus=event_bus,
         )
         self._current_compressed = None
+        self._compressed_states_log: list[CompressedState] = []
         self._final_itinerary = None
         self._agent_step_count = 0
         self._episode_done = False
@@ -248,9 +251,10 @@ class CompressionEnv(gymnasium.Env):
 
         # Decode action tokens → CompressedState
         action_text = self._decode_action(action)
-        self._current_compressed = _parse_compressed_state(
-            action_text, self._current_compressed
-        )
+        parsed = _parse_compressed_state(action_text, self._current_compressed)
+        if parsed is not None and parsed is not self._current_compressed:
+            self._compressed_states_log.append(parsed)
+        self._current_compressed = parsed
 
         # Run next window of ReAct steps with the injected compressed context
         if not self._episode_done:
@@ -273,6 +277,7 @@ class CompressionEnv(gymnasium.Env):
         terminated = self._episode_done
         truncated = self._agent_step_count >= self._config.max_agent_steps
 
+        tool_stats = tuple(self._tracker.get_stats()) if self._tracker is not None else ()
         episode_log = _build_episode_log(
             episode_id=self._episode_id,
             request_id=self._current_request.request_id,
@@ -280,6 +285,8 @@ class CompressionEnv(gymnasium.Env):
             trajectory=self._trajectory,
             final_itinerary=self._final_itinerary,
             total_steps=self._agent_step_count,
+            compressed_states=tuple(self._compressed_states_log),
+            tool_stats=tool_stats,
         )
 
         reward_components = self._reward_fn.compute(
@@ -351,8 +358,10 @@ def _build_episode_log(
     trajectory: Trajectory,
     final_itinerary: Itinerary | None,
     total_steps: int,
+    compressed_states: tuple = (),
+    tool_stats: tuple = (),
 ) -> EpisodeLog:
-    """Build a minimal EpisodeLog from live episode state for reward computation."""
+    """Build an EpisodeLog from live episode state for reward computation."""
     agent_mode_str = agent_mode.value if isinstance(agent_mode, Enum) else str(agent_mode)
     placeholder_reward = RewardComponents(
         hard_constraint_score=0.0,
@@ -368,10 +377,10 @@ def _build_episode_log(
         request_id=request_id,
         agent_mode=agent_mode_str,
         trajectory=trajectory.to_model(),
-        compressed_states=(),
+        compressed_states=compressed_states,
         final_itinerary=final_itinerary,
         reward_components=placeholder_reward,
-        tool_stats=(),
+        tool_stats=tool_stats,
         total_steps=total_steps,
         mcts_stats=None,
         success=True,
