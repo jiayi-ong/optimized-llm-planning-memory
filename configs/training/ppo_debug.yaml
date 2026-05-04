@@ -17,6 +17,7 @@ num_timesteps: 8
 n_envs: 1
 checkpoint_every_n_steps: 8
 resume_from: null
+run_name: null
 device: cpu                   # force CPU for deterministic debug runs
 episode_save_freq: 1          # save every episode for full transparency in debug
 
