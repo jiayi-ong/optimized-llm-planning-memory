@@ -9,7 +9,7 @@ Evaluation runs in two independent layers. Layer 1 (deterministic) is fast, free
 | File | Role |
 |---|---|
 | `evaluation/evaluator.py` | `Evaluator` — orchestrates both layers, writes results |
-| `evaluation/deterministic.py` | `DeterministicEvaluator` — 14 rule-based metrics (8 v1 + 6 v2) |
+| `evaluation/deterministic.py` | `DeterministicEvaluator` — 15 rule-based metrics (8 v1 + 6 v2 + 1 v3) |
 | `evaluation/llm_judge.py` | `LLMJudge` — up to 10 rubric dimensions via instructor |
 | `evaluation/rubrics.py` | Rubric text constants; `DEFAULT_RUBRIC_DIMENSIONS` (6 v1) and `RUBRIC_DIMENSIONS_V2` (all 10) |
 | `evaluation/manifest.py` | `EvalRunManifest` — run metadata and result index |
@@ -47,6 +47,12 @@ Evaluation runs in two independent layers. Layer 1 (deterministic) is fast, free
 | `rest_day_ratio` | [0, 1] | For trips >5 days: `min(1.0, actual_rest_days / target)` where target = 1 rest day per 4 travel days (a day with ≤1 activity counts as a rest day). Returns 1.0 for trips ≤5 days. |
 | `schedule_overlap_score` | [0, 1] | `1 − overlapping_pairs / total_checked_pairs` across all days. Granular complement to `logical_consistency` sub-check 3. |
 | `intra_city_feasibility` | [0, 1] | `1 − violated_gaps / total_gaps`. A gap is violated when consecutive same-city activities have < 15 minutes between them. |
+
+### v3 Metrics (added in v3, 1 new)
+
+| Metric key | Range | Formula / Description |
+|---|---|---|
+| `completion_rate` | [0, 1] | `booked_days / required_trip_days`. Fraction of required trip days that have at least one booking. Guards against empty-itinerary score inflation: without this metric, `budget_adherence`, `schedule_overlap_score`, and `logical_consistency` trivially score 1.0 when the agent books nothing. Returns 0.0 if `final_itinerary` is None or has no days. Returns 1.0 if `required_days ≤ 0`. |
 
 ### Critical invariant
 
@@ -479,6 +485,7 @@ Every `EvalResult` is stamped with `METRIC_VERSION`. History:
 |---|---|
 | `v1` | Initial 8 metrics: `hard_constraint_ratio`, `soft_constraint_score`, `tool_efficiency`, `tool_failure_rate`, `avg_tool_latency_ms`, `steps_per_episode`, `budget_adherence`, `logical_consistency`. Constraint evaluation via `ConstraintSatisfactionEngine`. |
 | `v2` | Added 6 metrics: `destination_coverage_ratio`, `accommodation_coverage_ratio`, `activity_density_score`, `rest_day_ratio`, `schedule_overlap_score`, `intra_city_feasibility`. Also fixed multi-hotel star-rating bug in `_evaluate_accommodation()`. |
+| `v3` | Added 1 metric: `completion_rate` (`booked_days / required_trip_days`). Prevents score inflation on near-empty itineraries where budget, overlap, and consistency metrics trivially score 1.0. |
 
 When the metric schema changes:
 - Old results retain their original version tag.
