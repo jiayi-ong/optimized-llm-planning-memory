@@ -44,10 +44,27 @@ This avoids pasting keys into cells. Keys are per-account and never shared with 
 
 ### 4. Install
 
+> **Order matters**: `pip` does not read `[tool.uv.sources]`, so the travel simulator
+> must be installed **before** the main package — otherwise `pip` looks for
+> `travel-world` on PyPI and fails.
+
+**If your repos are cloned to `/content/` (default):**
+
 ```python
-%cd /content/optimized-llm-planning-memory
-!pip install -e ".[dev]" -q
-!pip install -e "/content/my-travel-world" -q
+# 1. Simulator first — main package depends on it
+!pip install -q -e "/content/my-travel-world"
+# 2. Main package (now travel-world is already installed)
+!pip install -q -e "/content/optimized-llm-planning-memory[dev]"
+```
+
+**If your repos live on Google Drive:**
+
+```python
+DRIVE_ROOT = "/content/drive/MyDrive/STATGR5293 - GenAI Final Project"
+# 1. Simulator first
+!pip install -q -e "{DRIVE_ROOT}/my-travel-world"
+# 2. Main package
+!pip install -q -e "{DRIVE_ROOT}/optimized-llm-planning-memory[dev]"
 ```
 
 ### 5. Mount Google Drive
@@ -272,6 +289,8 @@ Each team member works in their own Colab notebook (their copy of `notebooks/05_
 
 | Symptom | Fix |
 |---|---|
+| `ERROR: Could not find a version that satisfies the requirement travel-world` | Install order is wrong. Install `my-travel-world` **before** `optimized-llm-planning-memory[dev]`. See Step 4 above. |
+| `ModuleNotFoundError: No module named 'hydra'` | Caused by the same install-order bug — `.[dev]` failed mid-install. Re-run Step 4 in the correct order. |
 | `FileNotFoundError: Training run directory not found` | Check `run_id` — it must match the subdirectory name under `outputs/training/`. Run `list_manifests()` to see available IDs. |
 | Drive runs out of space | Delete intermediate checkpoint zips (`outputs/checkpoints/ppo_*_steps.zip`). Only the `final/` checkpoint is needed for sharing. |
 | TensorBoard shows no data | You started `%tensorboard` after `ppo.learn()` started. Stop training, run `%tensorboard --logdir outputs/logs`, then restart. |
