@@ -33,10 +33,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / ".env", override=False)
+load_dotenv(_REPO_ROOT / ".env", override=False)
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -87,11 +89,11 @@ def main(cfg: DictConfig) -> None:
     # ── Load test requests ────────────────────────────────────────────────────
     from optimized_llm_planning_memory.core.models import UserRequest
 
-    test_dir = Path("data/user_requests/test")
+    test_dir = _REPO_ROOT / "data/user_requests/test"
     if not test_dir.exists() or not list(test_dir.glob("*.json")):
         log.warning("no_test_requests", path=str(test_dir),
                     hint="Run scripts/generate_user_requests.py first.")
-        template = Path("data/user_requests/templates/request_template.json")
+        template = _REPO_ROOT / "data/user_requests/templates/request_template.json"
         user_requests = [UserRequest.model_validate(json.loads(template.read_text()))]
     else:
         user_requests = [
