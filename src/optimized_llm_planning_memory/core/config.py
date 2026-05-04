@@ -48,6 +48,22 @@ class SimulatorConfig(BaseModel):
         default_factory=dict,
         description="Extra kwargs forwarded to the simulator constructor.",
     )
+    pool_size: int = Field(
+        default=20,
+        ge=1,
+        description=(
+            "Number of worlds to pre-generate in WorldPool at trainer startup. "
+            "Ignored when unique_per_episode=True."
+        ),
+    )
+    unique_per_episode: bool = Field(
+        default=False,
+        description=(
+            "When True, generate a fresh world on every CompressionEnv.reset(). "
+            "Use for debugging or when world generation is fast. "
+            "When False (default), use WorldPool to amortise generation cost."
+        ),
+    )
 
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
@@ -151,6 +167,14 @@ class PPOHyperparams(BaseModel):
     ent_coef: float = Field(default=0.01, ge=0.0)
     vf_coef: float = Field(default=0.5, ge=0.0)
     max_grad_norm: float = Field(default=1.0, gt=0.0)
+    lr_schedule: str = Field(
+        default="constant",
+        description=(
+            "Learning rate schedule applied over training. "
+            "'constant' keeps lr fixed. 'linear' decays from lr to lr/10 "
+            "linearly over num_timesteps. 'cosine' uses cosine annealing."
+        ),
+    )
 
 
 class EnvConfig(BaseModel):
@@ -186,6 +210,27 @@ class TrainingConfig(BaseModel):
         default=None,
         description="Path to a checkpoint .zip file to resume training from.",
     )
+    device: str = Field(
+        default="auto",
+        description=(
+            "Device for the policy + compressor. 'auto' selects CUDA if available, "
+            "else CPU. 'cpu' forces CPU (useful for debugging). 'cuda' forces GPU."
+        ),
+    )
+    episode_save_freq: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Save a full EpisodeLog JSON every N completed episodes during training. "
+            "0 = never (recommended for Colab to avoid storage blowup). "
+            "Use ppo_debug.yaml which sets this to 1 for full transparency."
+        ),
+    )
+    run_name: str | None = Field(
+        default=None,
+        description="Human-readable name for this training run (appears in manifest).",
+    )
+    seed: int = Field(default=42, description="Global random seed for reproducibility.")
 
 
 # ── Reward ────────────────────────────────────────────────────────────────────
@@ -197,6 +242,37 @@ class RewardWeights(BaseModel):
     tool_failure_penalty: float = Field(default=-0.5, le=0.0)
     logical_consistency: float = Field(default=0.5)
     terminal_itinerary: float = Field(default=3.0)
+
+
+class OptionalRewardComponent(BaseModel):
+    """Config for an optional reward component that can be toggled per training session."""
+    enabled: bool = False
+    weight: float = Field(default=0.1, ge=0.0)
+
+
+class OptionalRewardComponents(BaseModel):
+    """
+    Optional reward components sourced from DeterministicEvaluator v2 metrics.
+
+    These are OFF by default (weight=0, enabled=False).  Enable them in a
+    custom reward YAML (e.g., configs/reward/coverage_heavy.yaml) to add trip-
+    quality signals to the training reward without modifying reward.py.
+
+    Alignment invariant: each component delegates to the same DeterministicEvaluator
+    method used at evaluation time, preserving training_reward ≡ eval_metric.
+    """
+    destination_coverage: OptionalRewardComponent = Field(
+        default_factory=OptionalRewardComponent,
+        description="Fraction of requested destinations included in the itinerary.",
+    )
+    activity_density: OptionalRewardComponent = Field(
+        default_factory=OptionalRewardComponent,
+        description="Average number of activities per itinerary day.",
+    )
+    budget_adherence: OptionalRewardComponent = Field(
+        default_factory=OptionalRewardComponent,
+        description="1.0 if within budget; penalises proportionally to overshoot.",
+    )
 
 
 class RewardConfig(BaseModel):
@@ -212,6 +288,13 @@ class RewardConfig(BaseModel):
     normalize: bool = Field(
         default=True,
         description="Normalize total reward to [-1, 1] range.",
+    )
+    optional: OptionalRewardComponents = Field(
+        default_factory=OptionalRewardComponents,
+        description=(
+            "Optional v2 evaluation metrics usable as reward components. "
+            "All disabled by default. Enable via reward/coverage_heavy.yaml."
+        ),
     )
 
 

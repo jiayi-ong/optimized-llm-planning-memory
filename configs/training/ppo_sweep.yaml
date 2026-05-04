@@ -1,0 +1,70 @@
+# configs/training/ppo_sweep.yaml
+# ====================================
+# Hyperparameter sweep reference for manual Colab experiments.
+#
+# We search a 3×3×3 = 27-point grid around the theory-backed default values.
+# Run each combination as a separate Colab cell with a unique run_name so that
+# bundle_run() + run_comparison notebook can compare them automatically.
+#
+# Sweep parameters and rationale
+# --------------------------------
+# learning_rate : Controls step size. Too high → unstable KL (clip_fraction > 0.3).
+#                 Too low → slow convergence. Default 3e-5 is conservative for LLM tasks.
+#   Range: [1e-4, 3e-5, 1e-5]
+#
+# clip_epsilon  : PPO clipping threshold. Larger → more aggressive updates.
+#                 Smaller → too conservative, slow learning.
+#   Range: [0.1, 0.2, 0.3]
+#
+# ent_coef      : Entropy bonus. Higher → more exploration (wider action distribution).
+#                 Lower → faster convergence but risk of premature collapse.
+#   Range: [0.0, 0.01, 0.05]
+#
+# Fixed (do not sweep):
+#   n_steps=512, batch_size=32, n_epochs=4  (Colab memory limits)
+#   gamma=0.99, gae_lambda=0.95             (standard for sparse-reward tasks)
+#   max_grad_norm=1.0                       (never relax — protects from instability)
+#
+# Workflow
+# ---------
+# 1. Copy ppo_colab.yaml into a new config or override at CLI.
+# 2. Run each combination as a separate cell:
+#
+#   !python scripts/run_training.py \
+#       compressor=identity training=ppo_colab \
+#       training.ppo.learning_rate=1e-4 \
+#       training.ppo.clip_epsilon=0.2 \
+#       training.ppo.ent_coef=0.01 \
+#       project.run_name=sweep_lr1e4_clip02_ent001
+#
+# 3. After all 27 runs, use notebooks/08_run_comparison.ipynb to rank by
+#    final hard_constraint_score and reward_mean_20.
+#
+# 4. Promote the best combination to ppo_default.yaml.
+#
+# Suggested order (most likely to succeed first):
+#   lr=3e-5,  clip=0.2, ent=0.01  ← default baseline
+#   lr=1e-4,  clip=0.2, ent=0.01
+#   lr=3e-5,  clip=0.1, ent=0.01
+#   lr=3e-5,  clip=0.2, ent=0.05
+#   lr=3e-5,  clip=0.3, ent=0.0
+#   ...
+#
+# @package training
+# (This file is documentation — it is not loaded directly as a Hydra config.)
+
+_sweep_grid:
+  learning_rate: [1.0e-4, 3.0e-5, 1.0e-5]
+  clip_epsilon:  [0.1, 0.2, 0.3]
+  ent_coef:      [0.0, 0.01, 0.05]
+
+_fixed:
+  num_timesteps: 50000
+  n_envs: 2
+  n_steps: 512
+  batch_size: 32
+  n_epochs: 4
+  gamma: 0.99
+  gae_lambda: 0.95
+  max_grad_norm: 1.0
+  lr_schedule: constant

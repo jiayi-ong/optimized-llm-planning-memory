@@ -1,0 +1,38 @@
+# configs/reward/coverage_heavy.yaml
+# ====================================
+# Reward profile that adds trip-quality coverage signals to the standard reward.
+#
+# Use this profile to study whether optimising for destination coverage and
+# activity density produces itineraries that are richer and more complete,
+# at the cost of potentially slightly lower hard-constraint satisfaction.
+#
+# Usage:
+#   python scripts/run_training.py reward=coverage_heavy compressor=identity
+#
+# Ablation comparison:
+#   Run once with reward=default and once with reward=coverage_heavy on the same
+#   seed set.  Compare hard_constraint_ratio vs destination_coverage_ratio in the
+#   eval_results to understand the trade-off.
+#
+# @package reward
+weights:
+  hard_constraint: 2.0          # unchanged — hard constraints remain primary signal
+  soft_constraint: 1.0
+  tool_efficiency: 0.3
+  tool_failure_penalty: -0.5
+  logical_consistency: 0.5
+  terminal_itinerary: 3.0
+terminal_bonus: 5.0
+step_penalty: -0.01
+normalize: true
+
+optional:
+  destination_coverage:
+    enabled: true
+    weight: 0.5               # strong signal for destination completeness
+  activity_density:
+    enabled: true
+    weight: 0.3               # encourage filling itinerary days with activities
+  budget_adherence:
+    enabled: false            # already implicit in hard_constraint budget check
+    weight: 0.0

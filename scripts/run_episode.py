@@ -21,12 +21,14 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
 # Allow running from the project root without installing the package
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 # Load .env before any library (litellm, openai) reads os.environ for API keys
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / ".env", override=False)
+load_dotenv(_REPO_ROOT / ".env", override=False)
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -174,12 +176,12 @@ def main(cfg: DictConfig) -> None:
     from optimized_llm_planning_memory.core.models import UserRequest
 
     # Prefer real generated requests over the placeholder template
-    train_dir = Path("data/user_requests/train")
+    train_dir = _REPO_ROOT / "data/user_requests/train"
     train_files = sorted(train_dir.glob("*.json")) if train_dir.exists() else []
     if train_files:
         user_request = UserRequest.model_validate(json.loads(train_files[0].read_text()))
     else:
-        template_path = Path("data/user_requests/templates/request_template.json")
+        template_path = _REPO_ROOT / "data/user_requests/templates/request_template.json"
         user_request = UserRequest.model_validate(json.loads(template_path.read_text()))
 
     # ── Run episode ───────────────────────────────────────────────────────────

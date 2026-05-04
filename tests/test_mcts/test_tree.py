@@ -12,9 +12,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from optimized_llm_planning_memory.core.models import ReActStep, TrajectoryModel
 from optimized_llm_planning_memory.mcts.config import MCTSConfig
-from optimized_llm_planning_memory.mcts.node import MCTSNode
+from optimized_llm_planning_memory.mcts.node import MCTSNode, MCTSTreeRepresentation
 from optimized_llm_planning_memory.mcts.tree import MCTSTree
+
+# Resolve TYPE_CHECKING forward reference so MCTSTreeRepresentation validates fields.
+MCTSTreeRepresentation.model_rebuild()
+
+_TS = "2026-05-01T12:00:00+00:00"
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -31,14 +37,18 @@ def _make_config(**kwargs) -> MCTSConfig:
     return MCTSConfig(**defaults)
 
 
-def _make_traj(total_steps: int = 0):
-    traj = MagicMock()
-    traj.trajectory_id = str(uuid.uuid4())
-    traj.request_id = "req-001"
-    traj.total_steps = total_steps
-    traj.steps = ()
-    traj.to_text.return_value = f"[{total_steps} steps]"
-    return traj
+def _make_traj(total_steps: int = 0) -> TrajectoryModel:
+    """Return a real TrajectoryModel with ``total_steps`` stub ReActStep objects."""
+    steps = tuple(
+        ReActStep(step_index=i, thought=f"t{i}", action=None, observation=None, timestamp=_TS)
+        for i in range(total_steps)
+    )
+    return TrajectoryModel(
+        trajectory_id=str(uuid.uuid4()),
+        request_id="req-001",
+        steps=steps,
+        total_steps=total_steps,
+    )
 
 
 # ── build_root ────────────────────────────────────────────────────────────────

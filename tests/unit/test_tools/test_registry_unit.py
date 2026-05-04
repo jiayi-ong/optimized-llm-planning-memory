@@ -100,7 +100,7 @@ class TestToolRegistryFromConfig:
         registry = ToolRegistry.from_config(
             simulator=mock_sim_protocol, tracker=tracker, event_bus=bus
         )
-        assert len(registry) == 12
+        assert len(registry) == 13
 
     def test_from_config_subset(self, mock_sim_protocol):
         tracker = ToolCallTracker()

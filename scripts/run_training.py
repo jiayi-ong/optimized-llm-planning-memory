@@ -16,10 +16,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / ".env", override=False)
+load_dotenv(_REPO_ROOT / ".env", override=False)
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -49,13 +51,13 @@ def main(cfg: DictConfig) -> None:
     import json
     from optimized_llm_planning_memory.core.models import UserRequest
 
-    train_dir = Path("data/user_requests/train")
+    train_dir = _REPO_ROOT / "data/user_requests/train"
     if not train_dir.exists() or not list(train_dir.glob("*.json")):
         log.warning("no_training_requests", path=str(train_dir),
                     hint="Run scripts/generate_user_requests.py first, "
                          "or place request JSON files in data/user_requests/train/")
         # Fallback: use template request
-        template = Path("data/user_requests/templates/request_template.json")
+        template = _REPO_ROOT / "data/user_requests/templates/request_template.json"
         user_requests = [UserRequest.model_validate(json.loads(template.read_text()))]
     else:
         user_requests = [

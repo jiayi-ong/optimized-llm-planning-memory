@@ -39,7 +39,7 @@ Constraint engine compatibility notes (see core/constraints.py)
 Usage
 -----
     python scripts/generate_user_requests.py
-    python scripts/generate_user_requests.py n_train=40 n_val=10 n_test=10
+    python scripts/generate_user_requests.py data.n_train=40 data.n_val=10 data.n_test=10
     python scripts/generate_user_requests.py project.seed=123
 """
 
@@ -55,7 +55,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import NamedTuple
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -725,9 +726,9 @@ def main(cfg: DictConfig) -> None:
     set_seed(seed)
     rng = random.Random(seed)
 
-    n_train = int(OmegaConf.select(cfg, "n_train", default=40))
-    n_val   = int(OmegaConf.select(cfg, "n_val",   default=10))
-    n_test  = int(OmegaConf.select(cfg, "n_test",  default=10))
+    n_train = int(OmegaConf.select(cfg, "data.n_train", default=40))
+    n_val   = int(OmegaConf.select(cfg, "data.n_val",   default=10))
+    n_test  = int(OmegaConf.select(cfg, "data.n_test",  default=10))
 
     from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
     worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
@@ -762,12 +763,12 @@ def main(cfg: DictConfig) -> None:
         template_req = _make_request(
             city_pairs[0], _ARCHETYPES[0], 2500.0, "2025-07-01", "2025-07-08", tone_idx=1
         )
-        template_path = Path("data/user_requests/templates/request_template.json")
+        template_path = _REPO_ROOT / "data/user_requests/templates/request_template.json"
         template_path.parent.mkdir(parents=True, exist_ok=True)
         template_path.write_text(json.dumps(template_req, indent=2), encoding="utf-8")
         log.info("template_updated", path=str(template_path))
 
-    base = Path("data/user_requests")
+    base = _REPO_ROOT / "data/user_requests"
     for split, n in [("train", n_train), ("val", n_val), ("test", n_test)]:
         log.info("generating_split", split=split, n=n)
         generate_and_save(n, split, base / split, city_pairs, rng, log)
