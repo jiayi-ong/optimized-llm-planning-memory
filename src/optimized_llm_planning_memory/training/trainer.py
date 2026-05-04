@@ -165,6 +165,10 @@ class EpisodeLogCallback(BaseCallback):
             self.logger.record(f"{self._prefix}/tool_success_rate", tool_success_rate)
             self.logger.record(f"{self._prefix}/num_compressions", num_compressions)
 
+            # Flush episode metrics to TensorBoard immediately rather than waiting
+            # for the rollout boundary (n_steps × n_envs steps away).
+            self.logger.dump(self.num_timesteps)
+
             # ── Persist to JSONL ───────────────────────────────────────────────
             if self._run_logger is not None:
                 summary = EpisodeMetricsSummary(
