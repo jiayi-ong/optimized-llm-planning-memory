@@ -28,10 +28,10 @@ Training with `compressor=identity` on the T4 takes ~15 min for 50k steps.
 
 `Tools → Secrets` → add:
 
-| Secret name | Value |
-|---|---|
-| `ANTHROPIC_API_KEY` | `sk-ant-...` |
-| `OPENAI_API_KEY` | `sk-...` |
+| Secret name | Required? | Value |
+|---|---|---|
+| `OPENAI_API_KEY` | Yes | `sk-...` — agent + LLM compressors |
+| `ANTHROPIC_API_KEY` | No | `sk-ant-...` — only if switching agent to Claude |
 
 This avoids pasting keys into cells. Keys are per-account and never shared with teammates.
 
@@ -87,8 +87,9 @@ After this, everything written to `outputs/` persists across session resets.
 import os
 from google.colab import userdata
 
-os.environ["ANTHROPIC_API_KEY"] = userdata.get("ANTHROPIC_API_KEY")
-os.environ["OPENAI_API_KEY"]    = userdata.get("OPENAI_API_KEY")
+os.environ["OPENAI_API_KEY"]    = userdata.get("OPENAI_API_KEY")     # required
+os.environ["ANTHROPIC_API_KEY"] = userdata.get("ANTHROPIC_API_KEY")  # optional
+os.environ.setdefault("AGENT_LLM_MODEL_ID", "openai/gpt-4o-mini")
 ```
 
 ### 7. Smoke-test (one episode, no training)
