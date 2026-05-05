@@ -21,3 +21,4 @@ ppo:
   vf_coef: 0.5
   max_grad_norm: 1.0
   lr_schedule: constant       # switch to 'linear' for longer runs (>100k steps)
+  normalize_advantage: false  # prevents policy_loss≈0 at init when ratio≈1 and batch mean(adv)≈0

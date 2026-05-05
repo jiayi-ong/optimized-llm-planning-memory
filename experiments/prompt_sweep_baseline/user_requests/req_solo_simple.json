@@ -1,0 +1,78 @@
+{
+  "request_id": "req-solo-simple-001",
+  "raw_text": "Solo traveler heading from Brindor to Caelum for 4 days. Budget is $2000. Looking for a comfortable hotel and at least one local event or activity.",
+  "origin_city": "city_world_42_20260504_075144_0001",
+  "destination_cities": [
+    "city_world_42_20260504_075144_0002"
+  ],
+  "start_date": "2026-06-28",
+  "end_date": "2026-07-02",
+  "budget_usd": 2000.0,
+  "traveler_profile": {
+    "num_adults": 1,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-solo-001",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $2000 USD.",
+      "value": 2000.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-solo-001",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-28 and end by 2026-07-02.",
+      "value": "2026-06-28 to 2026-07-02",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-solo-001",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 4 days long.",
+      "value": 4,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-solo-001",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Prefer a 3-star hotel or above.",
+      "value": 3,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "local culture",
+    "walking tours",
+    "affordable dining"
+  ],
+  "world_id": "world_42_20260504_075144",
+  "metadata": {
+    "generated_by": "prompt_sweep_baseline",
+    "template_version": "3.0",
+    "archetype": "solo_traveler",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
+    "dest_names": ["Caelum"],
+    "world_id": "world_42_20260504_075144",
+    "experiment": "prompt_sweep_baseline",
+    "notes": "Simple control: 1 destination, low budget, minimal constraints"
+  }
+}

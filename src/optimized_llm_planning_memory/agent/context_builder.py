@@ -36,6 +36,10 @@ All modes produce a string with the structure::
 
     [AVAILABLE TOOLS]
     <tool list from ToolRegistry>
+
+STATELESS mode omits the [CONTEXT] section entirely. The agent's only memory
+is the [CURRENT ITINERARY STATE]. This models a non-ReAct agent that makes
+each decision independently from the current itinerary state.
 """
 
 from __future__ import annotations
@@ -106,11 +110,30 @@ class ContextBuilder:
         str
             The complete context string passed as the LLM prompt.
         """
-        history = self._build_history(trajectory, compressed_state, mode)
         tools_section = self._build_tools_section()
         itinerary_section = self._build_itinerary_section(itinerary)
         request_section = self._build_request_section(request)
 
+        # STATELESS mode: no [CONTEXT] section — the agent's only memory is
+        # the itinerary. This models a non-ReAct agent where each call is an
+        # independent decision based on the current booking state.
+        if mode == AgentMode.STATELESS:
+            parts = [
+                "[SYSTEM]",
+                self._system_prompt,
+                "",
+                "[USER REQUEST]",
+                request_section,
+                "",
+                "[CURRENT ITINERARY STATE]",
+                itinerary_section,
+                "",
+                "[AVAILABLE TOOLS]",
+                tools_section,
+            ]
+            return "\n".join(parts)
+
+        history = self._build_history(trajectory, compressed_state, mode)
         parts = [
             "[SYSTEM]",
             self._system_prompt,
@@ -145,6 +168,10 @@ class ContextBuilder:
             return self._history_compressor(trajectory, compressed_state)
         elif mode == AgentMode.MCTS_COMPRESSOR:
             return self._history_mcts_compressor(trajectory, compressed_state)
+        elif mode == AgentMode.STATELESS:
+            # STATELESS never reaches here (handled in build() before _build_history),
+            # but guard against future refactoring.
+            return ""
         else:
             raise ValueError(f"Unknown AgentMode: {mode}")
 

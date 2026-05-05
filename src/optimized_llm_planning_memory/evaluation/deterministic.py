@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from optimized_llm_planning_memory.core.constraints import ConstraintSatisfactionEngine
 from optimized_llm_planning_memory.core.models import EpisodeLog, Itinerary, UserRequest
 
-METRIC_VERSION = "v2"
+METRIC_VERSION = "v3"
 
 METRIC_CHANGELOG: dict[str, str] = {
     "v1": (
@@ -44,6 +44,12 @@ METRIC_CHANGELOG: dict[str, str] = {
         "accommodation_coverage_ratio, activity_density_score, rest_day_ratio, "
         "schedule_overlap_score, intra_city_feasibility. "
         "Fixed multi-hotel star-rating bug in ConstraintSatisfactionEngine."
+    ),
+    "v3": (
+        "Added completion_rate: booked_days / required_trip_days. "
+        "Acts as a gate metric to prevent near-empty itineraries from achieving "
+        "high scores via trivially satisfied metrics (budget_adherence=1.0, "
+        "schedule_overlap=1.0 on zero activities)."
     ),
 }
 
@@ -101,6 +107,8 @@ class DeterministicEvaluator:
             "rest_day_ratio": self._rest_day_ratio(itinerary),
             "schedule_overlap_score": self._schedule_overlap_score(itinerary),
             "intra_city_feasibility": self._intra_city_feasibility(itinerary),
+            # ── v3 metrics (completion gate) ─────────────────────────────────
+            "completion_rate": self._completion_rate(itinerary, user_request),
         }
 
     # ── Component scorers ─────────────────────────────────────────────────────
@@ -381,3 +389,32 @@ class DeterministicEvaluator:
                 if gap >= _MIN_GAP:
                     feasible_gaps += 1
         return feasible_gaps / total_gaps if total_gaps > 0 else 1.0
+
+    def _completion_rate(
+        self, itinerary: Itinerary | None, request: UserRequest
+    ) -> float:
+        """Fraction of required trip days that have been planned.
+
+        Penalises near-empty itineraries that would otherwise score high on
+        trivially satisfied metrics (budget_adherence=1.0 when nothing is booked,
+        schedule_overlap=1.0 when there are 0 activities, etc.).
+
+        completion_rate = min(1.0, booked_days / required_trip_days)
+
+        ``required_trip_days`` is derived from request.start_date / end_date.
+        Falls back to 1.0 if dates are absent or malformed (no penalty when
+        the request doesn't specify a trip length).
+        """
+        if itinerary is None or not itinerary.days:
+            return 0.0
+        try:
+            from datetime import date as _date
+            start = _date.fromisoformat(request.start_date)
+            end = _date.fromisoformat(request.end_date)
+            required_days = (end - start).days
+            if required_days <= 0:
+                return 1.0
+        except (AttributeError, ValueError, TypeError):
+            return 1.0
+        booked_days = len(itinerary.days)
+        return min(1.0, booked_days / required_days)

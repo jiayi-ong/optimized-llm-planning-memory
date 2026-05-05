@@ -324,6 +324,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                 encoder_outputs=BaseModelOutput(last_hidden_state=encoder_out),
                 decoder_input_ids=prefix_ids,
                 max_new_tokens=self._max_output_tokens,
+                min_new_tokens=4,
                 num_beams=4,
                 early_stopping=True,
                 no_repeat_ngram_size=3,
@@ -385,6 +386,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                 encoder_outputs=BaseModelOutput(last_hidden_state=encoder_out),
                 decoder_input_ids=prefix_ids,
                 max_new_tokens=self._max_output_tokens,
+                min_new_tokens=4,
                 num_beams=4,
                 early_stopping=True,
                 no_repeat_ngram_size=3,
@@ -608,6 +610,12 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
         """
         Encode a path's trajectory text via frozen T5 encoder.
         Returns [H] mean-pooled embedding.
+
+        The encoder parameters are frozen (requires_grad=False), so no encoder
+        weights are updated during backprop.  Running without torch.no_grad()
+        keeps the encoder output in the autograd graph, which allows gradient
+        to flow through path_emb into the downstream trainable modules
+        (struct_projector, path_encoder, importance_scorer) during PPO update.
         """
         input_ids = self._tokenizer.encode(
             text,
@@ -616,9 +624,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
             truncation=True,
         ).to(self._device)
 
-        # Encoder is frozen — no grad needed, saves memory
-        with torch.no_grad():
-            enc_out = self._model.encoder(input_ids=input_ids)
+        enc_out = self._model.encoder(input_ids=input_ids)
         return enc_out.last_hidden_state.squeeze(0).mean(dim=0)   # [H]
 
     def _pack_encoder_output(
@@ -686,6 +692,16 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                     constraints=(), satisfied_ids=(), violated_ids=(), unknown_ids=()
                 )
             )
+            # Ensure the sketch never contains ## SECTION ## sentinels.
+            # The fallback sketch is the raw T5 output, which starts with the
+            # generation prefix "## HARD_CONSTRAINT_LEDGER ##". When this is
+            # rendered into a template, decoded (T5 strips newlines), and
+            # re-normalised, the embedded sentinel is mistaken for a new section
+            # header, corrupting the structure and causing validate() to fail.
+            import re as _re_local
+            _raw = (generated_text or "")[:400].strip()
+            _clean = _re_local.sub(r"##\s+\w+\s+##", "", _raw).strip()
+            sketch = _clean or "(pending)"
             state = CompressedState(
                 state_id=str(uuid.uuid4()),
                 trajectory_id=trajectory_id,
@@ -695,7 +711,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                 decisions_made=[],
                 open_questions=[],
                 key_discoveries=[],
-                current_itinerary_sketch=generated_text[:400],
+                current_itinerary_sketch=sketch,
                 compression_method=self._METHOD,
                 token_count=None,
                 created_at=datetime.now(tz=timezone.utc).isoformat(),

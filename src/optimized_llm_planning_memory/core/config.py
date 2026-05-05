@@ -167,6 +167,15 @@ class PPOHyperparams(BaseModel):
     ent_coef: float = Field(default=0.01, ge=0.0)
     vf_coef: float = Field(default=0.5, ge=0.0)
     max_grad_norm: float = Field(default=1.0, gt=0.0)
+    normalize_advantage: bool = Field(
+        default=True,
+        description=(
+            "Normalise advantages to zero-mean unit-variance before PPO update. "
+            "Set False when batch_size == n_steps × n_envs: in that regime "
+            "normalisation drives mean(advantages) → 0, causing policy_loss ≈ 0 "
+            "whenever ratio ≈ 1 (i.e. at initialisation and after small updates)."
+        ),
+    )
     lr_schedule: str = Field(
         default="constant",
         description=(

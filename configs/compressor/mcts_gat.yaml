@@ -20,7 +20,8 @@ use_lora: true
 lora:
   r: 8
   alpha: 16
-  dropout: 0.05
+  dropout: 0.0           # 0.0 for PPO stability: eval/train log_prob mismatch with dropout≠0
+                         # causes approx_kl spike even before gradient updates
   target_modules: [q, v]
 freeze_base_layers: false
 top_k_paths: 3           # number of paths selected by Gumbel top-K

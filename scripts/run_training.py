@@ -148,12 +148,18 @@ def main(cfg: DictConfig) -> None:
 
     worlds_dir = OmegaConf.select(cfg, "simulator.worlds_dir", default="./worlds")
     world_params = OmegaConf.to_container(cfg.simulator.world_params, resolve=True) if OmegaConf.select(cfg, "simulator.world_params") else None
+    world_id_override = OmegaConf.select(cfg, "simulator.world_id", default=None)
 
     def simulator_factory(seed: int) -> SimulatorAdapter:
-        return SimulatorAdapter(seed=seed, worlds_dir=worlds_dir, world_config=world_params)
+        return SimulatorAdapter(
+            seed=seed,
+            worlds_dir=worlds_dir,
+            world_config=world_params,
+            world_id=world_id_override or None,
+        )
 
     def agent_factory() -> ReActAgent:
-        sim = SimulatorAdapter(seed=0, world_config=world_params)  # placeholder; env overrides with fresh sim
+        sim = SimulatorAdapter(seed=0, world_config=world_params, world_id=world_id_override or None)  # placeholder; env overrides with fresh sim
         tracker = ToolCallTracker()
         event_bus = EventBus()
         registry = ToolRegistry.from_config(simulator=sim, tracker=tracker, event_bus=event_bus)
@@ -190,14 +196,26 @@ def main(cfg: DictConfig) -> None:
 
     # ── Build trainer + run ───────────────────────────────────────────────────
     from optimized_llm_planning_memory.training.trainer import RLTrainer
-    from optimized_llm_planning_memory.core.config import TrainingConfig, EnvConfig, RewardConfig
+    from optimized_llm_planning_memory.core.config import TrainingConfig, EnvConfig, RewardConfig, SimulatorConfig
 
     training_cfg = TrainingConfig(**OmegaConf.to_container(cfg.training, resolve=True))
     env_cfg = training_cfg.env  # populated from training YAML's `env:` section
     reward_cfg = RewardConfig(**OmegaConf.to_container(cfg.reward, resolve=True))
 
+    # Build SimulatorConfig from cfg.simulator so WorldPool respects pool_size,
+    # seed_range, and unique_per_episode from the YAML (not just hard-coded defaults).
+    _sim_raw = OmegaConf.to_container(cfg.simulator, resolve=True)
+    _sim_fields = {k: v for k, v in _sim_raw.items() if k in SimulatorConfig.model_fields}
+    simulator_cfg = SimulatorConfig(**_sim_fields)
+
     output_dir = Path(cfg.project.output_dir)
     rp_fit_every = int(OmegaConf.select(cfg, "compressor.reward_predictor_fit_every", default=50))
+    # Pass the compressor's tokenizer to the env so _decode_action() can
+    # convert action token IDs back to text. Without this the env falls back
+    # to character-level decoding (chr(token_id)) which produces gibberish,
+    # causing _parse_compressed_state() to always return None → compressions=0.
+    compressor_tokenizer = getattr(compressor, "_tokenizer", None)
+
     trainer = RLTrainer(
         compressor=compressor,
         agent_factory=agent_factory,
@@ -206,10 +224,12 @@ def main(cfg: DictConfig) -> None:
         config=training_cfg,
         env_config=env_cfg,
         reward_config=reward_cfg,
+        simulator_config=simulator_cfg,
         tensorboard_log=output_dir / "logs" / cfg.project.run_name,
         checkpoint_dir=output_dir / "checkpoints",
         reward_predictor=reward_predictor,
         reward_predictor_fit_every=rp_fit_every,
+        tokenizer=compressor_tokenizer,
     )
 
     trainer.train()

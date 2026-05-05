@@ -50,7 +50,7 @@ EpisodeLog ◄──────────────────────
     │       uses ConstraintSatisfactionEngine
     │
     └─► Evaluator
-            DeterministicEvaluator   (14 metrics: 8 v1 + 6 v2, no LLM)
+            DeterministicEvaluator   (15 metrics: 8 v1 + 6 v2 + 1 v3, no LLM)
             LLMJudge                 (up to 10 rubric dimensions)
 ```
 
@@ -73,7 +73,7 @@ EpisodeLog ◄──────────────────────
 | `agent/` | `ReActAgent`, `Trajectory`, `ContextBuilder`, `AgentMode`, prompt templates | [docs/AGENT.md](docs/AGENT.md) |
 | `compressor/` | `CompressorBase` + `TrainableCompressorBase` ABCs; 6 implementations; `CompressedStateTemplate` | [docs/COMPRESSOR.md](docs/COMPRESSOR.md) |
 | `training/` | `CompressionEnv` (Gymnasium), `CompressorPolicy` (SB3), `RewardFunction`, `RLTrainer`, `RLRunLogger`, `TrainingRunManifest` | [docs/TRAINING.md](docs/TRAINING.md) |
-| `evaluation/` | `DeterministicEvaluator`, `LLMJudge`, `AblationRunner` | [docs/EVALUATION.md](docs/EVALUATION.md) |
+| `evaluation/` | `DeterministicEvaluator` (15 metrics: 8 v1 + 6 v2 + 1 v3), `LLMJudge`, `AblationRunner` | [docs/EVALUATION.md](docs/EVALUATION.md) |
 | `mcts/` | Optional MCTS search augmentation (tree, node, controller) | — |
 | `utils/` | structlog config, visualization, seed control, episode I/O, `itinerary_export`, `colab_utils` | — |
 

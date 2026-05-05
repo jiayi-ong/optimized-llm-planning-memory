@@ -90,6 +90,8 @@ class ConstraintSatisfactionEngine:
         if not hard_ids:
             return 1.0
         hard_results = [r for r in results if r.constraint_id in hard_ids]
+        if not hard_results:
+            return 0.0
         satisfied = sum(1 for r in hard_results if r.satisfied)
         return satisfied / len(hard_results)
 
@@ -105,6 +107,8 @@ class ConstraintSatisfactionEngine:
         if not soft_ids:
             return 1.0
         soft_results = [r for r in results if r.constraint_id in soft_ids]
+        if not soft_results:
+            return 1.0
         return sum(r.score for r in soft_results) / len(soft_results)
 
     # ── Private dispatch ──────────────────────────────────────────────────────
@@ -277,13 +281,13 @@ class ConstraintSatisfactionEngine:
         all_activities = [a for day in itinerary.days for a in day.activities]
         if constraint.unit == "min_count":
             required_count = int(constraint.value)
-            count = sum(1 for a in all_activities if a.category.lower() != "event")
+            count = sum(1 for a in all_activities if (a.category or "").lower() != "event")
             satisfied = count >= required_count
             score = min(1.0, count / required_count) if required_count > 0 else 1.0
             explanation = f"{count} activities found vs required >={required_count}."
         elif constraint.unit == "max_price_usd":
             # Events are pre-filtered at booking time; presence confirms price was met.
-            event_acts = [a for a in all_activities if a.category.lower() == "event"]
+            event_acts = [a for a in all_activities if (a.category or "").lower() == "event"]
             satisfied = len(event_acts) > 0
             score = 1.0 if satisfied else 0.0
             explanation = (
@@ -293,7 +297,7 @@ class ConstraintSatisfactionEngine:
         else:
             required = str(constraint.value).lower()
             found = any(
-                required in a.category.lower() or required in a.activity_name.lower()
+                required in (a.category or "").lower() or required in (a.activity_name or "").lower()
                 for a in all_activities
             )
             satisfied, score = found, 1.0 if found else 0.0
@@ -354,7 +358,7 @@ class ConstraintSatisfactionEngine:
         value = str(constraint.value).lower()
         if any(kw in value for kw in ("cuisine", "dining", "restaurant", "food")):
             matched = any(
-                any(kw in a.category.lower() for kw in _DINING_KEYWORDS)
+                a.category and any(kw in a.category.lower() for kw in _DINING_KEYWORDS)
                 for a in all_activities
             )
             satisfied, score = matched, 1.0 if matched else 0.0
@@ -364,7 +368,7 @@ class ConstraintSatisfactionEngine:
             )
         else:
             matched = any(
-                value in a.category.lower() or value in a.activity_name.lower()
+                value in (a.category or "").lower() or value in (a.activity_name or "").lower()
                 for a in all_activities
             )
             satisfied, score = matched, 0.7 if matched else 0.3

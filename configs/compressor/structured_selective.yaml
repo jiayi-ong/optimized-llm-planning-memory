@@ -15,7 +15,7 @@ use_lora: true
 lora:
   r: 8
   alpha: 16
-  dropout: 0.05
+  dropout: 0.0           # 0.0 for PPO stability: eval/train log_prob mismatch with dropout≠0
   target_modules: [q, v]
 freeze_base_layers: false  # LoRA injection freezes base layers automatically
 generation:

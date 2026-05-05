@@ -194,7 +194,7 @@ Tokenize action text → action tensor
 Compressor.get_log_probs(trajectory, action) → log π(a|s)
 ```
 
-The value network uses token embeddings (not raw token IDs) to avoid feeding categorical integers directly to a linear layer.
+The value network uses token embeddings (not raw token IDs) to avoid feeding categorical integers directly to a linear layer. Padding tokens (ID=0) are masked out before mean-pooling so that long zero-padded observations do not dilute the pooled representation toward zero.
 
 ---
 
@@ -261,15 +261,16 @@ Starting values are theory-backed for text-generation RL tasks:
 |---|---|---|---|
 | `num_timesteps` | 50,000 | 500,000 | Total env steps |
 | `n_envs` | 2 | 4 | Parallel simulator instances |
-| `n_steps` | 128 | 256 | Steps per env before each PPO update |
+| `n_steps` | 64 | 256 | Steps per env before each PPO update |
 | `batch_size` | 32 | 64 | PPO minibatch size |
 | `n_epochs` | 4 | 10 | PPO gradient epochs per rollout |
-| `learning_rate` | 3e-4 | 3e-4 | Adam LR (anneal with `lr_schedule`) |
+| `learning_rate` | 3e-5 | 3e-4 | Adam LR (anneal with `lr_schedule`) |
 | `gamma` | 0.99 | 0.99 | Discount factor |
 | `gae_lambda` | 0.95 | 0.95 | GAE λ |
 | `clip_range` | 0.2 | 0.2 | PPO ε-clip |
 | `ent_coef` | 0.01 | 0.01 | Entropy regularization |
 | `vf_coef` | 0.5 | 0.5 | Value function loss weight |
+| `normalize_advantage` | **false** | true | Set `false` to prevent policy_loss≈0 at init. When `true`, per-mini-batch normalization drives `mean(adv)→0`, which zeroes out `policy_loss` whenever `ratio≈1` (i.e. at initialisation and after small updates). Keep `false` for all Colab runs. |
 
 ### Hyperparameter tuning strategy
 
@@ -453,7 +454,7 @@ tensorboard --logdir outputs/logs    # local
 | `episode/total_reward` | Rising | Flat after 10k steps |
 | `episode/hard_constraint_score` | Rising toward 1.0 | Stuck at 0 |
 | `episode/tool_efficiency_score` | Rising | Stuck at 0 (check API key) |
-| `train/policy_gradient_loss` | Decreasing toward 0 | Exploding |
+| `train/policy_gradient_loss` | Non-zero, decreasing | **Exactly 0.0 every update** — means `normalize_advantage=True` is collapsing advantages; set `normalize_advantage: false` in the training config |
 | `train/entropy_loss` | Slowly decreasing | Jumps to 0 (collapsed policy) |
 | `train/value_loss` | Decreasing | Never decreasing (value net not learning) |
 | `train/clip_fraction` | 0.1–0.2 | >0.3 (LR too high) |

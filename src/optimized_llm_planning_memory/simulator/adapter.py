@@ -80,6 +80,9 @@ class SimulatorAdapter:
                    (e.g. ``{"num_cities_per_region": 3, "num_regions": 1}``).
                    Keys must match WorldGenerator.DEFAULT_CONFIG exactly.
                    When None, WorldGenerator's DEFAULT_CONFIG is used unchanged.
+    world_id     : If provided, load this specific world by ID instead of
+                   creating a new one. Use this to replay a run against an exact
+                   world snapshot (e.g. for probe runs or evaluation replay).
     """
 
     def __init__(
@@ -87,11 +90,13 @@ class SimulatorAdapter:
         seed: int,
         worlds_dir: str | Path = "./worlds",
         world_config: dict | None = None,
+        world_id: str | None = None,
     ) -> None:
         self._seed = seed
         self._worlds_dir = Path(worlds_dir)
         self._worlds_dir.mkdir(parents=True, exist_ok=True)
         self._world_config = world_config
+        self._world_id_override = world_id
         self._init_services(seed)
 
     def _init_services(self, seed: int) -> None:
@@ -113,10 +118,14 @@ class SimulatorAdapter:
 
         try:
             manager = WorldManager(self._worlds_dir)
-            self._ws = manager.create_world(seed=seed, config=self._world_config)
+            if self._world_id_override:
+                self._ws = manager.load_world(self._world_id_override)
+            else:
+                self._ws = manager.create_world(seed=seed, config=self._world_config)
         except Exception as exc:
             raise SimulatorError(
-                f"Failed to create travel_world world with seed={seed}: {exc}"
+                f"Failed to initialise travel_world (seed={seed}, "
+                f"world_id={self._world_id_override}): {exc}"
             ) from exc
 
         self._flights = FlightService(self._ws)

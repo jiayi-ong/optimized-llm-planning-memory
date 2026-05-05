@@ -1,0 +1,100 @@
+{
+  "request_id": "req-couple-medium-001",
+  "raw_text": "Couple (2 adults) traveling from Brindor to Caelum for 5 days. Budget is $3500. We enjoy arts and culture, and prefer a mid-range hotel. Would love at least one live event or festival during the trip.",
+  "origin_city": "city_world_42_20260504_075144_0001",
+  "destination_cities": [
+    "city_world_42_20260504_075144_0002"
+  ],
+  "start_date": "2026-06-28",
+  "end_date": "2026-07-03",
+  "budget_usd": 3500.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-couple-001",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $3500 USD.",
+      "value": 3500.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-couple-001",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-28 and end by 2026-07-03.",
+      "value": "2026-06-28 to 2026-07-03",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-couple-001",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 5 days long.",
+      "value": 5,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-couple-001",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 adults; all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-couple-001",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Prefer a 3-star or above hotel in a central location.",
+      "value": 3,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-couple-001",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one arts, culture, or live event per 3 days.",
+      "value": "arts_culture",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "arts and culture",
+    "live events",
+    "local restaurants",
+    "museums",
+    "scenic walks"
+  ],
+  "world_id": "world_42_20260504_075144",
+  "metadata": {
+    "generated_by": "prompt_sweep_baseline",
+    "template_version": "3.0",
+    "archetype": "couple_trip",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
+    "dest_names": ["Caelum"],
+    "world_id": "world_42_20260504_075144",
+    "experiment": "prompt_sweep_baseline",
+    "notes": "Medium control: 2 adults, moderate budget, culture preferences"
+  }
+}

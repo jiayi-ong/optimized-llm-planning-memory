@@ -3,6 +3,11 @@
 
 seed_range: [0, 9999]
 
+# When set, SimulatorAdapter loads this exact world instead of creating a fresh
+# one. Use for probe runs or evaluation replay where training requests were
+# generated from a specific world snapshot.
+world_id: null
+
 # WorldPool settings — controls how simulator instances are created for training.
 # Amortises world-generation cost across parallel environments.
 #

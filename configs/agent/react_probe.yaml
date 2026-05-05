@@ -1,0 +1,13 @@
+# configs/agent/react_probe.yaml
+# ================================
+# Agent config for probe RL runs.
+# Compressor mode with max_steps=24 to allow 4 compression windows of 6 steps.
+# Uses v5 system prompt which adds event/attraction distinction and loop guard.
+#
+# @package agent
+
+mode: compressor
+llm_model_id: gpt-4o-mini
+max_steps: 24
+compress_every_n_steps: 6
+system_prompt_version: v5

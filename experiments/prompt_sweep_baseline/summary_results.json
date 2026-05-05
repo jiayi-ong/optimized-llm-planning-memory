@@ -1,0 +1,44 @@
+{
+  "sweep_config": {
+    "variants": [
+      "sweep_D"
+    ],
+    "requests": [
+      "req_solo_simple"
+    ],
+    "world_id": "world_42_20260504_075144",
+    "llm_model": "openai/gpt-4o-mini",
+    "seed": 42,
+    "dry_run": false
+  },
+  "results": [
+    {
+      "variant": "sweep_D",
+      "request": "req_solo_simple",
+      "non_degenerate": true,
+      "scores": {
+        "hard_constraint_ratio": 0.0,
+        "soft_constraint_score": 1.0,
+        "tool_efficiency": 0.9,
+        "tool_failure_rate": 0.2,
+        "avg_tool_latency_ms": 1.5837099992495496,
+        "steps_per_episode": 11.0,
+        "budget_adherence": 0.8890449999999999,
+        "logical_consistency": 0.6666666666666667,
+        "destination_coverage_ratio": 1.0,
+        "accommodation_coverage_ratio": 1.0,
+        "activity_density_score": 0.25,
+        "rest_day_ratio": 1.0,
+        "schedule_overlap_score": 1.0,
+        "intra_city_feasibility": 1.0,
+        "completion_rate": 0.5
+      },
+      "termination_reason": "DONE_ITINERARY",
+      "episode_path": "C:\\Users\\mushj\\OneDrive\\Desktop\\ColumbiaU MSDS\\S26 - STATGR5293 - GenAI with LLMs\\Final Project\\optimized-llm-planning-memory\\experiments\\prompt_sweep_baseline\\results\\sweep_D_react\\ep_req-solo-simple-001.json",
+      "eval_path": "C:\\Users\\mushj\\OneDrive\\Desktop\\ColumbiaU MSDS\\S26 - STATGR5293 - GenAI with LLMs\\Final Project\\optimized-llm-planning-memory\\experiments\\prompt_sweep_baseline\\results\\sweep_D_react\\eval_req-solo-simple-001.json"
+    }
+  ],
+  "non_degenerate_counts": {
+    "sweep_D": 1
+  }
+}

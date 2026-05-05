@@ -30,6 +30,7 @@ a separate transformer head) can be swapped in by overriding ``_compute_value()`
 
 from __future__ import annotations
 
+import traceback
 from typing import Any
 
 import numpy as np
@@ -38,6 +39,10 @@ import torch.nn as nn
 from gymnasium import spaces
 from stable_baselines3.common.policies import BasePolicy
 from stable_baselines3.common.type_aliases import Schedule
+
+from optimized_llm_planning_memory.utils.logging import get_logger
+
+_log = get_logger(__name__)
 
 from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
 from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
@@ -171,17 +176,17 @@ class CompressorPolicy(BasePolicy):
             action_text = self._decode_action(actions[i])
 
             token_log_probs = self.compressor.get_log_probs(obs_text, action_text)
-            log_prob = token_log_probs.sum()
+            # Use mean (not sum) to keep log_prob in the -5 to -15 range.
+            # With 200 tokens at ~-10 each, sum ≈ -2000; exp(new-old) overflows
+            # to inf/NaN after the first gradient step. Mean keeps the ratio
+            # exp(new-old) near 1.0 and PPO clipping operates stably.
+            # IMPORTANT: old log_probs in _generate_action() must also use mean
+            # so that r_t = exp(new_mean - old_mean) is consistent.
+            log_prob = token_log_probs.mean()
             log_probs_list.append(log_prob)
 
-            # Entropy proxy: we approximate H(π) ≈ -mean(log_prob) per token,
-            # which equals per-token cross-entropy, not the true distribution
-            # entropy H = -Σ p·log(p).  This is numerically close for well-trained
-            # policies (where action distribution is sharp) but will overestimate
-            # entropy for flat distributions early in training.  The PPO entropy
-            # bonus coefficient (ent_coef) is applied to this proxy, so calibrate
-            # ent_coef accordingly.  To use true token entropy, compute
-            # F.log_softmax(logits, dim=-1) and apply -Σ exp(lp)*lp per token.
+            # Entropy proxy: H(π) ≈ -mean(log_prob) per token (consistent with
+            # mean-based log_prob above). See _generate_action() comment.
             entropy = -token_log_probs.mean()
             entropy_list.append(entropy)
 
@@ -266,40 +271,72 @@ class CompressorPolicy(BasePolicy):
                 token_ids = tokenizer.encode(
                     compressed_text, max_length=max_act, truncation=True
                 )
+                # Decode the (possibly truncated) token IDs back to text.
+                # evaluate_actions() will decode the stored action tokens the same way,
+                # so computing log_prob on this decoded text ensures the old/new
+                # ratio = exp(log_prob_new - log_prob_old) doesn't blow up from
+                # a text/token mismatch when compressed_text > max_act tokens.
+                action_text_for_log_prob = tokenizer.decode(
+                    token_ids, skip_special_tokens=True
+                )
             else:
                 token_ids = [ord(c) % 32768 for c in compressed_text[:max_act]]
+                action_text_for_log_prob = "".join(chr(min(t, 127)) for t in token_ids)
 
             action_arr = np.zeros(max_act, dtype=np.int32)
             action_arr[:len(token_ids)] = token_ids[:max_act]
             action_tensor = torch.tensor(action_arr, dtype=torch.int32)
 
-            # Scalar log-prob = sum of token-level log-probs
-            token_log_probs = self.compressor.get_log_probs(obs_text, compressed_text)
-            log_prob = token_log_probs.sum()
+            # Scalar log-prob computed on the same text evaluate_actions() will see.
+            # Use mean so the value stays in -5 to -15 range (not -2000 for 200 tokens).
+            token_log_probs = self.compressor.get_log_probs(obs_text, action_text_for_log_prob)
+            log_prob = token_log_probs.mean()
 
-        except Exception:
+        except Exception as _exc:
+            _log.warning(
+                "policy.generate_action.failed",
+                error=str(_exc),
+                traceback=traceback.format_exc(),
+            )
             action_tensor = torch.zeros(max_act, dtype=torch.int32)
-            log_prob = torch.tensor(0.0)
+            # Use a consistent fallback log_prob so the old/new ratio in PPO
+            # doesn't blow up.  log(1/32768) ≈ -10.4 is the uniform-distribution
+            # baseline for a 32K-vocab model; this is a safe lower bound.
+            try:
+                token_log_probs = self.compressor.get_log_probs(obs_text, "")
+                log_prob = token_log_probs.mean().detach()
+            except Exception:
+                log_prob = torch.tensor(-10.0)
 
         return action_tensor, log_prob
 
     def _compute_value(self, obs: torch.Tensor) -> torch.Tensor:
-        """Compute value estimates from mean-pooled token embeddings."""
-        embedded = self._token_embed(obs.long())  # (batch, obs_len, embed_dim)
-        pooled = embedded.mean(dim=1)              # (batch, embed_dim)
+        """Compute value estimates from mean-pooled token embeddings.
+
+        Masks padding zeros so the pool is over real tokens only.  Without
+        masking, 480+ zero-embedding positions overwhelm the 30-token signal,
+        driving value estimates toward a constant regardless of the observation.
+        """
+        mask = (obs != 0).float().unsqueeze(-1)    # (batch, obs_len, 1)
+        embedded = self._token_embed(obs.long())   # (batch, obs_len, embed_dim)
+        counts = mask.sum(dim=1).clamp(min=1)      # (batch, 1) — avoid div-by-zero
+        pooled = (embedded * mask).sum(dim=1) / counts  # (batch, embed_dim)
         return self._value_net(pooled)             # (batch, 1)
 
     def _decode_obs(self, obs_tokens: torch.Tensor) -> str:
         """Decode observation token IDs to text string."""
-        # Remove padding (zeros at the end)
-        tokens = obs_tokens[obs_tokens != 0].tolist()
+        # Box obs space stores floats; cast to int before tokenizer decode.
+        int_tokens = obs_tokens.long()
+        tokens = int_tokens[int_tokens != 0].tolist()
         if hasattr(self.compressor, "_tokenizer") and self.compressor._tokenizer is not None:
             return self.compressor._tokenizer.decode(tokens, skip_special_tokens=True)
         return " ".join(str(t) for t in tokens)
 
     def _decode_action(self, action_tokens: torch.Tensor) -> str:
         """Decode action token IDs to text string."""
-        tokens = action_tokens[action_tokens != 0].tolist()
+        # Box action space stores floats; cast to int before tokenizer decode.
+        int_tokens = action_tokens.long()
+        tokens = int_tokens[int_tokens != 0].tolist()
         if hasattr(self.compressor, "_tokenizer") and self.compressor._tokenizer is not None:
             return self.compressor._tokenizer.decode(tokens, skip_special_tokens=True)
         return " ".join(str(t) for t in tokens)
