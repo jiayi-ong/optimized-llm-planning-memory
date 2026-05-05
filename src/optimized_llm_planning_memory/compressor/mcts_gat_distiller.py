@@ -324,6 +324,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                 encoder_outputs=BaseModelOutput(last_hidden_state=encoder_out),
                 decoder_input_ids=prefix_ids,
                 max_new_tokens=self._max_output_tokens,
+                min_new_tokens=4,
                 num_beams=4,
                 early_stopping=True,
                 no_repeat_ngram_size=3,
@@ -385,6 +386,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                 encoder_outputs=BaseModelOutput(last_hidden_state=encoder_out),
                 decoder_input_ids=prefix_ids,
                 max_new_tokens=self._max_output_tokens,
+                min_new_tokens=4,
                 num_beams=4,
                 early_stopping=True,
                 no_repeat_ngram_size=3,
@@ -690,6 +692,10 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                     constraints=(), satisfied_ids=(), violated_ids=(), unknown_ids=()
                 )
             )
+            # Ensure required fields are never empty so render()/validate() succeeds.
+            # An empty current_itinerary_sketch causes validate() to raise, which
+            # propagates to _generate_action()'s except clause → zero action tensor.
+            sketch = generated_text[:400] if generated_text and generated_text.strip() else "(pending)"
             state = CompressedState(
                 state_id=str(uuid.uuid4()),
                 trajectory_id=trajectory_id,
@@ -699,7 +705,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                 decisions_made=[],
                 open_questions=[],
                 key_discoveries=[],
-                current_itinerary_sketch=generated_text[:400],
+                current_itinerary_sketch=sketch,
                 compression_method=self._METHOD,
                 token_count=None,
                 created_at=datetime.now(tz=timezone.utc).isoformat(),

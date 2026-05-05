@@ -30,6 +30,7 @@ a separate transformer head) can be swapped in by overriding ``_compute_value()`
 
 from __future__ import annotations
 
+import traceback
 from typing import Any
 
 import numpy as np
@@ -38,6 +39,10 @@ import torch.nn as nn
 from gymnasium import spaces
 from stable_baselines3.common.policies import BasePolicy
 from stable_baselines3.common.type_aliases import Schedule
+
+from optimized_llm_planning_memory.utils.logging import get_logger
+
+_log = get_logger(__name__)
 
 from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
 from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
@@ -266,18 +271,32 @@ class CompressorPolicy(BasePolicy):
                 token_ids = tokenizer.encode(
                     compressed_text, max_length=max_act, truncation=True
                 )
+                # Decode the (possibly truncated) token IDs back to text.
+                # evaluate_actions() will decode the stored action tokens the same way,
+                # so computing log_prob on this decoded text ensures the old/new
+                # ratio = exp(log_prob_new - log_prob_old) doesn't blow up from
+                # a text/token mismatch when compressed_text > max_act tokens.
+                action_text_for_log_prob = tokenizer.decode(
+                    token_ids, skip_special_tokens=True
+                )
             else:
                 token_ids = [ord(c) % 32768 for c in compressed_text[:max_act]]
+                action_text_for_log_prob = "".join(chr(min(t, 127)) for t in token_ids)
 
             action_arr = np.zeros(max_act, dtype=np.int32)
             action_arr[:len(token_ids)] = token_ids[:max_act]
             action_tensor = torch.tensor(action_arr, dtype=torch.int32)
 
-            # Scalar log-prob = sum of token-level log-probs
-            token_log_probs = self.compressor.get_log_probs(obs_text, compressed_text)
+            # Scalar log-prob computed on the same text evaluate_actions() will see.
+            token_log_probs = self.compressor.get_log_probs(obs_text, action_text_for_log_prob)
             log_prob = token_log_probs.sum()
 
-        except Exception:
+        except Exception as _exc:
+            _log.warning(
+                "policy.generate_action.failed",
+                error=str(_exc),
+                traceback=traceback.format_exc(),
+            )
             action_tensor = torch.zeros(max_act, dtype=torch.int32)
             # Use a consistent fallback log_prob so the old/new ratio in PPO
             # doesn't blow up.  log(1/32768) ≈ -10.4 is the uniform-distribution

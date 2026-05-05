@@ -46,7 +46,9 @@ ppo:
 
 env:
   max_obs_tokens: 512
-  max_action_tokens: 128
+  # max_action_tokens MUST be >= compressor.max_output_tokens (512 for flan-t5 compressors).
+  # Setting it lower truncates the generated template before parsing, causing compressions=0.
+  max_action_tokens: 512
   steps_per_compression: 6
   max_agent_steps: 24
   vocab_size: 32128

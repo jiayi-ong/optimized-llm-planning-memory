@@ -337,16 +337,31 @@ def _parse_compressed_state(
     fallback: CompressedState | None,
 ) -> CompressedState | None:
     """
-    Try to parse action text as a CompressedState JSON; return fallback on failure.
+    Try to parse action text as a CompressedState; return fallback on failure.
 
-    The policy network may produce malformed JSON early in training. Falling back
+    Attempts JSON first (IdentityCompressor / LLM outputs), then template format
+    (## SECTION_NAME ## headers produced by TGAD / SSD compressors). Falling back
     to the previous state prevents hard crashes while still penalising low-quality
     compressions via the reward signal.
+
+    Normalisation note: T5 tokenizer encodes then decodes the rendered template,
+    stripping newlines in the process. The result is one long line with inline
+    sentinels: "## SECTION_A ## content ## SECTION_B ## ...".  _split_sections()
+    uses fullmatch on individual lines, so inline sentinels are invisible.
+    We re-insert a newline before each ## TOKEN ## to restore the expected format.
     """
+    import re as _re
     if not text.strip():
         return fallback
     try:
         return CompressedState.model_validate_json(text)
+    except Exception:
+        pass
+    try:
+        from optimized_llm_planning_memory.compressor.template import CompressedStateTemplate
+        # Re-normalise: put each sentinel on its own line before attempting parse.
+        normalized = _re.sub(r"(##\s+\w+\s+##)", r"\n\1\n", text)
+        return CompressedStateTemplate().parse(normalized)
     except Exception:
         return fallback
 
