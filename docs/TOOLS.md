@@ -235,6 +235,8 @@ Returns: {cancelled_booking_ref, status: "cancelled"}
 
 **Important:** `cancel_booking` does not call the simulator. The removal happens in the agent middleware's `_try_extract_itinerary()` handler, which scans the in-memory `Itinerary` object and removes the matching item. Always check `[CURRENT ITINERARY STATE]` after calling this to confirm the item is gone before re-booking.
 
+**Why not a simulator call?** The `travel_world` simulator is stateless with respect to bookings — it is a search and lookup engine, not a booking system with persistent reservation state. There is no simulator-side record to cancel. The `Itinerary` object in the agent's memory is the only booking ledger; `cancel_booking` manipulates that ledger directly through the agent middleware's special-case branch in `_try_extract_itinerary()`. This design keeps all itinerary mutations going through a single pipeline, making the booking state auditable from `EpisodeLog.final_itinerary`.
+
 ---
 
 ## ToolRegistry
@@ -373,7 +375,11 @@ stats = tracker.get_stats()
 #  redundant_call_count, total_latency_ms, avg_latency_ms}
 ```
 
-A call is counted as **redundant** when the same tool is called with identical arguments more than once in the same episode. Starting from the third identical call, `BaseTool.call()` wraps the result as `{"result": <original_result>, "agent_warning": "..."}` — a redundancy envelope that directs the agent to `Action: EXIT(reason=REPEATED_DEAD_END)`. The call still executes — no hard block — so evaluation metrics remain unbiased.
+A call is counted as **redundant** when the same tool is called with identical arguments more than once in the same episode. Starting from the **third** identical call, `BaseTool.call()` wraps the result as `{"result": <original_result>, "agent_warning": "..."}` — a redundancy envelope that directs the agent to `Action: EXIT(reason=REPEATED_DEAD_END)`. The call still executes — no hard block — so evaluation metrics remain unbiased.
+
+**Why threshold of >2 (not >1)?** Two identical calls sometimes happen legitimately: the agent may call `search_flights` once early to get prices, then call it again with the same parameters after checking hotel costs to re-confirm availability. A third identical call reliably indicates a reasoning loop where the agent is not updating its plan based on observations. The threshold is deliberately permissive to avoid triggering on genuine double-checks.
+
+**Agent-side handling:** When the agent receives a redundancy envelope, it should issue `Action: EXIT(reason=REPEATED_DEAD_END)`. See [docs/AGENT.md — Response Parsing](AGENT.md#response-parsing) for the EXIT format.
 
 **Itinerary extraction and the redundancy envelope:** `ReActAgent._try_extract_itinerary()` checks for this envelope and unwraps it before looking for booking confirmation keys (`booking_ref`, `hotel_id`, etc.). This unwrapping is required: if the envelope is not removed, the key lookups return `None` and the booking is silently dropped from the `Itinerary` object.
 
@@ -388,4 +394,4 @@ bus.subscribe(lambda event: print(event.tool_name, event.success))
 bus.emit(ToolEvent(tool_name="search_flights", success=True, latency_ms=42.0, ...))
 ```
 
-The bus is created once per episode and passed into every tool at construction time. Do not reuse a bus across episodes.
+The bus is created once per episode and passed into every tool at construction time. **Do not reuse a bus across episodes.** Each `CompressionEnv.reset()` creates a new `EventBus` — if the same bus were reused, subscribers from the previous episode (e.g., the live UI writer, the MCTS node evaluator) would accumulate across resets, triggering callbacks for stale episodes and eventually leaking memory in long training runs.

@@ -32,10 +32,29 @@ This document covers the full data flow, design patterns, and invariants that ho
    → PPO update (SB3): gradient through Compressor.get_log_probs()
 
 4. EVALUATION (Evaluator.evaluate_dataset)
-   EpisodeLog → DeterministicEvaluator.score() → 8 metrics
-             → LLMJudge.score()            → 6 rubric scores
+   EpisodeLog → DeterministicEvaluator.score() → 15 metrics (8 v1 + 6 v2 + 1 v3)
+             → LLMJudge.score()            → up to 10 rubric scores
    → EvalResult → saved to outputs/eval_results/{run_id}/results.jsonl
 ```
+
+### RL Framing — Two Levels of "Step"
+
+There are two distinct notions of "step" in this project that are easy to conflate:
+
+| Level | Term | What it is |
+|---|---|---|
+| **ReAct level** | ReAct step | One think→act→observe cycle inside `ReActAgent.run_episode()`. One LLM call, one tool call. |
+| **RL level** | Gymnasium step | One call to `CompressionEnv.step(action)`. Covers `compress_every_n_steps` ReAct steps plus one compression event. |
+
+A full **RL episode** = one complete planning task (`CompressionEnv.reset()` through `terminated=True`). A full **ReAct episode** = the same thing, but described from the agent's perspective.
+
+The compressor is the RL **policy**: its action at each gymnasium step is the full text of a `CompressedState` (tokenized to a fixed-length tensor). The observation is the current trajectory's token IDs (padded/truncated to `max_obs_tokens`). The reward is computed only at the end of the last gymnasium step of each RL episode (terminal reward from `RewardFunction`).
+
+This framing means:
+- **Longer compression windows** (`compress_every_n_steps=10`) → fewer PPO updates per episode, but each observation contains more context.
+- **Shorter windows** (`compress_every_n_steps=3`) → more frequent updates, smaller observations, higher API cost per RL episode.
+
+---
 
 ---
 
@@ -115,6 +134,8 @@ class Itinerary(BaseModel):
 
 The tool lifecycle (validate → execute → track → emit) is fixed in `BaseTool.call()`. Subclasses override only `_execute()`. This guarantees that adding a new tool never accidentally skips tracking or error handling.
 
+*Why Template Method?* Without it, a developer adding a new tool might forget to call `tracker.record()` or `bus.emit()`, silently breaking reward computation (which reads tracker stats) and the live UI (which subscribes to the event bus). The fixed lifecycle makes correctness a structural property, not a convention.
+
 ```
 BaseTool.call()           ← orchestrates the lifecycle
     │
@@ -128,6 +149,8 @@ BaseTool.call()           ← orchestrates the lifecycle
 
 Three memory strategies are interchangeable at the `ContextBuilder` boundary. The agent never knows which strategy is active — it just calls `context_builder.build(...)` and gets back a prompt string.
 
+*Why Strategy?* The three experimental conditions (RAW, LLM_SUMMARY, COMPRESSOR) are the independent variable in the experiment. Encapsulating them as interchangeable strategies ensures the agent code path is identical across conditions — any performance difference is attributable to the memory strategy, not the agent logic.
+
 ```
 ContextBuilder.build(mode=RAW)            → full trajectory in prompt
 ContextBuilder.build(mode=LLM_SUMMARY)    → LLM summary in prompt
@@ -138,9 +161,13 @@ ContextBuilder.build(mode=COMPRESSOR)     → CompressedState in prompt
 
 ABCs are used for **internal** class hierarchies where shared concrete behavior exists (template method in `BaseTool`, default `get_log_probs` in `CompressorBase`). Python enforces abstract method implementation at class definition time, not at runtime.
 
+*Why ABC over Protocol?* These are internal hierarchies within the same codebase. ABC gives us concrete default implementations (e.g., `CompressorBase.get_log_probs()` raises `LogProbsNotSupportedError` by default — trainable compressors override it). Protocol can't provide concrete defaults.
+
 ### Protocol — `SimulatorProtocol`
 
 `SimulatorProtocol` is a `typing.Protocol` for **external** code (the `travel_world` library). The simulator never imports from this codebase. Tests can pass a `MockSimulator` without inheritance. This is the correct boundary between codebases.
+
+*Why Protocol over ABC?* The `travel_world` simulator is a separate package maintained independently. Making it inherit from our ABC would create a hard coupling — the simulator would need to import from this codebase. Protocol uses structural typing (duck typing with type safety): if `travel_world` has a `search_flights()` method with the right signature, it satisfies `SimulatorProtocol` without any import.
 
 ```python
 class SimulatorProtocol(Protocol):
@@ -158,15 +185,19 @@ class MockSimulator:
 
 Decouples `ReActAgent` from knowing which tools exist. The agent asks for a tool by name string; the registry handles lookup and raises `ToolNotFoundError` for unknown names. The registry also generates the tool schema section of the system prompt automatically.
 
+*Why Registry?* The 13 tools must be listed in the agent's system prompt schema. Without a registry, adding or removing a tool requires editing both the tool file and the prompt template. With a registry, `get_tool_schemas()` auto-generates the prompt section — the agent prompt updates automatically when tools are added to `from_config()`.
+
 ### Optional MCTS path — `MCTSController`
 
-When `agent.mode == "mcts_compressor"` (set by `configs/agent/react_mcts.yaml`), each of the three run scripts constructs a `MCTSController` and passes it to `ReActAgent`. At each compression event, the agent calls `mcts_controller.search(trajectory)` to produce a `MCTSTreeRepresentation`, which is forwarded to `LLMMCTSCompressor.compress_with_tree()` instead of the standard `compress()`. The resulting `CompressedState` carries `top_candidates` and `tradeoffs` fields derived from the MCTS tree.
+When `agent.mode == "mcts_compressor"` (set by `configs/agent/react_mcts.yaml`), each of the three run scripts constructs a `MCTSController` and passes it to `ReActAgent`. At each compression event, the agent calls `mcts_controller.search(trajectory)` to produce a `MCTSTreeRepresentation`, which is forwarded to `compressor.compress_with_tree()` (requires an `MCTSAwareCompressor` subclass) instead of the standard `compress()`. The resulting `CompressedState` carries `top_candidates` and `tradeoffs` fields derived from the MCTS tree.
 
-`MCTSController` is `None` in all other modes — the standard `compress()` path is used. The config pairing is enforced by startup warnings in each script: `agent=react_mcts` must be paired with `compressor=llm_mcts`.
+`MCTSController` is `None` in all other modes — the standard `compress()` path is used. The config pairing is enforced by startup warnings in each script: `agent=react_mcts` must be paired with `compressor=llm_mcts` or `compressor=mcts_gat`.
 
 ### Composition — `RewardFunction` holds `ConstraintSatisfactionEngine`
 
 `RewardFunction` does not inherit from the engine; it holds an instance. This makes the engine mockable in tests and allows different reward configurations to use the same engine instance.
+
+*Why Composition over inheritance?* If `RewardFunction` subclassed `ConstraintSatisfactionEngine`, every reward configuration would be a class, coupling reward weighting to the engine's inheritance chain. Holding the engine as an injected instance means the engine can be swapped for a mock in unit tests without subclassing.
 
 ---
 
@@ -294,5 +325,5 @@ All `outputs/` is gitignored. Use Google Drive mounting in Colab to persist outp
 
 - **Global seed:** `config.project.seed` (default 42). Set via `utils/seed.py::set_seed()` which seeds Python, NumPy, PyTorch, and the simulator.
 - **Per-episode seed:** drawn from `SimulatorConfig.seed_range` (`[0, 9999]`). Each parallel env gets a distinct seed.
-- **Config hash:** `EpisodeLog.config_hash` stores a hash of `ProjectConfig` at run time, allowing you to verify that compared episodes used the same configuration.
+- **Config hash:** `EpisodeLog.config_hash` stores a SHA-256 hash of the serialized `ProjectConfig` at run time. Two `EpisodeLog` objects with the same `config_hash` used identical hyperparameters — this is the canonical way to group episodes from the same training configuration without manually tracking run IDs. The eval viewer uses `config_hash` alongside `eval_key` to detect when you are comparing results from different configurations.
 - **`uv.lock`:** pinned transitive dependencies — every developer and Colab session gets identical package versions.

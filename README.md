@@ -8,6 +8,8 @@
 
 This repository investigates whether **context compression alone** — without fine-tuning the planning LLM — can outperform raw and summarized ReAct trajectories for constraint-satisfying travel planning.
 
+**Research question:** Can a learned compression mechanism, trained via RL to distill a growing agent trajectory into a compact structured memory state, produce better constraint-satisfying travel itineraries than simply keeping the full trajectory (RAW) or using an off-the-shelf LLM to summarize it (LLM Summary)?
+
 A trainable **compressor** distills a growing ReAct agent trajectory into a compact structured text state. That state is injected into the agent's context window at each compression event. The compressor is trained end-to-end via **Proximal Policy Optimization (PPO)**, with rewards shaped by hard/soft constraint satisfaction, tool efficiency, and logical consistency.
 
 Three experimental conditions are compared:
@@ -29,7 +31,8 @@ UserRequest
 ReActAgent  ──────────────────────────────────────────────────────────┐
     think → act → observe loop                                        │
     │                                                                 │
-    ├─► ContextBuilder    (RAW | LLM_SUMMARY | COMPRESSOR mode)      │
+    ├─► ContextBuilder    (RAW | LLM_SUMMARY | COMPRESSOR |           │
+    │                     MCTS_COMPRESSOR | STATELESS mode)          │
     │       builds the LLM prompt from:                              │
     │       [SYSTEM] + [USER REQUEST] + [CURRENT ITINERARY STATE]   │
     │       + [MEMORY] + [TOOL SCHEMA] + [FEW-SHOT EXAMPLES]        │
@@ -69,9 +72,9 @@ EpisodeLog ◄──────────────────────
 |---|---|---|
 | `core/` | Pydantic v2 data models, constraint engine, config schema, exceptions | — |
 | `simulator/` | `SimulatorProtocol` structural interface + `SimulatorAdapter` + `WorldPool` | — |
-| `tools/` | `BaseTool` ABC, `ToolRegistry`, `ToolCallTracker`, `EventBus`, 14 concrete tools (incl. `cancel_booking`) | [docs/TOOLS.md](docs/TOOLS.md) |
+| `tools/` | `BaseTool` ABC, `ToolRegistry`, `ToolCallTracker`, `EventBus`, 13 concrete tools (incl. `cancel_booking`) | [docs/TOOLS.md](docs/TOOLS.md) |
 | `agent/` | `ReActAgent`, `Trajectory`, `ContextBuilder`, `AgentMode`, prompt templates | [docs/AGENT.md](docs/AGENT.md) |
-| `compressor/` | `CompressorBase` + `TrainableCompressorBase` ABCs; 6 implementations; `CompressedStateTemplate` | [docs/COMPRESSOR.md](docs/COMPRESSOR.md) |
+| `compressor/` | `CompressorBase` + `TrainableCompressorBase` + `MCTSAwareCompressor` ABCs; 8 implementations; `CompressedStateTemplate` | [docs/COMPRESSOR.md](docs/COMPRESSOR.md) |
 | `training/` | `CompressionEnv` (Gymnasium), `CompressorPolicy` (SB3), `RewardFunction`, `RLTrainer`, `RLRunLogger`, `TrainingRunManifest` | [docs/TRAINING.md](docs/TRAINING.md) |
 | `evaluation/` | `DeterministicEvaluator` (15 metrics: 8 v1 + 6 v2 + 1 v3), `LLMJudge`, `AblationRunner` | [docs/EVALUATION.md](docs/EVALUATION.md) |
 | `mcts/` | Optional MCTS search augmentation (tree, node, controller) | — |
@@ -98,7 +101,7 @@ optimized-llm-planning-memory/
 │       ├── simulator/          # protocol, adapter, schemas
 │       ├── tools/              # 14 tools + registry + tracker + event bus
 │       ├── agent/              # react_agent, context_builder, trajectory, prompts
-│       ├── compressor/         # 6 implementations + template + lora_utils
+│       ├── compressor/         # 8 implementations + ABCs + template + lora_utils
 │       ├── training/           # env, policy, reward, trainer, buffer, logger
 │       ├── evaluation/         # evaluator, deterministic, llm_judge, ablation
 │       ├── mcts/               # tree, node, controller (optional)
