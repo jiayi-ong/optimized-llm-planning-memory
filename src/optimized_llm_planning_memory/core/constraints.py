@@ -240,14 +240,20 @@ class ConstraintSatisfactionEngine:
             )
         if constraint.unit == "min_stars":
             min_stars = float(constraint.value)
-            booking = all_bookings[0]
-            if booking.star_rating is not None:
-                satisfied = booking.star_rating >= min_stars
-                score = 1.0 if satisfied else max(0.0, booking.star_rating / min_stars)
-                explanation = f"Hotel star rating {booking.star_rating} vs required >={min_stars}."
+            # Check ALL bookings — a luxury trip requires every hotel to meet the standard.
+            # Use the worst-rated hotel so a single sub-standard property fails the constraint.
+            rated_bookings = [b for b in all_bookings if b.star_rating is not None]
+            if rated_bookings:
+                min_actual = min(b.star_rating for b in rated_bookings)
+                satisfied = min_actual >= min_stars
+                score = 1.0 if satisfied else max(0.0, min_actual / min_stars)
+                explanation = (
+                    f"Lowest hotel star rating {min_actual} across {len(rated_bookings)} "
+                    f"booking(s) vs required >={min_stars}."
+                )
             else:
                 satisfied, score = True, 1.0
-                explanation = "Hotel booked; star rating not recorded, assuming satisfied."
+                explanation = "Hotels booked; star ratings not recorded, assuming satisfied."
         else:
             nights_with_hotel = len(all_bookings)
             satisfied = nights_with_hotel == total_nights
