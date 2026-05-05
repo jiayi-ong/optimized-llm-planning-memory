@@ -1,0 +1,131 @@
+{
+  "request_id": "b0dfac18-5395-4f25-8dae-cf42352877e3",
+  "raw_text": "Luxury 13-day trip from Caelum to Aeloria. Budget $16000, want only the best — fine dining, 5-star hotels, and private tours.",
+  "origin_city": "city_world_400_20260504_075030_0002",
+  "destination_cities": [
+    "city_world_400_20260504_075030_0000"
+  ],
+  "start_date": "2026-05-27",
+  "end_date": "2026-06-09",
+  "budget_usd": 16000.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-9a2085",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $16000 USD.",
+      "value": 16000.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-c750f0",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-05-27 and end by 2026-06-09.",
+      "value": "2026-05-27 to 2026-06-09",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-31b2d6",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 13 days long.",
+      "value": 13,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-b7540e",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-accommodation-2fa68d",
+      "constraint_type": "hard",
+      "category": "accommodation",
+      "description": "All properties must be 5-star rated or equivalent luxury boutique hotels.",
+      "value": 5,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-transport-6ae89f",
+      "constraint_type": "soft",
+      "category": "transport",
+      "description": "Business or first class for all flights; private transfers for ground transport.",
+      "value": "business_class",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-c91555",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Prioritise private, exclusive, or curated experiences over group tours.",
+      "value": "private_exclusive",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-416c09",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Include Michelin-starred or top-rated dining (at least one per 3 days).",
+      "value": "fine_dining",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-b13b54",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Include at least one full-day spa or wellness experience.",
+      "value": "spa_wellness",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "fine dining",
+    "5-star hotels",
+    "private tours",
+    "spa treatments",
+    "exclusive experiences",
+    "wine tasting"
+  ],
+  "world_id": "world_400_20260504_075030",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "luxury_extended",
+    "tone_variant": 0,
+    "origin_name": "Caelum",
+    "dest_names": [
+      "Aeloria"
+    ],
+    "world_id": "world_400_20260504_075030"
+  }
+}

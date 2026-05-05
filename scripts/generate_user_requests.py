@@ -45,6 +45,7 @@ Usage
 
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
 import random
@@ -385,6 +386,118 @@ _ARCHETYPES: list[dict] = [
 ]
 
 
+# ── World-aware helpers ────────────────────────────────────────────────────────
+
+def load_world_cities(world_path: Path) -> tuple[str, str, dict[str, str]]:
+    """Read a world folder directly (no simulator needed).
+
+    Returns (world_id, sim_date, {city_id: city_name}) sourced from
+    meta.json and geo_layer.json. This is the canonical way to bind
+    generated requests to a specific reproducible world.
+
+    The geo_layer stores cities under geo["data"]["cities"] as either a
+    dict {city_id: city_obj} or a list[city_obj] — both are handled.
+    """
+    meta = json.loads((world_path / "meta.json").read_text(encoding="utf-8"))
+    geo = json.loads((world_path / "geo_layer.json").read_text(encoding="utf-8"))
+
+    cities_raw = geo.get("data", geo).get("cities", {})
+    if isinstance(cities_raw, dict):
+        registry = {cid: city["name"] for cid, city in cities_raw.items() if "name" in city}
+    else:
+        registry = {c["city_id"]: c["name"] for c in cities_raw if "city_id" in c and "name" in c}
+
+    return meta["world_id"], meta["sim_date"], registry
+
+
+def _anchor_date_range(
+    sim_date: str, duration_days: int, rng: random.Random
+) -> tuple[str, str]:
+    """Start date is sim_date + 7..60 days so trips are temporally coherent with the world."""
+    base = datetime.fromisoformat(sim_date)
+    offset = rng.randint(7, 60)
+    start = base + timedelta(days=offset)
+    end = start + timedelta(days=duration_days - 1)
+    return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+
+
+def generate_from_world_dir(
+    world_path: Path,
+    n: int,
+    split: str,
+    output_dir: Path,
+    rng: random.Random,
+    log,
+) -> None:
+    """Generate ``n`` UserRequest JSON files bound to the given world directory.
+
+    Unlike the Hydra ``main()`` path, this function reads city data directly
+    from ``geo_layer.json`` without instantiating the simulator. All generated
+    requests store ``world_id`` so evaluations can be traced back to the exact
+    world that produced them.
+    """
+    from optimized_llm_planning_memory.core.models import UserRequest
+
+    world_id, sim_date, city_registry = load_world_cities(world_path)
+
+    if not city_registry:
+        raise ValueError(f"World at {world_path} has no cities in geo_layer.json.")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    city_ids = list(city_registry.keys())
+    rng.shuffle(city_ids)
+
+    if len(city_ids) == 1:
+        # Single-city world (e.g. Aeloria-only simulator): origin = destination.
+        cid, cname = city_ids[0], city_registry[city_ids[0]]
+        city_pairs: list[CityPair] = [
+            CityPair(origin_id=cid, origin_name=cname, dest_ids=[cid], dest_names=[cname])
+        ]
+    else:
+        city_pairs = [
+            CityPair(
+                origin_id=city_ids[i],
+                origin_name=city_registry[city_ids[i]],
+                dest_ids=[city_ids[(i + 1) % len(city_ids)]],
+                dest_names=[city_registry[city_ids[(i + 1) % len(city_ids)]]],
+            )
+            for i in range(len(city_ids))
+            if city_ids[i] != city_ids[(i + 1) % len(city_ids)]
+        ]
+
+    pairs_cycle = itertools.cycle(city_pairs)
+    n_archetypes = len(_ARCHETYPES)
+    saved = 0
+
+    for i in range(n):
+        pair = next(pairs_cycle)
+        archetype = _ARCHETYPES[i % n_archetypes]
+        tone_idx = i // n_archetypes
+        budget = rng.choice(archetype["budget_usd"])
+        duration = rng.choice(archetype["duration_days"])
+        start_date, end_date = _anchor_date_range(sim_date, duration, rng)
+
+        req_dict = _make_request(pair, archetype, budget, start_date, end_date, tone_idx)
+        req_dict["world_id"] = world_id
+        req_dict["metadata"]["world_id"] = world_id  # belt-and-suspenders for raw JSON readers
+
+        try:
+            req = UserRequest.model_validate(req_dict)
+            out_path = output_dir / f"request_{req.request_id}.json"
+            out_path.write_text(req.model_dump_json(indent=2), encoding="utf-8")
+            saved += 1
+        except Exception as exc:
+            log.warning(
+                "request_validation_failed",
+                split=split,
+                archetype=archetype["label"],
+                error=str(exc),
+            )
+
+    log.info("split_generated", split=split, n=saved, world_id=world_id)
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _random_date_range(rng: random.Random, duration_days: int) -> tuple[str, str]:
@@ -626,27 +739,34 @@ def main(cfg: DictConfig) -> None:
 
     city_registry = _discover_cities(sim, log)
 
-    if len(city_registry) < 2:
+    if not city_registry:
         log.warning(
-            "insufficient_cities",
-            n=len(city_registry),
-            hint="Using placeholder city IDs — replace with real IDs after world init.",
+            "no_cities_found",
+            hint="Simulator returned no cities — check worlds/ directory and simulator seed.",
         )
         city_registry = {f"city_{i:03d}": f"City {i}" for i in range(10)}
 
     city_ids = list(city_registry.keys())
     rng.shuffle(city_ids)
 
-    city_pairs: list[CityPair] = [
-        CityPair(
-            origin_id=city_ids[i],
-            origin_name=city_registry[city_ids[i]],
-            dest_ids=[city_ids[(i + 1) % len(city_ids)]],
-            dest_names=[city_registry[city_ids[(i + 1) % len(city_ids)]]],
-        )
-        for i in range(len(city_ids))
-        if city_ids[i] != city_ids[(i + 1) % len(city_ids)]
-    ]
+    if len(city_ids) == 1:
+        # Single-city world: origin = destination (single-destination trip model).
+        cid, cname = city_ids[0], city_registry[city_ids[0]]
+        log.info("single_city_world", city=cname, hint="Generating single-destination requests.")
+        city_pairs: list[CityPair] = [
+            CityPair(origin_id=cid, origin_name=cname, dest_ids=[cid], dest_names=[cname])
+        ]
+    else:
+        city_pairs = [
+            CityPair(
+                origin_id=city_ids[i],
+                origin_name=city_registry[city_ids[i]],
+                dest_ids=[city_ids[(i + 1) % len(city_ids)]],
+                dest_names=[city_registry[city_ids[(i + 1) % len(city_ids)]]],
+            )
+            for i in range(len(city_ids))
+            if city_ids[i] != city_ids[(i + 1) % len(city_ids)]
+        ]
 
     # Write a template request so run_episode.py has a working default
     if city_pairs:
@@ -666,5 +786,132 @@ def main(cfg: DictConfig) -> None:
     log.info("done", total=n_train + n_val + n_test)
 
 
+def _auto_detect_world_dir(base: Path = Path("worlds")) -> Path | None:
+    """Return the most recently modified world directory under *base*, or None."""
+    if not base.is_dir():
+        return None
+    candidates = [p for p in base.iterdir() if p.is_dir() and p.name.startswith("world_")]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
+def cli_main() -> None:
+    """Argparse entry point for world-aligned request generation.
+
+    Pre-creates a simulator world for every evaluation seed so the notebook
+    can reuse them without on-the-fly creation during episode generation.
+    Requests are generated from the first seed's city layout — city IDs are
+    identical across seeds that share the same world_config, so any world
+    produces valid city IDs for all seeds.
+
+    Example (seeds auto-read from EvalConfig — default [42, 100, 200, 300, 400])
+    -----------------------------------------------------------------------------
+    python scripts/generate_user_requests.py --n_train 5 --n_val 5 --n_test 5
+
+    Example (explicit seed list)
+    ----------------------------
+    python scripts/generate_user_requests.py --n_train 5 --n_val 5 --n_test 5 --seeds 42 100 200
+
+    Example (explicit world directory, skips world creation)
+    ---------------------------------------------------------
+    python scripts/generate_user_requests.py --world_dir worlds/world_42_20260502_084804 --n_train 40 --n_val 10 --n_test 10
+    """
+    parser = argparse.ArgumentParser(
+        description="Generate world-aligned UserRequest JSON files.",
+        add_help=True,
+    )
+    parser.add_argument(
+        "--world_dir",
+        type=Path,
+        default=None,
+        help=(
+            "Path to an existing world folder. If omitted, worlds are pre-created "
+            "for every seed in --seeds using configs/simulator/default.yaml."
+        ),
+    )
+    parser.add_argument("--n_train", type=int, default=40)
+    parser.add_argument("--n_val",   type=int, default=10)
+    parser.add_argument("--n_test",  type=int, default=10)
+    parser.add_argument(
+        "--seeds",
+        nargs="+",
+        type=int,
+        default=None,
+        help=(
+            "World seeds to pre-create (space-separated). "
+            "Defaults to EvalConfig.world_seeds — currently [42, 100, 200, 300, 400]. "
+            "City IDs are identical across seeds sharing the same world_config, so "
+            "requests generated from the first seed are valid for all."
+        ),
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default=Path("data/user_requests"),
+        help="Base output directory; split sub-dirs are created automatically.",
+    )
+
+    # When Hydra is invoked it injects its own sys.argv. Guard against that here.
+    args, _ = parser.parse_known_args()
+
+    # Resolve seeds: explicit --seeds > EvalConfig.world_seeds > fallback [42]
+    if args.seeds is not None:
+        seeds = args.seeds
+    else:
+        try:
+            from optimized_llm_planning_memory.core.config import EvalConfig
+            seeds = list(EvalConfig().world_seeds)
+        except Exception:
+            seeds = [42]
+
+    configure_logging(level="INFO")
+    log = get_logger(__name__)
+
+    primary_seed = seeds[0]
+    set_seed(primary_seed)
+    rng = random.Random(primary_seed)
+
+    world_dir = args.world_dir
+    if world_dir is None:
+        import yaml as _yaml
+        from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
+        _cfg_path = Path(__file__).parent.parent / "configs" / "simulator" / "default.yaml"
+        try:
+            _world_params = _yaml.safe_load(_cfg_path.read_text())["world_params"]
+        except Exception as exc:
+            raise SystemExit(f"Cannot read simulator config at {_cfg_path}: {exc}") from exc
+
+        log.info("pre_creating_worlds", seeds=seeds, n=len(seeds))
+        for s in seeds:
+            try:
+                SimulatorAdapter(seed=s, world_config=_world_params)
+                log.info("world_ready", seed=s)
+            except Exception as exc:
+                raise SystemExit(f"Failed to create world for seed={s}: {exc}") from exc
+
+        world_dir = _auto_detect_world_dir()
+        if world_dir is None:
+            raise SystemExit(
+                "No world directories found after creation. "
+                "Ensure SimulatorAdapter persists worlds under worlds/. "
+                "Pass --world_dir explicitly as a workaround."
+            )
+        log.info("using_world_dir", world_dir=str(world_dir))
+    else:
+        log.info("world_dir_mode", world_dir=str(world_dir))
+
+    for split, n in [("train", args.n_train), ("val", args.n_val), ("test", args.n_test)]:
+        log.info("generating_split", split=split, n=n)
+        generate_from_world_dir(world_dir, n, split, args.output_dir / split, rng, log)
+    log.info("done", seeds=seeds, total=args.n_train + args.n_val + args.n_test)
+
+
 if __name__ == "__main__":
-    main()
+    # Use cli_main (world-aligned) when any world-gen flags or --world_dir are
+    # present, or when Hydra config flags are absent (safest default).
+    hydra_flags = any(a.startswith("agent=") or a.startswith("compressor=") for a in sys.argv[1:])
+    if not hydra_flags:
+        cli_main()
+    else:
+        main()

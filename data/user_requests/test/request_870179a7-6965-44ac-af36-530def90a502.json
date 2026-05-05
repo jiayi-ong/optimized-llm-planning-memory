@@ -1,8 +1,10 @@
 {
-  "request_id": "TEMPLATE",
-  "raw_text": "Plan a 7-day trip from Aeloria to Brindor and Caelum for 1 adult with a budget of $2500. I prefer boutique hotels, love art museums, and need vegetarian dining options.",
-  "origin_city": "Aeloria",
-  "destination_cities": ["Brindor", "Caelum"],
+  "request_id": "870179a7-6965-44ac-af36-530def90a502",
+  "raw_text": "Solo trip from Brindor to Caelum — 6 days, $2500. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+  "origin_city": "city_world_400_20260504_075030_0001",
+  "destination_cities": [
+    "city_world_400_20260504_075030_0002"
+  ],
   "start_date": "2026-06-01",
   "end_date": "2026-06-07",
   "budget_usd": 2500.0,
@@ -10,74 +12,90 @@
     "num_adults": 1,
     "num_children": 0,
     "accessibility_needs": [],
-    "dietary_restrictions": ["vegetarian"]
+    "dietary_restrictions": []
   },
   "hard_constraints": [
     {
-      "constraint_id": "hc-budget-c3e86b",
+      "constraint_id": "hc-budget-dc5d19",
       "constraint_type": "hard",
       "category": "budget",
       "description": "Total trip cost must not exceed $2500 USD.",
       "value": 2500.0,
-      "unit": "USD"
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-dates-faaeb3",
+      "constraint_id": "hc-dates-312fda",
       "constraint_type": "hard",
       "category": "date",
-      "description": "Trip must start on 2026-06-01 and end on 2026-06-07",
+      "description": "Trip must start on 2026-06-01 and end by 2026-06-07.",
       "value": "2026-06-01 to 2026-06-07",
-      "unit": "date_range"
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-duration-27e4b7",
+      "constraint_id": "hc-duration-b96315",
       "constraint_type": "hard",
       "category": "duration",
-      "description": "Trip must be exactly 7 days long.",
-      "value": 7,
-      "unit": "days"
+      "description": "Trip must be exactly 6 days long.",
+      "value": 6,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-group-bbd68c",
+      "constraint_id": "hc-group-919960",
       "constraint_type": "hard",
       "category": "group",
       "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
       "value": 1,
-      "unit": "people"
+      "unit": "people",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "hc-activity-230ee0",
+      "constraint_id": "hc-activity-7ba207",
       "constraint_type": "hard",
       "category": "activity",
       "description": "Itinerary must include at least one hiking activity.",
       "value": "hiking",
-      "unit": null
+      "unit": null,
+      "satisfied": null,
+      "score": null
     }
   ],
   "soft_constraints": [
     {
-      "constraint_id": "sc-accommodation-e8f4e3",
+      "constraint_id": "sc-accommodation-9ada54",
       "constraint_type": "soft",
       "category": "accommodation",
       "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
       "value": 1,
-      "unit": "min_stars"
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "sc-activity-91c952",
+      "constraint_id": "sc-activity-65ebe0",
       "constraint_type": "soft",
       "category": "activity",
       "description": "Include at least one outdoor or adventure activity per day.",
       "value": "outdoor",
-      "unit": "preference"
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
     },
     {
-      "constraint_id": "sc-preference-eaed0e",
+      "constraint_id": "sc-preference-397925",
       "constraint_type": "soft",
       "category": "preference",
       "description": "Favour local community experiences over tourist-trap attractions.",
       "value": "local_authentic",
-      "unit": "preference"
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
     }
   ],
   "preferences": [
@@ -87,15 +105,16 @@
     "photography",
     "street art"
   ],
+  "world_id": "world_400_20260504_075030",
   "metadata": {
     "generated_by": "generate_user_requests.py",
     "template_version": "3.0",
     "archetype": "solo_adventurer",
-    "tone_variant": 1,
-    "origin_name": "Aeloria",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
     "dest_names": [
-      "Brindor",
       "Caelum"
-    ]
+    ],
+    "world_id": "world_400_20260504_075030"
   }
 }

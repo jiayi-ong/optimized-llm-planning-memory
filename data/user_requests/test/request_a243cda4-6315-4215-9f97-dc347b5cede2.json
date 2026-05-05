@@ -1,0 +1,120 @@
+{
+  "request_id": "a243cda4-6315-4215-9f97-dc347b5cede2",
+  "raw_text": "Quick 1-day trip from Brindor to Caelum, very tight $600 total. We want street food and free attractions. As cheap as possible.",
+  "origin_city": "city_world_400_20260504_075030_0001",
+  "destination_cities": [
+    "city_world_400_20260504_075030_0002"
+  ],
+  "start_date": "2026-06-02",
+  "end_date": "2026-06-03",
+  "budget_usd": 600.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-9e890a",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $600 USD.",
+      "value": 600.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-a906da",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-02 and end by 2026-06-03.",
+      "value": "2026-06-02 to 2026-06-03",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-f1bd26",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 1 days long.",
+      "value": 1,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-9c4454",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-transport-20dc27",
+      "constraint_type": "hard",
+      "category": "transport",
+      "description": "Trip must use bus or public transit for at least one journey leg.",
+      "value": "bus",
+      "unit": "mode",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-e36a48",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Budget accommodation only — hostels or 1-2 star hotels.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-aee444",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Prioritise free or low-cost attractions (under $20 per person per activity).",
+      "value": "free_or_cheap",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-7ac352",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Maximise the number of distinct locations visited within the time and budget.",
+      "value": "coverage",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "street food",
+    "free attractions",
+    "walking tours",
+    "local markets",
+    "public transit"
+  ],
+  "world_id": "world_400_20260504_075030",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "short_budget_stay",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
+    "dest_names": [
+      "Caelum"
+    ],
+    "world_id": "world_400_20260504_075030"
+  }
+}
