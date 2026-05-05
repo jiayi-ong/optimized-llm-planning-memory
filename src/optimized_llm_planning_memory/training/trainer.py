@@ -244,6 +244,34 @@ class CompressorCheckpointCallback(BaseCallback):
         return True
 
 
+class LoggerCapturePatch(BaseCallback):
+    """
+    Patches the SB3 logger's dump() at training start to snapshot name_to_value
+    before SB3 clears it.
+
+    Root cause: PPOUpdateMetricsCallback._on_rollout_end() fires BEFORE train(),
+    so by the time the rollout ends, the previous train() has already called
+    logger.dump() which wipes all train/* keys. This callback intercepts dump()
+    once the logger exists (after _setup_learn) and stores a snapshot that
+    PPOUpdateMetricsCallback can read instead.
+    """
+
+    def _on_training_start(self) -> None:
+        _captured: dict = {}
+        _orig_dump = self.model.logger.dump
+
+        def _capturing_dump(step: int = 0) -> None:
+            _captured.clear()
+            _captured.update(self.model.logger.name_to_value)
+            _orig_dump(step)
+
+        self.model.logger.dump = _capturing_dump  # type: ignore[method-assign]
+        self.model._captured_log_values = _captured  # type: ignore[attr-defined]
+
+    def _on_step(self) -> bool:
+        return True
+
+
 # ── RLTrainer ─────────────────────────────────────────────────────────────────
 
 
@@ -377,7 +405,10 @@ class PPOUpdateMetricsCallback(BaseCallback):
 
     def _on_rollout_end(self) -> None:
         """Called after each complete PPO update cycle."""
-        log_values = self.model.logger.name_to_value  # type: ignore[attr-defined]
+        # Prefer captured values (snapshot taken just before dump() clears the logger).
+        # Falls back to name_to_value for the very first rollout before any train() runs.
+        captured = getattr(self.model, "_captured_log_values", None)
+        log_values = captured if captured else self.model.logger.name_to_value  # type: ignore[attr-defined]
 
         def _get(key: str, default: float = 0.0) -> float:
             val = log_values.get(key, default)
@@ -399,6 +430,13 @@ class PPOUpdateMetricsCallback(BaseCallback):
         except Exception:
             pass
 
+        # Read LR directly from optimizer as ground truth (logger value may be stale).
+        opt_lr: float = 0.0
+        try:
+            opt_lr = float(self.model.policy.optimizer.param_groups[0]["lr"])  # type: ignore
+        except Exception:
+            opt_lr = _get("train/learning_rate")
+
         metrics = PPOUpdateMetrics(
             update_step=self._update_count,
             policy_loss=_get("train/policy_gradient_loss"),
@@ -408,7 +446,7 @@ class PPOUpdateMetricsCallback(BaseCallback):
             clip_fraction=_get("train/clip_fraction"),
             approx_kl=_get("train/approx_kl"),
             explained_variance=_get("train/explained_variance"),
-            learning_rate=_get("train/learning_rate"),
+            learning_rate=opt_lr,
             # grad_norm: SB3 logs this when max_grad_norm > 0
             grad_norm=_get_opt("train/grad_norm"),
             advantages_mean=adv_mean,
@@ -802,8 +840,10 @@ class RLTrainer:
         )
         ppo_metrics_cb = PPOUpdateMetricsCallback(run_logger=run_logger, verbose=0)
         mcts_metrics = MCTSMetricsCallback(verbose=0)  # no-op for non-MCTS runs
+        logger_patch = LoggerCapturePatch(verbose=0)   # must come before PPOUpdateMetricsCallback
 
         callbacks: list[BaseCallback] = [
+            logger_patch,
             sb3_ckpt,
             compressor_ckpt,
             episode_log_cb,

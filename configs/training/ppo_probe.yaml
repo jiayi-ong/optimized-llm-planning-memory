@@ -36,7 +36,7 @@ ppo:
                            # at 3e-5 with token-level PPO (KL explodes to 3e9).
   n_steps: 64
   batch_size: 16
-  n_epochs: 4
+  n_epochs: 2            # reduced from 4; token-level PPO with T5 LoRA can blow up KL in epoch 2+
   gamma: 0.99
   gae_lambda: 0.95
   clip_epsilon: 0.2
