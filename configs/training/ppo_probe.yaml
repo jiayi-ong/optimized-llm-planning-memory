@@ -5,10 +5,11 @@
 # Designed to run ~60 min on CPU. 10 PPO updates with meaningful learning signal.
 #
 # Key fixes vs original probe:
-#   normalize_advantage: false — prevents policy_loss ≈ 0 when ratio ≈ 1 (init)
+#   normalize_advantage: true — prevents policy_loss ≈ 0 when advantage variance is tiny
 #   n_steps: 64              — larger rollout → more advantage variance
 #   batch_size: 16           — 4 mini-batches per rollout (vs 1 before)
 #   max_agent_steps: 24      — 4 compression windows of 6 steps each
+#   lora_dropout: 0.0        — eliminates eval/train log_prob mismatch (Bug 7)
 #
 # Math:
 #   n_envs=1, n_steps=64 → rollout buffer fills after 64 compression events
