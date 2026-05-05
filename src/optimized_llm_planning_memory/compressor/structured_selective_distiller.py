@@ -563,7 +563,7 @@ class StructuredSelectiveDistiller(TrainableCompressorBase):
                 decisions_made=[],
                 open_questions=[],
                 key_discoveries=[],
-                current_itinerary_sketch=generated_text[:400] if generated_text and generated_text.strip() else "(pending)",
+                current_itinerary_sketch=__import__("re").sub(r"##\s+\w+\s+##", "", (generated_text or "")[:400].strip()).strip() or "(pending)",
                 compression_method=self._METHOD,
                 token_count=None,
                 created_at=datetime.now(tz=timezone.utc).isoformat(),

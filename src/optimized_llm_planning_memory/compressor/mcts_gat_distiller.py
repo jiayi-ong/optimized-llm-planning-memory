@@ -692,10 +692,16 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
                     constraints=(), satisfied_ids=(), violated_ids=(), unknown_ids=()
                 )
             )
-            # Ensure required fields are never empty so render()/validate() succeeds.
-            # An empty current_itinerary_sketch causes validate() to raise, which
-            # propagates to _generate_action()'s except clause → zero action tensor.
-            sketch = generated_text[:400] if generated_text and generated_text.strip() else "(pending)"
+            # Ensure the sketch never contains ## SECTION ## sentinels.
+            # The fallback sketch is the raw T5 output, which starts with the
+            # generation prefix "## HARD_CONSTRAINT_LEDGER ##". When this is
+            # rendered into a template, decoded (T5 strips newlines), and
+            # re-normalised, the embedded sentinel is mistaken for a new section
+            # header, corrupting the structure and causing validate() to fail.
+            import re as _re_local
+            _raw = (generated_text or "")[:400].strip()
+            _clean = _re_local.sub(r"##\s+\w+\s+##", "", _raw).strip()
+            sketch = _clean or "(pending)"
             state = CompressedState(
                 state_id=str(uuid.uuid4()),
                 trajectory_id=trajectory_id,
