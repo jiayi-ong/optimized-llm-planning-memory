@@ -240,6 +240,7 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
         use_lora: bool = True,
         lora_config: LoRAConfig | None = None,
         top_k_paths: int = 3,
+        path_encoder_dropout: float = 0.0,
     ) -> None:
         self._model_name = model_name_or_path
         self._max_path_tokens = max_path_tokens
@@ -269,8 +270,11 @@ class MCTSGraphAttentionDistiller(TrainableCompressorBase, MCTSAwareCompressor):
         ).to(self._device)
 
         # PathSetEncoder (from tree_gat.py): 2-layer multi-head path attention
+        # dropout=0.0 for PPO stability: SB3 toggles training mode between rollout
+        # (eval, no dropout) and update (train, dropout active). Any dropout>0 causes
+        # a stochastic mismatch between old/new log_probs → KL explosion (same as Bug 7).
         self._path_encoder = PathSetEncoder(
-            dim=hidden_dim, num_heads=4, dropout=0.1
+            dim=hidden_dim, num_heads=4, dropout=path_encoder_dropout
         ).to(self._device)
 
         # Importance scorer → Gumbel top-K selection
