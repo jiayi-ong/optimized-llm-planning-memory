@@ -24,9 +24,25 @@ class AgentMode(str, Enum):
     LLM_SUMMARY      = "llm_summary"       # LLM-summarized trajectory
     COMPRESSOR       = "compressor"        # PPO-trained compressed state
     MCTS_COMPRESSOR  = "mcts_compressor"   # compressed state + MCTS tree info
+    STATELESS        = "stateless"         # no trajectory history; itinerary-only memory
 ```
 
 Mode is set in `configs/agent/*.yaml` and read into `AgentConfig.mode`.
+
+### STATELESS mode
+
+`AgentMode.STATELESS` is used exclusively by the **prompt sweep** non-ReAct variants (`sweep_F`, `sweep_G`). When selected, `ContextBuilder.build()` omits the `[CONTEXT]` section entirely. The agent receives:
+
+```
+[SYSTEM]                   ← system prompt
+[USER REQUEST]             ← original request + structured constraints
+[CURRENT ITINERARY STATE]  ← confirmed bookings (flights, hotels, events)
+[AVAILABLE TOOLS]          ← runtime tool list
+```
+
+No trajectory history is injected, regardless of how many steps have elapsed. The itinerary object is the agent's sole external memory — a stateless reactive policy over `(system_prompt, request, itinerary, tools)`.
+
+Compression is disabled in STATELESS mode (it is not in the set of modes that trigger `_should_compress()`). See [`docs/PROMPT_SWEEP.md`](PROMPT_SWEEP.md) for the rationale and experiment details.
 
 ---
 
