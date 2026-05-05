@@ -128,6 +128,7 @@ class ReActAgent:
         # Per-episode state reset in run_episode()
         self._current_request: UserRequest | None = None
         self._last_mcts_stats: MCTSStats | None = None
+        self._episode_tokens: int = 0  # accumulates LLM token usage per episode
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -167,6 +168,7 @@ class ReActAgent:
         # Store on self so _run_compression() can access them without threading issues
         self._current_request = request
         self._last_mcts_stats = None
+        self._episode_tokens = 0
 
         log.info("episode.start", episode_id=episode_id, request_id=request.request_id, mode=self._mode.value)
 
@@ -361,6 +363,7 @@ class ReActAgent:
             reward_components=reward_components,
             tool_stats=tuple(tracker.get_stats()),
             total_steps=trajectory.total_steps,
+            total_tokens_used=self._episode_tokens if self._episode_tokens > 0 else None,
             mcts_stats=self._last_mcts_stats,
             success=success,
             error=error_msg,
@@ -508,6 +511,9 @@ class ReActAgent:
             temperature=self._config.temperature,
             max_tokens=self._config.max_tokens_per_response,
         )
+        _usage = getattr(response, "usage", None)
+        if _usage is not None:
+            self._episode_tokens += getattr(_usage, "total_tokens", 0) or 0
         return response.choices[0].message.content or ""
 
     # ── Response parsing ──────────────────────────────────────────────────────

@@ -114,6 +114,9 @@ class LLMCompressor(CompressorBase):
             max_tokens=self._max_tokens,
             response_format={"type": "json_object"},
         )
+        _usage = getattr(raw, "usage", None)
+        _completion_tokens = getattr(_usage, "completion_tokens", None)
+        _prompt_tokens = getattr(_usage, "prompt_tokens", None)
         raw_text = raw.choices[0].message.content or "{}"
         response = _CompressorLLMResponse.model_validate(json.loads(raw_text))
 
@@ -141,7 +144,8 @@ class LLMCompressor(CompressorBase):
             key_discoveries=response.key_discoveries,
             current_itinerary_sketch=response.current_itinerary_sketch,
             compression_method="llm",
-            token_count=None,
+            token_count=_completion_tokens,
+            raw_token_count=_prompt_tokens,
             created_at=datetime.now(tz=timezone.utc).isoformat(),
         )
 

@@ -108,6 +108,8 @@ class TransformerCompressor(TrainableCompressorBase):
             truncation=True,
         ).to(self._device)
 
+        raw_token_count = int(input_ids.shape[1])
+
         with torch.no_grad():
             output_ids = self._model.generate(
                 input_ids,
@@ -117,6 +119,7 @@ class TransformerCompressor(TrainableCompressorBase):
                 no_repeat_ngram_size=3,
             )
 
+        output_token_count = int(output_ids.shape[-1])
         generated_text = self._tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
         try:
@@ -127,12 +130,14 @@ class TransformerCompressor(TrainableCompressorBase):
                 compression_method="transformer",
             )
         except Exception:
-            # Fallback: wrap raw output in a minimal CompressedState
             state = self._make_fallback_state(
                 trajectory, generated_text, previous_state
             )
 
-        return state
+        return state.model_copy(update={
+            "token_count": output_token_count,
+            "raw_token_count": raw_token_count,
+        })
 
     # ── TrainableCompressorBase ───────────────────────────────────────────────
 

@@ -106,6 +106,7 @@ class Evaluator:
             judge_model=judge_model,
             created_at=datetime.now(timezone.utc).isoformat(),
             metric_version=METRIC_VERSION,
+            world_seed=episode_log.world_seed,
         )
 
     def evaluate_dataset(
@@ -162,19 +163,27 @@ class Evaluator:
 
         agg: dict[str, float] = {}
 
+        def _stdev(vals: list[float]) -> float:
+            # statistics.stdev broke for plain floats in Python 3.13 (requires Fraction
+            # internals). Manual population std-dev avoids the regression.
+            if len(vals) < 2:
+                return 0.0
+            mean = sum(vals) / len(vals)
+            return (sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)) ** 0.5
+
         for key in sorted(all_det_keys):
             vals = [r.deterministic_scores.get(key, 0.0) for r in results]
             agg[f"{key}_mean"] = statistics.mean(vals)
-            agg[f"{key}_std"] = statistics.stdev(vals) if len(vals) > 1 else 0.0
+            agg[f"{key}_std"] = _stdev(vals)
 
         for key in sorted(all_llm_keys):
             vals = [r.llm_judge_scores.get(key, 0.0) for r in results]
             agg[f"judge_{key}_mean"] = statistics.mean(vals)
-            agg[f"judge_{key}_std"] = statistics.stdev(vals) if len(vals) > 1 else 0.0
+            agg[f"judge_{key}_std"] = _stdev(vals)
 
         overall_vals = [r.overall_score for r in results]
         agg["overall_score_mean"] = statistics.mean(overall_vals)
-        agg["overall_score_std"] = statistics.stdev(overall_vals) if len(overall_vals) > 1 else 0.0
+        agg["overall_score_std"] = _stdev(overall_vals)
 
         return agg
 
