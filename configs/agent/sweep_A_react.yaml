@@ -1,0 +1,12 @@
+# configs/agent/sweep_A_react.yaml
+# Prompt sweep variant A — Grow-then-Prune (ReAct).
+# Philosophy: aggressive exploration with mandatory booking per search, then cancel to fit budget.
+# @package agent
+mode: raw
+llm_model_id: openai/gpt-4o-mini
+max_steps: 30
+max_retries_per_action: 3
+compress_every_n_steps: 9999
+compress_on_token_threshold: 999999
+temperature: 0.0
+system_prompt_version: sweep_A

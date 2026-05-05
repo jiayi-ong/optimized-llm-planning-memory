@@ -50,3 +50,13 @@ class AgentMode(str, Enum):
       - ``ReActAgent._mcts_controller`` is not None.
       - ``isinstance(compressor, MCTSAwareCompressor)`` is True.
     """
+
+    STATELESS = "stateless"
+    """
+    Non-ReAct stateless agent.
+
+    The agent receives NO trajectory history on each call — only the system
+    prompt, user request, current itinerary state, and available tools.
+    The itinerary object is the agent's sole memory. Used for the sweep_F and
+    sweep_G prompt variants in the baseline prompt-design experiment.
+    """

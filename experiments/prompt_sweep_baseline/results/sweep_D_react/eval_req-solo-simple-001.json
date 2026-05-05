@@ -1,0 +1,17 @@
+{
+  "hard_constraint_ratio": 0.0,
+  "soft_constraint_score": 1.0,
+  "tool_efficiency": 0.9,
+  "tool_failure_rate": 0.2,
+  "avg_tool_latency_ms": 1.5837099992495496,
+  "steps_per_episode": 11.0,
+  "budget_adherence": 0.8890449999999999,
+  "logical_consistency": 0.6666666666666667,
+  "destination_coverage_ratio": 1.0,
+  "accommodation_coverage_ratio": 1.0,
+  "activity_density_score": 0.25,
+  "rest_day_ratio": 1.0,
+  "schedule_overlap_score": 1.0,
+  "intra_city_feasibility": 1.0,
+  "completion_rate": 0.5
+}
