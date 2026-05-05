@@ -123,6 +123,7 @@ def main(cfg: DictConfig) -> None:
             use_lora=OmegaConf.select(cfg, "compressor.use_lora", default=True),
             lora_config=lora_cfg,
             top_k_paths=OmegaConf.select(cfg, "compressor.top_k_paths", default=3),
+            path_encoder_dropout=OmegaConf.select(cfg, "compressor.path_encoder_dropout", default=0.0),
         )
     else:
         from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor

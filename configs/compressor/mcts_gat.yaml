@@ -25,6 +25,8 @@ lora:
   target_modules: [q, v]
 freeze_base_layers: false
 top_k_paths: 3           # number of paths selected by Gumbel top-K
+path_encoder_dropout: 0.0  # 0.0 for PPO stability: PathSetEncoder eval/train mismatch
+                           # with dropout>0 causes approx_kl explosion (Bug 8, same root as Bug 7)
 generation:
   num_beams: 4
   early_stopping: true
