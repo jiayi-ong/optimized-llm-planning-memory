@@ -2,6 +2,8 @@
 
 Evaluation runs in two independent layers. Layer 1 (deterministic) is fast, free, and always run. Layer 2 (LLM judge) adds qualitative scoring and requires an API key.
 
+**Why two layers?** Deterministic metrics are reproducible, zero-cost, and identical to the RL training reward — they are the primary signal for experiment comparison and regression detection. However, rule-based metrics cannot capture whether an itinerary feels coherent, creative, or authentic. The LLM judge fills this gap with rubric-guided qualitative scores; its fixed judge model (`openai/gpt-4o-mini` unless overridden) acts as a consistent human proxy across all conditions.
+
 ---
 
 ## Files
@@ -28,7 +30,7 @@ Evaluation runs in two independent layers. Layer 1 (deterministic) is fast, free
 
 | Metric key | Range | Description |
 |---|---|---|
-| `hard_constraint_ratio` | [0, 1] | Fraction of hard constraints satisfied. **Primary success criterion** — double-weighted in the overall score. |
+| `hard_constraint_ratio` | [0, 1] | Fraction of hard constraints satisfied. **Primary success criterion** — double-weighted in the overall score. Hard constraints (city visits, budget, group size, dates) are non-negotiable: a trip that misses a required city is a planning failure regardless of activity diversity or creativity. The 2× weight ensures that a compressor that violates hard constraints cannot be rescued by good soft-constraint or qualitative scores. |
 | `soft_constraint_score` | [0, 1] | Weighted average satisfaction across soft constraints. 1.0 when no soft constraints exist. |
 | `budget_adherence` | [0, 1] | 1.0 if total itinerary cost ≤ budget; decreases proportionally if over. |
 | `logical_consistency` | [0, 1] | Four sub-checks: dates sorted chronologically, no duplicate hotel bookings, no activity time overlaps within a day, flight arrival ≤ hotel check-in. Score = 1 − issues/checks. |

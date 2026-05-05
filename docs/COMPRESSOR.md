@@ -12,6 +12,7 @@ The compressor is the **only component being trained** in this project. The plan
 |---|---|
 | `compressor/base.py` | `CompressorBase` ABC — universal interface |
 | `compressor/trainable_base.py` | `TrainableCompressorBase` ABC — PPO training contract |
+| `compressor/mcts_aware.py` | `MCTSAwareCompressor` ABC — intermediate ABC for compressors that consume an MCTS tree |
 | `compressor/template.py` | `CompressedStateTemplate` — fixed 6-section schema renderer/parser |
 | `compressor/identity_compressor.py` | `IdentityCompressor` — full trajectory + trainable scalar param (PPO baseline) |
 | `compressor/dummy_compressor.py` | `DummyCompressor` — simple RNN/seq2seq baseline |
@@ -19,6 +20,9 @@ The compressor is the **only component being trained** in this project. The plan
 | `compressor/transformer_compressor.py` | `TransformerCompressor` — fine-tunable seq2seq (flan-t5, BART) |
 | `compressor/hybrid_compressor.py` | `HybridCompressor` — structured slots + free-form LLM output |
 | `compressor/llm_mcts_compressor.py` | `LLMMCTSCompressor` — LLM compressor with MCTS tree awareness |
+| `compressor/structured_selective_distiller.py` | `StructuredSelectiveDistiller` (SSD) — Design 1: section-aware cross-attention distillation (standalone, no MCTS) |
+| `compressor/tree_gat.py` | `PathSetEncoder` — 2-layer dense multi-head attention for encoding MCTS path-sets |
+| `compressor/mcts_gat_distiller.py` | `MCTSGraphAttentionDistiller` (TGAD) — Design 2: T5+GAT tree-conditioned distillation |
 | `compressor/lora_utils.py` | LoRA injection helpers |
 | `compressor/reward_predictor.py` | `RewardPredictorComponent` — lightweight linear reward predictor |
 
@@ -57,6 +61,8 @@ All compressors implement `compress()`. Non-trainable compressors (LLM, Hybrid) 
 
 ### `TrainableCompressorBase` (PPO-compatible compressors)
 
+> **WARNING — `get_log_probs` implementation:** do **not** pass `labels=target_ids` to a seq2seq model's `forward()` inside `get_log_probs`. That computes an internal cross-entropy loss and returns the wrong tensor — the per-token log-probs you need are not in the loss scalar. Instead, run the decoder forward pass with `decoder_input_ids=action_ids`, then gather `log_softmax(logits, dim=-1)` at the actual action token indices. See the *Common Mistakes* table below for the symptom this causes.
+
 ```python
 class TrainableCompressorBase(CompressorBase):
 
@@ -85,9 +91,31 @@ class TrainableCompressorBase(CompressorBase):
     def freeze_base_layers(self) -> None: ...
 ```
 
+### `MCTSAwareCompressor` (MCTS-aware compressors)
+
+Intermediate ABC extending `CompressorBase`. Compressors that consume MCTS search trees inherit from this instead of directly from `CompressorBase` or `TrainableCompressorBase`:
+
+```python
+class MCTSAwareCompressor(CompressorBase):
+    @abstractmethod
+    def compress_with_tree(
+        self,
+        trajectory: TrajectoryModel,
+        mcts_tree: MCTSTreeRepresentation,
+        previous_state: CompressedState | None = None,
+    ) -> CompressedState:
+        """Tree-aware distillation. Called instead of compress() when MCTS is active."""
+```
+
+Both `compress()` **and** `compress_with_tree()` must be implemented. `compress()` serves as the non-MCTS fallback — it runs whenever `agent.mode != mcts_compressor`, when no `MCTSController` is wired in, or when the compressor is used standalone (e.g., in ablation studies).
+
+`compress_with_tree()` is only called when all three conditions hold in `ReActAgent`: mode is `MCTS_COMPRESSOR`, the compressor is an `MCTSAwareCompressor` instance, and `mcts_controller is not None`. This triple-guard prevents runtime errors from mismatched configs.
+
 ---
 
 ## CompressedStateTemplate — The 6-Section Schema
+
+The 6-section schema is deliberately structured rather than free-form. A free-form summary works for human readers but causes two problems for an agent: (1) the rendering pipeline cannot validate that all required information was produced, and (2) re-injection requires templated anchors so the agent knows *which part of the summary* to update its constraint ledger from. The `## SECTION_NAME ##` sentinel headers satisfy both: `template.validate()` checks all headers exist, and the agent's prompt instructs it to locate the `HARD_CONSTRAINT_LEDGER` section specifically when tracking constraint status.
 
 Every `CompressedState` must contain exactly these sections, in this order:
 
@@ -164,6 +192,57 @@ A minimal trainable compressor used for gradient-flow tests. Implements a tiny c
 ### `HybridCompressor`
 
 Combines structured slot-filling (budget remaining, constraint statuses extracted by regex) with a free-form LLM summary for the narrative sections. Not currently trainable (inherits `CompressorBase`).
+
+### `StructuredSelectiveDistiller` (SSD — Design 1)
+
+Section-aware cross-attention distillation. No MCTS required.
+
+```yaml
+compressor:
+  type: structured_selective
+```
+
+**Architecture:** Each trajectory step is encoded independently by a frozen T5-small encoder. Five learned section-query vectors (one per free-form template section) cross-attend over all step embeddings. The attention weights are the routing policy: they select which trajectory steps matter most for each section (`DECISIONS_MADE`, `OPEN_QUESTIONS`, etc.). The five attended context vectors (plus a constraint-ledger embedding) are packed into a 6-vector sequence and fed to a T5 decoder (with LoRA) to generate the full 6-section output.
+
+**Why explicit routing?** The baseline `TransformerCompressor` compresses the full trajectory as a single token stream, forcing the T5 decoder to learn implicit content routing from sparse RL reward signals alone. SSD makes routing explicit — the cross-attention weights are differentiable and directly trainable end-to-end via PPO, and they can be visualised per-step for ablation analysis.
+
+**Memory (Colab T4):** ~600 MB total (T5-small encoder fp16 frozen + LoRA adapters + training activations at batch=32).
+
+### `MCTSGraphAttentionDistiller` (TGAD — Design 2)
+
+T5 + Graph Attention Network tree-conditioned distillation. Requires `agent=react_mcts`.
+
+```yaml
+compressor:
+  type: mcts_gat
+```
+
+**Architecture pipeline:**
+1. Materialise paths from `MCTSTreeRepresentation` (best path + up to K alternative paths).
+2. Encode each path via a **frozen** T5-small encoder → mean-pool to a fixed-size embedding.
+3. Concatenate with structural path features (`q_value`, `is_verified`, `is_best_path`, depth) projected through a small MLP.
+4. Run a 2-layer `PathSetEncoder` (dense multi-head attention, implemented in `tree_gat.py`) over the N path node embeddings.
+5. Score each path with a linear → sigmoid Importance Scorer. During training: Gumbel-softmax top-K (differentiable); during inference: hard top-K.
+6. Attention-weighted pool selected paths → single context vector.
+7. T5 decoder + LoRA generates all 6 template sections plus `top_candidates` and `tradeoffs`.
+
+**Key advantage over `LLMMCTSCompressor`:** Fully neural — zero LLM API calls at distillation time (~10 ms on T4 vs. ~1–3 s per LLM call). The `is_verified` feature explicitly distinguishes real tool observations from synthetic MCTS expansion steps; the GAT learns to down-weight speculative branches.
+
+**Recommended training curriculum:**
+- Phase 1 (supervised pre-training, ~1 hr): Run `LLMMCTSCompressor` on 200 offline episodes to collect `(MCTSTreeRepresentation, CompressedState)` pairs. Train TGAD via cross-entropy on the token sequences to warm up the GAT + decoder weights.
+- Phase 2 (PPO fine-tuning, ~4 hr): PPO with `num_simulations=10` (reduced from eval-time 50) using `ppo_mcts.yaml` config.
+
+See [docs/TRAINING.md — MCTSGATDistiller Training Notes](TRAINING.md#mctsgat-distiller-training-notes) for hyperparameter guidance and known instability patterns.
+
+**Memory (Colab T4):** ~300 MB total (T5-small encoder fp16 frozen + T5-small decoder + LoRA + PathSetEncoder + optimizer state).
+
+#### `PathSetEncoder` (`tree_gat.py`)
+
+The attention backbone shared between TGAD layers. Implements dense multi-head attention (not sparse GAT) because MCTS trees in this project have at most 3–5 paths — for this small cardinality, PyTorch Geometric or DGL add dependency overhead with no practical benefit. Two attention layers capture:
+- Layer 1 (bottom-up proxy): all nodes attend to each other freely.
+- Layer 2 (top-down proxy): all nodes attend to each other, with the best-path node boosted via an additive bias (root anchor).
+
+No external graph library required — standard `torch.nn.MultiheadAttention` with a node mask.
 
 ### `LLMMCTSCompressor`
 

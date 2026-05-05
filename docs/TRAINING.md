@@ -2,6 +2,17 @@
 
 The RL training loop trains a compressor to produce `CompressedState` representations that maximize episode reward. The reward is shaped by constraint satisfaction, tool efficiency, and logical consistency — the same metrics used in evaluation.
 
+## Why PPO?
+
+PPO (Proximal Policy Optimization) was chosen over alternatives for this task:
+
+- **vs. REINFORCE:** REINFORCE has high gradient variance when actions are long token sequences (our compressed states are 200–500 tokens). PPO's clipped objective and mini-batch updates provide substantially lower variance without requiring a value baseline from scratch.
+- **vs. A2C:** A2C requires synchronous rollouts across all parallel environments. With LLM-backed tool calls (~100–500 ms per step), synchronization stalls faster workers. SB3's PPO supports asynchronous `SubprocVecEnv` rollouts.
+- **vs. DPO/RLHF:** DPO requires pairwise human preference data (preferred vs. rejected compressions). We have no such dataset — our reward signal is entirely programmatic (constraint satisfaction scores). PPO works directly from scalar rewards.
+- **vs. GRPO (DeepSeek-style):** GRPO removes the value network and uses group-normalized advantages. We retain the value network because our episode rewards are highly variable across different travel requests — the critic's baseline substantially reduces advantage variance compared to group normalization on small batches.
+
+The SB3 PPO implementation is chosen over a custom loop for development speed and battle-tested correctness (GAE, mini-batch shuffling, gradient clipping are pre-implemented).
+
 ---
 
 ## Files
@@ -63,7 +74,9 @@ Each parallel environment uses a different random seed for the travel world, giv
 
 ### Request sampling
 
-`CompressionEnv.reset()` cycles through training requests in round-robin order (`itertools.cycle`) rather than sampling randomly. This eliminates within-rollout serial correlation that would bias GAE advantage estimates when consecutive episodes share the same request.
+`CompressionEnv.reset()` cycles through training requests in round-robin order (`itertools.cycle`) rather than sampling randomly.
+
+**Why round-robin over random?** With 4 parallel environments and a small training set (e.g., 40 requests), random sampling risks all 4 envs drawing the same request in a single rollout batch. When this happens, all episodes in that batch share the same hard constraint set and world seed — the GAE advantage estimates reflect the *policy's response to request difficulty* rather than its actual improvement. The advantages become conflated with episode difficulty, biasing gradient updates. Round-robin ensures each parallel env sees a distinct request within any rollout window, distributing difficulty uniformly across the batch.
 
 ---
 
@@ -519,6 +532,60 @@ print(f"Resuming from: {latest}")
 !python scripts/run_training.py compressor=identity training=ppo_colab \
     training.resume_from={latest}
 ```
+
+---
+
+## MCTSGATDistiller Training Notes
+
+`MCTSGraphAttentionDistiller` (TGAD) has specific training characteristics that differ from `TransformerCompressor` and `StructuredSelectiveDistiller`. Read these before starting a TGAD PPO run.
+
+### Recommended config
+
+```bash
+python scripts/run_training.py agent=react_mcts compressor=mcts_gat training=ppo_mcts
+```
+
+`ppo_mcts.yaml` uses a lower learning rate (3e-5 vs. 3e-4) and a wider clip range (0.3 vs. 0.2) than `ppo_default`. The lower LR stabilises the PathSetEncoder's attention weights during early training; the wider clip range accommodates the higher-variance actions produced by the GAT → decoder pipeline.
+
+### `path_encoder_dropout` — set to 0.0
+
+The default `path_encoder_dropout=0.1` in `configs/compressor/mcts_gat.yaml` causes `approx_kl` spikes (~7.0) at the first PPO update, destabilising training. Set it to 0.0:
+
+```yaml
+# configs/compressor/mcts_gat.yaml
+compressor:
+  type: mcts_gat
+  path_encoder_dropout: 0.0   # was 0.1 — see training notes
+```
+
+**Root cause:** With dropout enabled during the first rollout, the PathSetEncoder produces high-variance path embeddings. When `evaluate_actions()` re-runs the same inputs without dropout (evaluation mode), the log-probs differ substantially from those recorded during rollout collection, causing a large KL divergence.
+
+### Expected early training behaviour
+
+| Metric | Steps 0–2k | Steps 2k–10k |
+|---|---|---|
+| `train/approx_kl` | Up to ~1.5 at first TGAD update (normal) | Settles to ~0.01–0.05 |
+| `episode/hard_constraint_score` | Near 0 while GAT/decoder warms up | Begins rising |
+| `train/policy_gradient_loss` | Non-zero but small | Increasing magnitude |
+
+If `approx_kl > 5.0` at any update, stop and verify `path_encoder_dropout=0.0` and `normalize_advantage=false` are set.
+
+### Supervised pre-training (recommended)
+
+Before PPO, run supervised pre-training on `(MCTSTreeRepresentation, CompressedState)` pairs collected from `LLMMCTSCompressor`:
+
+```python
+# notebooks/07_compressor_dev.ipynb — Section: TGAD supervised pre-training
+# Generates ~200 pairs, trains for ~1 hr on T4, saves to outputs/checkpoints/tgad_pretrain/
+```
+
+Resume PPO from the pre-trained checkpoint:
+```bash
+python scripts/run_training.py agent=react_mcts compressor=mcts_gat training=ppo_mcts \
+    training.resume_from=outputs/checkpoints/tgad_pretrain/ppo_model.zip
+```
+
+Pre-training typically reduces Phase 2 PPO steps needed by ~30%.
 
 ---
 
