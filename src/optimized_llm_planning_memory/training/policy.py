@@ -176,17 +176,17 @@ class CompressorPolicy(BasePolicy):
             action_text = self._decode_action(actions[i])
 
             token_log_probs = self.compressor.get_log_probs(obs_text, action_text)
-            log_prob = token_log_probs.sum()
+            # Use mean (not sum) to keep log_prob in the -5 to -15 range.
+            # With 200 tokens at ~-10 each, sum ≈ -2000; exp(new-old) overflows
+            # to inf/NaN after the first gradient step. Mean keeps the ratio
+            # exp(new-old) near 1.0 and PPO clipping operates stably.
+            # IMPORTANT: old log_probs in _generate_action() must also use mean
+            # so that r_t = exp(new_mean - old_mean) is consistent.
+            log_prob = token_log_probs.mean()
             log_probs_list.append(log_prob)
 
-            # Entropy proxy: we approximate H(π) ≈ -mean(log_prob) per token,
-            # which equals per-token cross-entropy, not the true distribution
-            # entropy H = -Σ p·log(p).  This is numerically close for well-trained
-            # policies (where action distribution is sharp) but will overestimate
-            # entropy for flat distributions early in training.  The PPO entropy
-            # bonus coefficient (ent_coef) is applied to this proxy, so calibrate
-            # ent_coef accordingly.  To use true token entropy, compute
-            # F.log_softmax(logits, dim=-1) and apply -Σ exp(lp)*lp per token.
+            # Entropy proxy: H(π) ≈ -mean(log_prob) per token (consistent with
+            # mean-based log_prob above). See _generate_action() comment.
             entropy = -token_log_probs.mean()
             entropy_list.append(entropy)
 
@@ -288,8 +288,9 @@ class CompressorPolicy(BasePolicy):
             action_tensor = torch.tensor(action_arr, dtype=torch.int32)
 
             # Scalar log-prob computed on the same text evaluate_actions() will see.
+            # Use mean so the value stays in -5 to -15 range (not -2000 for 200 tokens).
             token_log_probs = self.compressor.get_log_probs(obs_text, action_text_for_log_prob)
-            log_prob = token_log_probs.sum()
+            log_prob = token_log_probs.mean()
 
         except Exception as _exc:
             _log.warning(
@@ -303,7 +304,7 @@ class CompressorPolicy(BasePolicy):
             # baseline for a 32K-vocab model; this is a safe lower bound.
             try:
                 token_log_probs = self.compressor.get_log_probs(obs_text, "")
-                log_prob = token_log_probs.sum().detach()
+                log_prob = token_log_probs.mean().detach()
             except Exception:
                 log_prob = torch.tensor(-10.0)
 
