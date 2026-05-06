@@ -21,6 +21,7 @@ temperature: 0.0
 max_tokens_per_response: 1024
 # v4 adds last-observation disambiguation and anti-repeat-search clauses.
 system_prompt_version: v4
+prompt_id: null             # registry ID; overrides system_prompt_version when set
 few_shot_examples_path: data/few_shot_examples/react_tool_use.json
 
 mcts:

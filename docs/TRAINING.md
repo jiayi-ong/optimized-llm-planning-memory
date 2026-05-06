@@ -245,6 +245,55 @@ The `resume_from` path is to the SB3 `.zip` file. The compressor weights are loa
 
 ---
 
+## Augmentation Registry
+
+The augmentation registry (`data/registry/augmentations.json`) stores named compressor states — init snapshots and trained checkpoints — identified by short IDs. Use `project.augmentation_id` instead of manually specifying `compressor.type` + checkpoint path.
+
+### Typical workflow
+
+```bash
+# 1. Snapshot a fresh init before PPO training
+python scripts/snapshot_init.py --aug-id ssd-init-001 --compressor structured_selective
+
+# 2. Train from the init snapshot; auto-register final checkpoint
+python scripts/run_training.py \
+    agent.prompt_id=v2 \
+    project.augmentation_id=ssd-init-001 \
+    training=ppo_colab \
+    project.register_as=ssd-trained-001
+
+# 3. Generate episodes from the trained checkpoint
+python scripts/run_episode.py \
+    agent.prompt_id=v2 \
+    project.augmentation_id=ssd-trained-001
+```
+
+### Init vs. trained distinction
+
+`ssd-init-001` is an **init snapshot** (`type=ssd_init`): weights saved before any PPO training, capturing the exact random initialization. This is important because LoRA config or base model changes would produce a different init, breaking reproducibility.
+
+`ssd-trained-001` is a **trained checkpoint** (`type=ssd_trained`): weights after PPO optimization. It records `parent_init_id=ssd-init-001` so the full training lineage is traceable.
+
+### MCTS augmentations
+
+For MCTS-based augmentations (`mcts_only`, `tgad_init`, `tgad_trained`), the registry entry sets `requires_mcts=True`. The script automatically builds an `MCTSController` when this flag is set — no separate `agent=react_mcts` override is needed when using registry IDs.
+
+```bash
+# MCTS-only (no neural training):
+python scripts/run_episode.py agent.prompt_id=v2 project.augmentation_id=mcts-default
+
+# TGAD training from a supervised-pretrained init:
+python scripts/run_training.py \
+    agent.prompt_id=v5 \
+    project.augmentation_id=tgad-init-001 \
+    training=ppo_mcts \
+    project.register_as=tgad-trained-001
+```
+
+See [`docs/REGISTRY.md`](REGISTRY.md) for the full reference, including how to list all registered IDs and how to add new ones.
+
+---
+
 ## Checkpoint Layout
 
 ```
