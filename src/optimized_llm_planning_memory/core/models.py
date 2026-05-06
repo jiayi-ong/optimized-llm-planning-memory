@@ -643,6 +643,25 @@ class EvalResult(BaseModel):
         default=None,
         description="Simulator seed from the linked EpisodeLog. Stored here for grouping/filtering.",
     )
+    itinerary_id: str | None = Field(
+        default=None,
+        description=(
+            "ID of the final itinerary that was evaluated (EpisodeLog.final_itinerary.itinerary_id). "
+            "Stored explicitly so callers can identify which itinerary was judged without loading "
+            "the full EpisodeLog."
+        ),
+    )
+    augmentation_id: str | None = Field(
+        default=None,
+        description=(
+            "AugmentationRegistry entry ID (e.g. 'tgad-trained-001') for the compressor "
+            "used during the linked episode. Enables grouping/filtering by registry ID."
+        ),
+    )
+    prompt_id: str | None = Field(
+        default=None,
+        description="PromptRegistry entry ID (e.g. 'sweep_D') used during the linked episode.",
+    )
 
     @computed_field
     @property

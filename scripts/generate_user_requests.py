@@ -478,6 +478,7 @@ def generate_from_world_dir(
         req_dict = _make_request(pair, archetype, budget, start_date, end_date, tone_idx)
         req_dict["world_id"] = world_id
         req_dict["metadata"]["world_id"] = world_id  # belt-and-suspenders for raw JSON readers
+        _inject_complexity(req_dict)
 
         try:
             req = UserRequest.model_validate(req_dict)
@@ -634,6 +635,23 @@ def _make_request(
     }
 
 
+def _inject_complexity(req_dict: dict) -> dict:
+    """Compute and embed complexity breakdown into request metadata.
+
+    Called after the UserRequest passes validation so that the scorer can use
+    the fully-parsed model rather than the raw dict.
+    """
+    try:
+        from optimized_llm_planning_memory.core.complexity import RequestComplexityScorer
+        from optimized_llm_planning_memory.core.models import UserRequest as _UR
+        scorer = RequestComplexityScorer()
+        parsed = _UR.model_validate(req_dict)
+        req_dict["metadata"]["complexity_breakdown"] = dict(scorer.score(parsed))
+    except Exception:
+        pass  # Non-fatal — complexity can be back-filled later
+    return req_dict
+
+
 def generate_and_save(
     n: int,
     split: str,
@@ -664,6 +682,7 @@ def generate_and_save(
         start_date, end_date = _random_date_range(rng, duration)
 
         req_dict = _make_request(pair, archetype, budget, start_date, end_date, tone_idx)
+        _inject_complexity(req_dict)
         try:
             req = UserRequest.model_validate(req_dict)
             out_path = output_dir / f"request_{req.request_id}.json"

@@ -52,7 +52,9 @@ Selection flags (mutually exclusive)
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -62,7 +64,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
-from optimized_llm_planning_memory.core.models import EpisodeLog, UserRequest
+from optimized_llm_planning_memory.core.models import EpisodeLog, EvalResult, UserRequest
 from optimized_llm_planning_memory.evaluation.deterministic import DeterministicEvaluator, METRIC_VERSION
 from optimized_llm_planning_memory.evaluation.evaluator import Evaluator
 from optimized_llm_planning_memory.evaluation.manifest import EvalRunManifest
@@ -141,6 +143,43 @@ def resolve_user_request(
     return None
 
 
+def _score_one(
+    ep: EpisodeLog,
+    req: UserRequest,
+    evaluator: Evaluator,
+    augmentation_id: str | None,
+    prompt_id: str | None,
+    total: int,
+    counter: dict,
+    lock: threading.Lock,
+    log,
+) -> EvalResult | None:
+    """Score a single episode. Safe to call from multiple threads.
+
+    DeterministicEvaluator is stateless; LLMJudge makes HTTP calls that are
+    I/O-bound and thread-safe. Returns None on failure so callers can filter.
+    """
+    try:
+        result = evaluator.evaluate_episode(ep, req)
+        itinerary_id = ep.final_itinerary.itinerary_id if ep.final_itinerary else None
+        result = result.model_copy(update={
+            "itinerary_id": itinerary_id,
+            "augmentation_id": augmentation_id,
+            "prompt_id": prompt_id,
+        })
+        with lock:
+            counter["done"] += 1
+            n = counter["done"]
+        print(f"EPISODE_DONE: {n}/{total} {ep.episode_id}", flush=True)
+        log.info("episode.scored", episode_id=ep.episode_id, n_done=n, total=total)
+        return result
+    except Exception as exc:
+        with lock:
+            counter["failed"] += 1
+        log.warning("score_failed", episode_id=ep.episode_id, error=str(exc))
+        return None
+
+
 def _print_summary(results) -> None:
     """Print a compact summary table to stdout."""
     if not results:
@@ -206,7 +245,16 @@ def main() -> None:
     parser.add_argument(
         "--deterministic_only",
         action="store_true",
-        help="Skip LLM judge (fast mode).",
+        help="[Deprecated] Skip LLM judge. Prefer --eval_mode deterministic.",
+    )
+    parser.add_argument(
+        "--eval_mode",
+        default=None,
+        choices=["deterministic", "llm_judge", "full"],
+        help=(
+            "Evaluation mode: 'deterministic' (no LLM calls), 'llm_judge' (rubric only), "
+            "'full' (both). Overrides --deterministic_only."
+        ),
     )
     parser.add_argument(
         "--judge_model",
@@ -219,9 +267,39 @@ def main() -> None:
         help="Filter episodes to a specific agent_mode (raw, llm_summary, compressor, ...).",
     )
     parser.add_argument(
+        "--augmentation_id",
+        default=None,
+        help="AugmentationRegistry ID to embed in manifest and each EvalResult for traceability.",
+    )
+    parser.add_argument(
+        "--prompt_id",
+        default=None,
+        help="PromptRegistry ID to embed in manifest and each EvalResult.",
+    )
+    parser.add_argument(
+        "--parent_run_id",
+        default=None,
+        help="run_id of the eval run this is a re-run of (for lineage tracking).",
+    )
+    parser.add_argument(
+        "--run_name",
+        default=None,
+        help="Human-readable experiment name grouping multiple eval runs (e.g. 'sweep_D-ablation').",
+    )
+    parser.add_argument(
         "--note",
         default=None,
         help="Free-text note recorded in the eval run manifest.",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=5,
+        help=(
+            "Number of episodes to score in parallel (default 5). "
+            "Set to 1 for sequential. "
+            "Reduce if hitting LLM rate limits when using --eval_mode llm_judge or full."
+        ),
     )
     parser.add_argument(
         "--log_file",
@@ -286,9 +364,20 @@ def main() -> None:
     if skipped:
         log.warning("skipped_episodes", n=skipped)
 
+    # ── Resolve eval_mode (--eval_mode overrides --deterministic_only) ────────
+    if args.eval_mode is not None:
+        deterministic_only = args.eval_mode == "deterministic"
+        run_llm_judge = args.eval_mode in ("llm_judge", "full")
+        run_deterministic = args.eval_mode in ("deterministic", "full")
+    else:
+        deterministic_only = args.deterministic_only
+        run_llm_judge = not deterministic_only
+        run_deterministic = True
+    eval_mode_label = args.eval_mode or ("deterministic" if deterministic_only else "full")
+
     # ── Build evaluator ───────────────────────────────────────────────────────
     judge = None
-    if not args.deterministic_only:
+    if run_llm_judge:
         try:
             from optimized_llm_planning_memory.evaluation.llm_judge import LLMJudge
             judge = LLMJudge(judge_model_id=args.judge_model)
@@ -302,14 +391,30 @@ def main() -> None:
     )
 
     # ── Score episodes ────────────────────────────────────────────────────────
-    log.info("scoring_episodes", n=len(pairs))
-    results = []
-    for ep, req in pairs:
-        try:
-            result = evaluator.evaluate_episode(ep, req)
-            results.append(result)
-        except Exception as e:
-            log.warning("score_failed", episode_id=ep.episode_id, error=str(e))
+    log.info("scoring_episodes", n=len(pairs), eval_mode=eval_mode_label, concurrency=args.concurrency)
+    total = len(pairs)
+    counter: dict = {"done": 0, "failed": 0}
+    lock = threading.Lock()
+
+    worker_kwargs = dict(
+        evaluator=evaluator,
+        augmentation_id=args.augmentation_id,
+        prompt_id=args.prompt_id,
+        total=total,
+        counter=counter,
+        lock=lock,
+        log=log,
+    )
+
+    print(f"Scoring {total} episodes · concurrency={args.concurrency}", flush=True)
+    if args.concurrency == 1:
+        raw_results = [_score_one(ep, req, **worker_kwargs) for ep, req in pairs]
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = [pool.submit(_score_one, ep, req, **worker_kwargs) for ep, req in pairs]
+            raw_results = [f.result() for f in futures]
+
+    results = [r for r in raw_results if r is not None]
 
     if not results:
         print("All scoring attempts failed. Check logs.")
@@ -328,16 +433,23 @@ def main() -> None:
     manifest = EvalRunManifest(
         run_id=run_id,
         created_at=datetime.now(timezone.utc).isoformat(),
-        compressor_type="unknown",  # run_eval.py evaluates existing episodes; compressor type is in episode
+        run_name=args.run_name,
+        compressor_type="unknown",  # eval runs on existing episodes; type is in episode
         agent_mode=agent_mode_str,
-        judge_model_id=args.judge_model if not args.deterministic_only else "none",
+        judge_model_id=args.judge_model if run_llm_judge else "none",
         config_hash="manual",
         metric_version=METRIC_VERSION,
         request_ids=[req.request_id for _, req in pairs],
+        episode_ids=[ep.episode_id for ep, _ in pairs],
         n_episodes=len(results),
-        deterministic_only=args.deterministic_only,
+        n_completed=len(results),
+        status="completed",
+        deterministic_only=deterministic_only,
         world_seeds=unique_seeds,
         episode_source="saved_episodes",
+        augmentation_id=args.augmentation_id,
+        prompt_id=args.prompt_id,
+        parent_run_id=args.parent_run_id,
         notes=args.note,
     )
 

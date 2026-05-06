@@ -22,6 +22,8 @@ Usage
 from __future__ import annotations
 
 import json
+import statistics
+from datetime import datetime, timezone
 from pathlib import Path
 
 from optimized_llm_planning_memory.core.models import EpisodeLog, EvalResult
@@ -166,7 +168,61 @@ def save_eval_run(
         for result in results:
             f.write(result.model_dump_json() + "\n")
 
+    _write_aggregate(results, run_dir)
     return run_dir
+
+
+def _write_aggregate(results: list[EvalResult], run_dir: Path) -> None:
+    """Pre-compute mean/std/min/max per metric per agent_mode and write aggregate.json.
+
+    Avoids re-scanning all results.jsonl on every UI page load; the dashboard reads
+    this O(1) file instead of O(n_episodes) JSONL lines to render the run table.
+    """
+    if not results:
+        return
+
+    def _stats(values: list[float]) -> dict[str, float]:
+        if not values:
+            return {}
+        mean = statistics.mean(values)
+        std = statistics.pstdev(values) if len(values) > 1 else 0.0
+        return {"mean": mean, "std": std, "min": min(values), "max": max(values), "n": len(values)}
+
+    # All metrics that appear in deterministic_scores or llm_judge_scores
+    all_det_keys: set[str] = set()
+    all_llm_keys: set[str] = set()
+    for r in results:
+        all_det_keys.update(r.deterministic_scores.keys())
+        all_llm_keys.update(r.llm_judge_scores.keys())
+
+    by_mode: dict[str, dict[str, list[float]]] = {}
+    overall_scores: list[float] = []
+
+    for r in results:
+        mode = r.agent_mode
+        if mode not in by_mode:
+            by_mode[mode] = {k: [] for k in all_det_keys | all_llm_keys | {"overall_score"}}
+        for k in all_det_keys:
+            if k in r.deterministic_scores:
+                by_mode[mode][k].append(r.deterministic_scores[k])
+        for k in all_llm_keys:
+            if k in r.llm_judge_scores:
+                by_mode[mode][k].append(r.llm_judge_scores[k])
+        by_mode[mode]["overall_score"].append(r.overall_score)
+        overall_scores.append(r.overall_score)
+
+    aggregate = {
+        "by_agent_mode": {
+            mode: {metric: _stats(vals) for metric, vals in metrics.items() if vals}
+            for mode, metrics in by_mode.items()
+        },
+        "overall": {"overall_score": _stats(overall_scores)},
+        "n_results": len(results),
+        "computed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (run_dir / "aggregate.json").write_text(
+        json.dumps(aggregate, indent=2), encoding="utf-8"
+    )
 
 
 def load_eval_run(
@@ -250,3 +306,14 @@ def list_eval_runs(
             continue
 
     return sorted(manifests, key=lambda m: m.created_at, reverse=True)
+
+
+def load_aggregate(run_id: str, base_directory: str | Path) -> dict | None:
+    """Load pre-computed aggregate stats for a run, or None if not yet generated."""
+    agg_path = Path(base_directory) / run_id / "aggregate.json"
+    if not agg_path.exists():
+        return None
+    try:
+        return json.loads(agg_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None

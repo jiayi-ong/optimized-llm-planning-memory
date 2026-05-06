@@ -34,22 +34,41 @@ if _repo_root not in sys.path:
 
 import streamlit as st
 
+_repo_root_str = str(Path(__file__).resolve().parent.parent)
+if _repo_root_str not in sys.path:
+    sys.path.insert(0, _repo_root_str)
+
+from app.utils.ui_style import inject_css  # noqa: E402
+
 st.set_page_config(
-    page_title="Travel Planner Dev UI",
-    page_icon="🗺️",
+    page_title="Evaluation Dashboard",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+inject_css()
 
-st.title("Travel Planner — Developer UI")
+st.title("Evaluation Dashboard")
 
 st.markdown(
     """
 Use the sidebar to navigate between views.
 
+**Evaluation pages**
+
 | Page | Purpose |
 |---|---|
-| **Episode Browser** | Browse and filter all saved episodes |
+| **Eval Dashboard** | Launch and monitor eval runs; view aggregate stats per run |
+| **Eval Episode Log** | Browse all evaluated episodes with flexible hierarchical filters |
+| **Eval Episode Detail** | Full drill-down: request card, itinerary, trajectory, and all scores |
+| **Ablation Comparison** | Side-by-side metric comparison across agent modes or checkpoints |
+| **Request Browser** | Explore the user request population and complexity distribution |
+
+**Diagnostics pages**
+
+| Page | Purpose |
+|---|---|
+| **Episode Browser** | Browse and filter all saved raw EpisodeLogs |
 | **Trajectory Viewer** | Inspect a full ReAct trail step-by-step; live mode for running episodes |
 | **Compression Viewer** | Compare trajectory text with the resulting CompressedState |
 | **MCTS Viewer** | Explore MCTS search statistics and top candidate plans |
