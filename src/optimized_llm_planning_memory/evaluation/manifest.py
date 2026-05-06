@@ -86,4 +86,39 @@ class EvalRunManifest(BaseModel):
         default=None,
         description="Episode generation method: 'scripted_baseline', 'react_agent', etc.",
     )
+    # ── Provenance fields (added for full traceability) ───────────────────────
+    augmentation_id: str | None = Field(
+        default=None,
+        description=(
+            "AugmentationRegistry entry ID (e.g. 'tgad-trained-001'). "
+            "None for raw/llm_summary baselines that have no registry entry."
+        ),
+    )
+    prompt_id: str | None = Field(
+        default=None,
+        description="PromptRegistry entry ID used for all episodes in this run.",
+    )
+    episode_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Explicit list of episode IDs evaluated in this run. More precise than "
+            "request_ids when multiple episodes share the same request_id."
+        ),
+    )
+    # ── Status fields (used by the UI control panel) ───────────────────────────
+    status: str = Field(
+        default="completed",
+        description="'running' | 'completed' | 'failed' | 'cancelled'",
+    )
+    n_completed: int = Field(
+        default=0,
+        description="Episodes scored so far; equals n_episodes when status='completed'.",
+    )
+    parent_run_id: str | None = Field(
+        default=None,
+        description=(
+            "run_id of the eval run this is a re-run of. Set when --parent_run_id is "
+            "passed to run_eval.py to trace re-run lineage (e.g. re-running only LLM judge)."
+        ),
+    )
     notes: str | None = None

@@ -206,7 +206,16 @@ def main() -> None:
     parser.add_argument(
         "--deterministic_only",
         action="store_true",
-        help="Skip LLM judge (fast mode).",
+        help="[Deprecated] Skip LLM judge. Prefer --eval_mode deterministic.",
+    )
+    parser.add_argument(
+        "--eval_mode",
+        default=None,
+        choices=["deterministic", "llm_judge", "full"],
+        help=(
+            "Evaluation mode: 'deterministic' (no LLM calls), 'llm_judge' (rubric only), "
+            "'full' (both). Overrides --deterministic_only."
+        ),
     )
     parser.add_argument(
         "--judge_model",
@@ -217,6 +226,21 @@ def main() -> None:
         "--agent_mode",
         default=None,
         help="Filter episodes to a specific agent_mode (raw, llm_summary, compressor, ...).",
+    )
+    parser.add_argument(
+        "--augmentation_id",
+        default=None,
+        help="AugmentationRegistry ID to embed in manifest and each EvalResult for traceability.",
+    )
+    parser.add_argument(
+        "--prompt_id",
+        default=None,
+        help="PromptRegistry ID to embed in manifest and each EvalResult.",
+    )
+    parser.add_argument(
+        "--parent_run_id",
+        default=None,
+        help="run_id of the eval run this is a re-run of (for lineage tracking).",
     )
     parser.add_argument(
         "--note",
@@ -286,9 +310,20 @@ def main() -> None:
     if skipped:
         log.warning("skipped_episodes", n=skipped)
 
+    # ── Resolve eval_mode (--eval_mode overrides --deterministic_only) ────────
+    if args.eval_mode is not None:
+        deterministic_only = args.eval_mode == "deterministic"
+        run_llm_judge = args.eval_mode in ("llm_judge", "full")
+        run_deterministic = args.eval_mode in ("deterministic", "full")
+    else:
+        deterministic_only = args.deterministic_only
+        run_llm_judge = not deterministic_only
+        run_deterministic = True
+    eval_mode_label = args.eval_mode or ("deterministic" if deterministic_only else "full")
+
     # ── Build evaluator ───────────────────────────────────────────────────────
     judge = None
-    if not args.deterministic_only:
+    if run_llm_judge:
         try:
             from optimized_llm_planning_memory.evaluation.llm_judge import LLMJudge
             judge = LLMJudge(judge_model_id=args.judge_model)
@@ -302,11 +337,20 @@ def main() -> None:
     )
 
     # ── Score episodes ────────────────────────────────────────────────────────
-    log.info("scoring_episodes", n=len(pairs))
+    log.info("scoring_episodes", n=len(pairs), eval_mode=eval_mode_label)
     results = []
     for ep, req in pairs:
         try:
             result = evaluator.evaluate_episode(ep, req)
+            # Inject provenance fields not available inside Evaluator
+            itinerary_id = (
+                ep.final_itinerary.itinerary_id if ep.final_itinerary else None
+            )
+            result = result.model_copy(update={
+                "itinerary_id": itinerary_id,
+                "augmentation_id": args.augmentation_id,
+                "prompt_id": args.prompt_id,
+            })
             results.append(result)
         except Exception as e:
             log.warning("score_failed", episode_id=ep.episode_id, error=str(e))
@@ -328,16 +372,22 @@ def main() -> None:
     manifest = EvalRunManifest(
         run_id=run_id,
         created_at=datetime.now(timezone.utc).isoformat(),
-        compressor_type="unknown",  # run_eval.py evaluates existing episodes; compressor type is in episode
+        compressor_type="unknown",  # eval runs on existing episodes; type is in episode
         agent_mode=agent_mode_str,
-        judge_model_id=args.judge_model if not args.deterministic_only else "none",
+        judge_model_id=args.judge_model if run_llm_judge else "none",
         config_hash="manual",
         metric_version=METRIC_VERSION,
         request_ids=[req.request_id for _, req in pairs],
+        episode_ids=[ep.episode_id for ep, _ in pairs],
         n_episodes=len(results),
-        deterministic_only=args.deterministic_only,
+        n_completed=len(results),
+        status="completed",
+        deterministic_only=deterministic_only,
         world_seeds=unique_seeds,
         episode_source="saved_episodes",
+        augmentation_id=args.augmentation_id,
+        prompt_id=args.prompt_id,
+        parent_run_id=args.parent_run_id,
         notes=args.note,
     )
 
