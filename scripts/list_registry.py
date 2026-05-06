@@ -68,20 +68,22 @@ def print_augmentations(aug_registry, filter_id: str | None = None) -> None:
     print("\n-- Augmentations -----------------------------------------------------------")
     header = (
         f"{'AUG_ID':<26}  {'TYPE':<22}  {'CKPT?':<6}  "
-        f"{'PARENT_INIT':<18}  DESCRIPTION"
+        f"{'AGENT_LLM':<28}  DESCRIPTION"
     )
     print(header)
-    print("-" * 100)
+    print("-" * 110)
     for e in sorted(entries, key=lambda x: x.aug_id):
         dep = " [dep]" if e.deprecated else ""
         ckpt = "yes" if e.has_checkpoint else "no"
-        parent = e.parent_init_id or "-"
+        agent_llm = e.config_snapshot.get("agent_llm_model_id", "-")
         print(
             f"{_col(e.aug_id + dep, 26)}  {_col(e.type.value, 22)}  "
-            f"{_col(ckpt, 6)}  {_col(parent, 18)}  {e.description[:50]}"
+            f"{_col(ckpt, 6)}  {_col(agent_llm, 28)}  {e.description[:46]}"
         )
         if e.checkpoint_path:
             print(f"  {'':26}   ckpt: {e.checkpoint_path}")
+        if e.config_snapshot.get("model_name_or_path"):
+            print(f"  {'':26}   base: {e.config_snapshot['model_name_or_path']}")
         if e.notes:
             print(f"  {'':26}   note: {e.notes[:72]}")
 

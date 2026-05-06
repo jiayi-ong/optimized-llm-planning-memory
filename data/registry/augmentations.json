@@ -9,6 +9,7 @@
     "training_step": null,
     "mcts_config_ref": "react_mcts",
     "config_snapshot": {
+      "agent_llm_model_id": "openai/gpt-4o-mini",
       "num_simulations": 50,
       "max_depth": 10,
       "branching_factor": 3,
@@ -43,6 +44,7 @@
     "training_step": null,
     "mcts_config_ref": null,
     "config_snapshot": {
+      "agent_llm_model_id": "openai/gpt-4o-mini",
       "llm_model_id": "openai/gpt-4o-mini"
     },
     "reward_weights": {},

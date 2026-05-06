@@ -105,6 +105,47 @@ Default init weights change whenever you change:
 
 Without an explicit snapshot, two training runs that both start "from scratch" may not start from the same weights. `snapshot_init.py` freezes the exact state before PPO begins.
 
+### Agent LLM model tracking
+
+Every augmentation entry records `agent_llm_model_id` in its `config_snapshot` — the litellm model string for the ReAct agent (e.g. `"openai/gpt-4o-mini"`, `"google/gemini-2.0-flash"`). This matters because:
+
+- The PPO reward signal is produced by the agent's planning behaviour, so a checkpoint trained with one LLM is not equivalent to the same architecture trained with another.
+- For non-neural types (`mcts_only`, `llm_summary`), the agent LLM is the primary variable that determines performance — there are no trainable weights.
+
+**Setting the agent LLM per run:**
+
+```bash
+# Pin agent LLM in the run spec (overrides agent.llm_model_id in YAML)
+python scripts/run_episode.py \
+    agent.prompt_id=v2 \
+    project.augmentation_id=raw-default \
+    agent.llm_model_id=google/gemini-2.0-flash
+```
+
+Or via `RunSpec` in Python:
+
+```python
+spec = RunSpec(
+    prompt_id="v2",
+    augmentation_id="ssd-init-001",
+    agent_llm_model_id="google/gemini-2.0-flash",
+)
+resolved = resolve_run_spec(spec)
+# resolved.agent_llm_model_id == "google/gemini-2.0-flash"
+# apply_run_spec_to_cfg(resolved, cfg) sets cfg.agent.llm_model_id accordingly
+```
+
+**Snapshotting with a specific agent LLM:**
+
+```bash
+python scripts/snapshot_init.py \
+    --aug-id ssd-init-gemini-001 \
+    --compressor structured_selective \
+    --agent-llm-model google/gemini-2.0-flash
+```
+
+The `agent_llm_model_id` is then stored in the entry's `config_snapshot` and shown by `list_registry.py`.
+
 ### Derived properties (read-only)
 
 Every `AugmentationEntry` exposes:

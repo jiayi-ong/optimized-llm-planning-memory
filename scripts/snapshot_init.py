@@ -64,10 +64,24 @@ _COMPRESSOR_TO_INIT_TYPE = {
 }
 
 
-def _build_config_snapshot(compressor_type: str, cfg: object) -> dict:
-    """Extract the compressor hyperparams that matter for reproducibility."""
+def _build_config_snapshot(
+    compressor_type: str,
+    cfg: object,
+    agent_llm_model_id: str | None = None,
+) -> dict:
+    """Extract the compressor hyperparams that matter for reproducibility.
+
+    agent_llm_model_id is recorded so a trained checkpoint can be traced back
+    to the agent model it was trained with (important because the reward signal
+    depends on agent behaviour, which differs across LLM models).
+    """
     from omegaconf import OmegaConf
     snap: dict = {}
+
+    # Always snapshot the agent LLM model used during this run
+    snap["agent_llm_model_id"] = agent_llm_model_id or OmegaConf.select(
+        cfg, "agent.llm_model_id", default="openai/gpt-4o-mini"
+    )
 
     # Always include model path and output size
     if compressor_type not in ("identity", "llm", "llm_mcts"):
@@ -118,6 +132,10 @@ def main() -> None:
     parser.add_argument("--from-checkpoint", default=None,
                         help="Optional: load weights from this .pt file before saving "
                              "(e.g. supervised pretraining output)")
+    parser.add_argument("--agent-llm-model", default=None,
+                        help="litellm model string for the ReAct agent used with this snapshot "
+                             "(e.g. openai/gpt-4o-mini, google/gemini-2.0-flash). "
+                             "Defaults to agent.llm_model_id from the active agent config.")
     parser.add_argument("--description", default=None,
                         help="Human-readable description for the registry entry")
     parser.add_argument("--overwrite", action="store_true",
@@ -125,11 +143,12 @@ def main() -> None:
 
     # Extract our named args; leave the rest for Hydra
     known, hydra_overrides = parser.parse_known_args()
-    aug_id       = known.aug_id
-    comp_type    = known.compressor
-    from_ckpt    = known.from_checkpoint
-    description  = known.description or f"Init snapshot of {comp_type}"
-    overwrite    = known.overwrite
+    aug_id           = known.aug_id
+    comp_type        = known.compressor
+    from_ckpt        = known.from_checkpoint
+    agent_llm_model  = known.agent_llm_model
+    description      = known.description or f"Init snapshot of {comp_type}"
+    overwrite        = known.overwrite
 
     # Inject compressor type as Hydra override so the config loads correctly
     if not any(o.startswith("compressor=") for o in hydra_overrides):
@@ -160,7 +179,7 @@ def main() -> None:
 
     aug_type_str = _COMPRESSOR_TO_INIT_TYPE.get(comp_type, "raw")
     aug_type = AugmentationType(aug_type_str)
-    snap = _build_config_snapshot(comp_type, cfg)
+    snap = _build_config_snapshot(comp_type, cfg, agent_llm_model_id=agent_llm_model)
 
     # Build a temporary entry with no checkpoint (just to drive the factory)
     temp_entry = AugmentationEntry(

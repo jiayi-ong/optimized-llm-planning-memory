@@ -61,10 +61,20 @@ from optimized_llm_planning_memory.core.registry import (
 # ── Data models ───────────────────────────────────────────────────────────────
 
 class RunSpec(BaseModel):
-    """A (prompt_id, augmentation_id) combination for episode generation or training."""
+    """A (prompt_id, augmentation_id) combination for episode generation or training.
+
+    agent_llm_model_id
+        Optional litellm model string for the ReAct agent (e.g.
+        "openai/gpt-4o-mini", "google/gemini-2.0-flash").  When set,
+        overrides ``agent.llm_model_id`` in the Hydra config so the agent
+        model is pinned as part of the run spec rather than relying on the
+        YAML default.  Leave None to use whatever the active agent YAML
+        declares.
+    """
 
     prompt_id: str
     augmentation_id: str
+    agent_llm_model_id: str | None = None
     description: str | None = None
 
 
@@ -73,6 +83,7 @@ class ResolvedRunSpec(BaseModel):
 
     prompt_id: str
     augmentation_id: str
+    agent_llm_model_id: str | None
     system_prompt: str
     augmentation_entry: AugmentationEntry
 
@@ -105,9 +116,14 @@ def resolve_run_spec(
     system_prompt = prompt_registry.get_prompt_text(spec.prompt_id)
     aug_entry = aug_registry.get(spec.augmentation_id)
 
+    # Agent LLM: spec field takes precedence, then config_snapshot (for traceability
+    # of what model a checkpoint was trained with), then left as None.
+    agent_llm = spec.agent_llm_model_id or aug_entry.config_snapshot.get("agent_llm_model_id")
+
     return ResolvedRunSpec(
         prompt_id=spec.prompt_id,
         augmentation_id=spec.augmentation_id,
+        agent_llm_model_id=agent_llm,
         system_prompt=system_prompt,
         augmentation_entry=aug_entry,
     )
@@ -138,6 +154,10 @@ def apply_run_spec_to_cfg(resolved: ResolvedRunSpec, cfg: Any) -> None:
 
     OmegaConf.update(cfg, "agent.mode", entry.agent_mode, merge=True)
     OmegaConf.update(cfg, "compressor.type", entry.compressor_type, merge=True)
+
+    # Pin agent LLM model when the run spec specifies one
+    if resolved.agent_llm_model_id is not None:
+        OmegaConf.update(cfg, "agent.llm_model_id", resolved.agent_llm_model_id, merge=True)
 
     # Apply config snapshot to compressor config (best-effort; ignore unknown keys)
     _COMPRESSOR_SCALAR_FIELDS = {
