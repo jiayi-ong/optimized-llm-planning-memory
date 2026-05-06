@@ -15,6 +15,16 @@ different agent configuration (agent_mode, augmentation_id) requires routing
 each request back to its original world so the constraint satisfaction problem
 is identical across conditions.
 
+Parallelism
+-----------
+By default (--concurrency 5) episodes run in parallel using a thread pool.
+Each episode gets its own SimulatorAdapter instance — world state (bookings)
+must not be shared across concurrent episodes. The compressor, system prompt,
+and MCTS controller are constructed once and shared read-only across threads.
+
+If the agent uses a trained transformer compressor (not IdentityCompressor or
+LLMCompressor) set --concurrency 1 to avoid concurrent model-inference races.
+
 Usage
 -----
     # All requests in a named collection — raw baseline (no compression)
@@ -43,8 +53,10 @@ start timestamp.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import sys
+import threading
 import uuid
 from pathlib import Path
 
@@ -97,6 +109,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--requests_dir", type=Path, default=_REPO_ROOT / "data" / "user_requests")
     parser.add_argument("--output_dir", type=Path, default=_REPO_ROOT / "outputs" / "episodes")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--concurrency", type=int, default=5,
+        help=(
+            "Number of episodes to run in parallel (default 5). "
+            "Set to 1 for sequential execution. "
+            "Reduce if hitting OpenAI rate limits or using a trained transformer compressor."
+        ),
+    )
 
     return parser.parse_args()
 
@@ -292,6 +312,67 @@ def _build_agent_for_episode(args, simulator, compressor, system_prompt, mcts_co
     )
 
 
+# ── Per-episode worker ────────────────────────────────────────────────────────
+
+def _run_one_episode(
+    req,
+    args: argparse.Namespace,
+    compressor,
+    system_prompt: str,
+    mcts_controller,
+    total: int,
+    counter: dict,
+    lock: threading.Lock,
+    log,
+) -> None:
+    """Run a single episode and save it.  Safe to call from multiple threads.
+
+    Each call creates its own SimulatorAdapter — the world's in-memory booking
+    state must not be shared across concurrent episodes.
+    """
+    from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
+    from optimized_llm_planning_memory.utils.episode_io import save_episode
+    from optimized_llm_planning_memory.utils.live_writer import LiveEpisodeWriter
+
+    world_id = req.world_id
+    worlds_dir = _find_worlds_dir(world_id, args.worlds_root)
+
+    try:
+        sim = SimulatorAdapter(
+            seed=args.seed,
+            worlds_dir=str(worlds_dir),
+            world_id=world_id,
+        )
+    except Exception as exc:
+        with lock:
+            counter["failed"] += 1
+        log.error("simulator.init_failed", world_id=world_id, error=str(exc))
+        print(f"  SKIP {req.request_id}: world init failed — {exc}", flush=True)
+        return
+
+    try:
+        agent = _build_agent_for_episode(args, sim, compressor, system_prompt, mcts_controller)
+        episode_id = str(uuid.uuid4())
+        with LiveEpisodeWriter(episode_id=episode_id, output_dir=args.output_dir) as lw:
+            episode_log = agent.run_episode(
+                request=req,
+                simulator=sim,
+                live_writer=lw,
+                episode_id=episode_id,
+            )
+        save_episode(episode_log, args.output_dir)
+        with lock:
+            counter["done"] += 1
+            n = counter["done"]
+        print(f"EPISODE_DONE: {n}/{total} {episode_id}", flush=True)
+        log.info("episode.saved", episode_id=episode_id, n_done=n, total=total)
+    except Exception as exc:
+        with lock:
+            counter["failed"] += 1
+        log.error("episode.failed", request_id=req.request_id, error=str(exc))
+        print(f"  FAIL {req.request_id}: {exc}", flush=True)
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -307,60 +388,35 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     total = len(requests)
-    print(f"Batch run: {total} requests · agent_mode={args.agent_mode}", flush=True)
+    print(f"Batch run: {total} requests · agent_mode={args.agent_mode} · concurrency={args.concurrency}", flush=True)
 
-    # Build expensive components once
+    # Build expensive components once; shared read-only across all worker threads
     compressor, system_prompt, mcts_controller = _build_shared_components(args, log)
 
-    from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
-    from optimized_llm_planning_memory.utils.episode_io import save_episode
-    from optimized_llm_planning_memory.utils.live_writer import LiveEpisodeWriter
+    counter: dict = {"done": 0, "failed": 0}
+    lock = threading.Lock()
 
-    # Cache SimulatorAdapter per world_id to avoid redundant world disk reads
-    simulator_cache: dict[str | None, SimulatorAdapter] = {}
-    n_done = n_failed = 0
+    worker_kwargs = dict(
+        args=args,
+        compressor=compressor,
+        system_prompt=system_prompt,
+        mcts_controller=mcts_controller,
+        total=total,
+        counter=counter,
+        lock=lock,
+        log=log,
+    )
 
-    for i, req in enumerate(requests):
-        world_id = req.world_id
+    if args.concurrency == 1:
+        for req in requests:
+            _run_one_episode(req, **worker_kwargs)
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = [pool.submit(_run_one_episode, req, **worker_kwargs) for req in requests]
+            concurrent.futures.wait(futures)
 
-        if world_id not in simulator_cache:
-            worlds_dir = _find_worlds_dir(world_id, args.worlds_root)
-            try:
-                sim = SimulatorAdapter(
-                    seed=args.seed,
-                    worlds_dir=str(worlds_dir),
-                    world_id=world_id,
-                )
-                simulator_cache[world_id] = sim
-            except Exception as exc:
-                n_failed += 1
-                log.error("simulator.init_failed", world_id=world_id, error=str(exc))
-                print(f"  SKIP [{i+1}/{total}] {req.request_id}: world init failed — {exc}", flush=True)
-                continue
-
-        simulator = simulator_cache[world_id]
-
-        try:
-            agent = _build_agent_for_episode(
-                args, simulator, compressor, system_prompt, mcts_controller
-            )
-            episode_id = str(uuid.uuid4())
-            with LiveEpisodeWriter(episode_id=episode_id, output_dir=args.output_dir) as lw:
-                episode_log = agent.run_episode(
-                    request=req,
-                    simulator=simulator,
-                    live_writer=lw,
-                    episode_id=episode_id,
-                )
-            save_episode(episode_log, args.output_dir)
-            n_done += 1
-            print(f"EPISODE_DONE: {n_done}/{total} {episode_id}", flush=True)
-            log.info("episode.saved", episode_id=episode_id, n_done=n_done, total=total)
-        except Exception as exc:
-            n_failed += 1
-            log.error("episode.failed", request_id=req.request_id, error=str(exc))
-            print(f"  FAIL [{i+1}/{total}] {req.request_id}: {exc}", flush=True)
-
+    n_done = counter["done"]
+    n_failed = counter["failed"]
     print(f"\n{'-' * 52}")
     print(f"  Completed : {n_done} / {total} episodes")
     print(f"  Failed    : {n_failed} / {total} episodes")
