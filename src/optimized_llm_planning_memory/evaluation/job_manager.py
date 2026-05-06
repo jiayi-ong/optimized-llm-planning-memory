@@ -240,11 +240,15 @@ class EvalJobManager:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _pid_alive(pid: int) -> bool:
-    """Return True if the process with the given PID is still running."""
+    """Return True if the process with the given PID is still running.
+
+    On Windows, os.kill(pid, 0) raises OSError [WinError 87] for non-existent
+    PIDs rather than ProcessLookupError, so we catch the base OSError class.
+    """
     try:
         os.kill(pid, 0)
         return True
-    except (ProcessLookupError, PermissionError):
+    except OSError:
         return False
 
 
