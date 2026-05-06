@@ -7,6 +7,13 @@ This document covers the full data flow, design patterns, and invariants that ho
 ## Data Flow
 
 ```
+0. REGISTRY RESOLUTION (optional, at script entry point)
+   data/registry/prompts.json      ──► PromptRegistry.get_prompt_text(prompt_id)
+   data/registry/augmentations.json ──► AugmentationRegistry.get(aug_id)
+            → system_prompt, compressor_type, agent_mode, checkpoint_path
+            → apply_run_spec_to_cfg() merges overrides into Hydra DictConfig
+            → build_compressor_from_entry() constructs + optionally loads checkpoint
+
 1. SETUP
    UserRequest (JSON) ──► ReActAgent + ToolRegistry + Compressor
 

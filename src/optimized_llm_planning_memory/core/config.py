@@ -100,6 +100,13 @@ class AgentConfig(BaseModel):
         default=None,
         description="MCTS search config. Required when mode='mcts_compressor'.",
     )
+    prompt_id: str | None = Field(
+        default=None,
+        description=(
+            "If set, resolves the system prompt via PromptRegistry instead of "
+            "system_prompt_version. Takes precedence when both are present."
+        ),
+    )
 
 
 # ── Compressor ────────────────────────────────────────────────────────────────
@@ -383,6 +390,20 @@ class ProjectConfig(BaseModel):
     seed: int = Field(default=42)
     output_dir: str = Field(default="outputs/")
     run_name: str | None = None
+    augmentation_id: str | None = Field(
+        default=None,
+        description=(
+            "If set, resolves the compressor type, agent mode, and checkpoint "
+            "via AugmentationRegistry. Overrides compressor.type and agent.mode."
+        ),
+    )
+    register_as: str | None = Field(
+        default=None,
+        description=(
+            "If set, auto-registers the final training checkpoint in the "
+            "augmentation registry under this aug_id at end of training."
+        ),
+    )
 
     simulator: SimulatorConfig = Field(default_factory=SimulatorConfig)
     agent: AgentConfig = Field(default_factory=AgentConfig)

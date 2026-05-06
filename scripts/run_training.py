@@ -66,11 +66,43 @@ def main(cfg: DictConfig) -> None:
         ]
     log.info("loaded_requests", n=len(user_requests))
 
+    # ── Registry resolution (optional) ───────────────────────────────────────
+    # When project.augmentation_id is set, the registry drives compressor type,
+    # agent mode, and checkpoint loading instead of the Hydra cfg.
+    # When unset, the existing Hydra-only path is used unchanged.
+    _aug_id    = OmegaConf.select(cfg, "project.augmentation_id")
+    _prompt_id = OmegaConf.select(cfg, "agent.prompt_id")
+    _resolved_spec = None
+    if _aug_id or _prompt_id:
+        from optimized_llm_planning_memory.core.registry import AugmentationRegistry, PromptRegistry
+        from optimized_llm_planning_memory.core.run_spec import RunSpec, resolve_run_spec, apply_run_spec_to_cfg
+        _spec = RunSpec(
+            prompt_id=_prompt_id or OmegaConf.select(cfg, "agent.system_prompt_version", default="v2"),
+            augmentation_id=_aug_id or "raw-default",
+        )
+        _resolved_spec = resolve_run_spec(
+            _spec,
+            prompt_registry=PromptRegistry.load(),
+            aug_registry=AugmentationRegistry.load(),
+        )
+        apply_run_spec_to_cfg(_resolved_spec, cfg)
+        log.info("registry.resolved",
+                 prompt_id=_spec.prompt_id,
+                 aug_id=_spec.augmentation_id,
+                 agent_mode=_resolved_spec.augmentation_entry.agent_mode,
+                 compressor_type=_resolved_spec.augmentation_entry.compressor_type,
+                 has_checkpoint=_resolved_spec.augmentation_entry.has_checkpoint)
+
     # ── Build compressor ──────────────────────────────────────────────────────
     compressor_type = cfg.compressor.type
     reward_predictor = None
 
-    if compressor_type == "identity":
+    if _resolved_spec is not None:
+        from optimized_llm_planning_memory.core.run_spec import build_compressor_from_entry
+        compressor = build_compressor_from_entry(
+            _resolved_spec.augmentation_entry, cfg, _REPO_ROOT, log
+        )
+    elif compressor_type == "identity":
         from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
         use_reward_predictor = OmegaConf.select(cfg, "compressor.use_reward_predictor", default=False)
         if use_reward_predictor:
@@ -164,9 +196,12 @@ def main(cfg: DictConfig) -> None:
         tracker = ToolCallTracker()
         event_bus = EventBus()
         registry = ToolRegistry.from_config(simulator=sim, tracker=tracker, event_bus=event_bus)
-        system_prompt = get_system_prompt(
-            OmegaConf.select(cfg, "agent.system_prompt_version", default="v1")
-        )
+        if _resolved_spec is not None:
+            system_prompt = _resolved_spec.system_prompt
+        else:
+            system_prompt = get_system_prompt(
+                OmegaConf.select(cfg, "agent.system_prompt_version", default="v1")
+            )
         mcts_controller = None
         mcts_cfg_node = OmegaConf.select(cfg, "agent.mcts")
         if cfg.agent.mode == "mcts_compressor" and mcts_cfg_node is not None:
@@ -236,6 +271,46 @@ def main(cfg: DictConfig) -> None:
     trainer.train()
     trainer.save_checkpoint(output_dir / "checkpoints" / "final")
     log.info("training.complete")
+
+    # ── Auto-register trained checkpoint in augmentation registry ─────────────
+    _register_as = OmegaConf.select(cfg, "project.register_as")
+    if _register_as and _resolved_spec is not None:
+        import datetime as _dt2
+        from optimized_llm_planning_memory.core.registry import (
+            AugmentationEntry, AugmentationRegistry, AugmentationType,
+        )
+        _aug_entry = _resolved_spec.augmentation_entry
+        # Map init type → trained type
+        _INIT_TO_TRAINED = {
+            AugmentationType.TGAD_INIT:        AugmentationType.TGAD_TRAINED,
+            AugmentationType.SSD_INIT:         AugmentationType.SSD_TRAINED,
+            AugmentationType.TRANSFORMER_INIT: AugmentationType.TRANSFORMER_TRAINED,
+        }
+        _trained_type = _INIT_TO_TRAINED.get(_aug_entry.type, _aug_entry.type)
+        _ckpt_rel = f"outputs/augmentations/{_register_as}/compressor.pt"
+        _ckpt_abs = _REPO_ROOT / _ckpt_rel
+        _ckpt_abs.parent.mkdir(parents=True, exist_ok=True)
+        # Copy final compressor weights to the named augmentation path
+        import shutil as _shutil
+        _src = output_dir / "checkpoints" / "final" / "compressor"
+        for _f in _src.glob("*.pt") if _src.exists() else []:
+            _shutil.copy2(_f, _ckpt_abs)
+            break
+        _reg = AugmentationRegistry.load()
+        _reg.register(AugmentationEntry(
+            aug_id=_register_as,
+            type=_trained_type,
+            description=f"Trained from {_aug_entry.aug_id} (auto-registered)",
+            created_at=_dt2.datetime.now(tz=_dt2.timezone.utc).isoformat(),
+            checkpoint_path=_ckpt_rel,
+            parent_init_id=_aug_entry.aug_id,
+            training_run_id=OmegaConf.select(cfg, "project.run_name"),
+            config_snapshot=_aug_entry.config_snapshot,
+            reward_weights=_aug_entry.reward_weights,
+            notes=f"Auto-registered after training run {OmegaConf.select(cfg, 'project.run_name')}",
+        ), overwrite=True)
+        _reg.save()
+        log.info("registry.auto_registered", aug_id=_register_as, checkpoint=_ckpt_rel)
 
 
 if __name__ == "__main__":

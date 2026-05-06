@@ -21,6 +21,8 @@ project:
   seed: 42
   output_dir: outputs
   run_name: "run_${now:%Y%m%d_%H%M%S}"
+  augmentation_id: null   # registry ID → drives compressor type + checkpoint
+  register_as: null       # if set, auto-registers final checkpoint with this aug_id
 
 data:
   n_train: 5

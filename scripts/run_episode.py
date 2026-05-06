@@ -52,6 +52,29 @@ def main(cfg: DictConfig) -> None:
 
     log.info("run_episode.start", mode=cfg.agent.mode, seed=cfg.project.seed)
 
+    # ── Registry resolution (optional) ───────────────────────────────────────
+    _aug_id    = OmegaConf.select(cfg, "project.augmentation_id")
+    _prompt_id = OmegaConf.select(cfg, "agent.prompt_id")
+    _resolved_spec = None
+    if _aug_id or _prompt_id:
+        from optimized_llm_planning_memory.core.registry import AugmentationRegistry, PromptRegistry
+        from optimized_llm_planning_memory.core.run_spec import RunSpec, resolve_run_spec, apply_run_spec_to_cfg
+        _spec = RunSpec(
+            prompt_id=_prompt_id or OmegaConf.select(cfg, "agent.system_prompt_version", default="v2"),
+            augmentation_id=_aug_id or "raw-default",
+        )
+        _resolved_spec = resolve_run_spec(
+            _spec,
+            prompt_registry=PromptRegistry.load(),
+            aug_registry=AugmentationRegistry.load(),
+        )
+        apply_run_spec_to_cfg(_resolved_spec, cfg)
+        log.info("registry.resolved",
+                 prompt_id=_spec.prompt_id,
+                 aug_id=_spec.augmentation_id,
+                 agent_mode=_resolved_spec.augmentation_entry.agent_mode,
+                 compressor_type=_resolved_spec.augmentation_entry.compressor_type)
+
     # ── Build components ──────────────────────────────────────────────────────
     from optimized_llm_planning_memory.simulator.adapter import SimulatorAdapter
     from optimized_llm_planning_memory.tools.registry import ToolRegistry
@@ -76,7 +99,12 @@ def main(cfg: DictConfig) -> None:
     )
 
     compressor_type = cfg.compressor.type
-    if compressor_type == "identity":
+    if _resolved_spec is not None:
+        from optimized_llm_planning_memory.core.run_spec import build_compressor_from_entry
+        compressor = build_compressor_from_entry(
+            _resolved_spec.augmentation_entry, cfg, _REPO_ROOT, log
+        )
+    elif compressor_type == "identity":
         from optimized_llm_planning_memory.compressor.identity_compressor import IdentityCompressor
         use_reward_predictor = OmegaConf.select(cfg, "compressor.use_reward_predictor", default=False)
         reward_predictor = None
@@ -155,7 +183,10 @@ def main(cfg: DictConfig) -> None:
         compress_every_n_steps=cfg.agent.compress_every_n_steps,
     )
 
-    system_prompt = get_system_prompt(cfg.agent.get("system_prompt_version", "v1"))
+    if _resolved_spec is not None:
+        system_prompt = _resolved_spec.system_prompt
+    else:
+        system_prompt = get_system_prompt(cfg.agent.get("system_prompt_version", "v1"))
     context_builder = ContextBuilder(
         system_prompt=system_prompt,
         tool_registry=tool_registry,

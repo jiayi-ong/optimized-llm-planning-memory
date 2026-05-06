@@ -55,8 +55,24 @@ Three prompt versions are stored in `agent/prompts.py`. The active version is se
 | `v1` | `"v1"` | Base ReAct instructions: WORLD CONTEXT (synthetic city names, no `get_city_info`), PLANNING PHASE (required execution order), BOOKING RULE (commit before proceeding), THOUGHT DISCIPLINE (`"The last observation showed..."` opener), LETHAL SCENARIOS (EXIT codes for unresolvable episodes) | Initial implementation — establishes the core ReAct loop and tool-use format |
 | `v2` | `"v2"` | + explicit **constraint tracking** guidance (track satisfied vs. open constraints at each step); + **ITINERARY STATE** section instructing the agent to use `[CURRENT ITINERARY STATE]` as source of truth and to call `cancel_booking` to remove an incorrect item before re-booking | Observed in baseline runs that v1 agents frequently booked items then forgot about hard constraints; adding explicit constraint-tracking guidance reduced this failure mode |
 | `v3` | `"v3"` | + strict format requirement with inline example; error-recovery and budget-tracking guidance; city-not-found → `EXIT(reason=CITY_NOT_FOUND)` | Format compliance failures and budget overruns in v2 runs; the inline example anchors the output format more reliably than prose instructions |
+| `v4` | `"v4"` | + CONTEXT SECTION GUIDE to reduce agent confusion between compressed-state sections | Agents mixing up HARD_CONSTRAINT_LEDGER and DECISIONS_MADE |
+| `v5` | `"v5"` | + STEP-BUDGET PHASED PLANNING with hard deadlines per phase | Deadline-missing and phase-skipping failures |
 
-`v2` is the default for all configs (including `react_default.yaml`). Do not change an existing config to `v1` — it regresses planning quality.
+`v2` is the default for all configs (including `react_default.yaml`). `v5` is recommended for new Colab training runs. Do not change an existing config to `v1` — it regresses planning quality.
+
+### Prompt Registry
+
+Prompt versions are also accessible via the **Prompt Registry** (`data/registry/prompts.json`), which adds metadata (description, notes, deprecation status) and enables ID-based lookup in CLI scripts and notebooks.
+
+```bash
+# Use a prompt by registry ID (overrides system_prompt_version)
+python scripts/run_episode.py agent.prompt_id=sweep_D project.augmentation_id=ssd-init-001
+
+# List all registered prompts
+python scripts/list_registry.py --prompts-only
+```
+
+The registry ID is identical to the `system_prompt_version` key for all built-in prompts. The `agent.prompt_id` field takes precedence over `agent.system_prompt_version` when both are set. See [`docs/REGISTRY.md`](REGISTRY.md) for the full reference.
 
 ### V1 base sections (inherited by all versions)
 

@@ -8,3 +8,4 @@ compress_every_n_steps: 5
 compress_on_token_threshold: 3000
 temperature: 0.0
 system_prompt_version: v2
+prompt_id: null             # registry ID; overrides system_prompt_version when set

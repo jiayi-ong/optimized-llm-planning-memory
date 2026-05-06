@@ -1,0 +1,52 @@
+{
+  "mcts-default": {
+    "type": "mcts_only",
+    "description": "MCTS-only mode using LLMMCTSCompressor — no trainable neural compressor weights",
+    "created_at": "2026-01-15T00:00:00+00:00",
+    "checkpoint_path": null,
+    "parent_init_id": null,
+    "training_run_id": null,
+    "training_step": null,
+    "mcts_config_ref": "react_mcts",
+    "config_snapshot": {
+      "num_simulations": 50,
+      "max_depth": 10,
+      "branching_factor": 3,
+      "rollout_steps": 5,
+      "evaluator_model_id": "openai/gpt-4o-mini"
+    },
+    "reward_weights": {},
+    "notes": "Default MCTS baseline. Uses react_mcts.yaml MCTS config. Requires OPENAI_API_KEY.",
+    "deprecated": false
+  },
+  "raw-default": {
+    "type": "raw",
+    "description": "No compression — full trajectory appended verbatim at every step",
+    "created_at": "2026-01-15T00:00:00+00:00",
+    "checkpoint_path": null,
+    "parent_init_id": null,
+    "training_run_id": null,
+    "training_step": null,
+    "mcts_config_ref": null,
+    "config_snapshot": {},
+    "reward_weights": {},
+    "notes": "Baseline 1. Use with react_baseline_raw.yaml agent config.",
+    "deprecated": false
+  },
+  "llm-summary-default": {
+    "type": "llm_summary",
+    "description": "LLM-based trajectory summarization — frozen LLM call replaces compressed state",
+    "created_at": "2026-01-15T00:00:00+00:00",
+    "checkpoint_path": null,
+    "parent_init_id": null,
+    "training_run_id": null,
+    "training_step": null,
+    "mcts_config_ref": null,
+    "config_snapshot": {
+      "llm_model_id": "openai/gpt-4o-mini"
+    },
+    "reward_weights": {},
+    "notes": "Baseline 2. Requires OPENAI_API_KEY. Non-trainable — no PPO weights.",
+    "deprecated": false
+  }
+}

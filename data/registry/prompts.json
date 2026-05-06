@@ -1,0 +1,98 @@
+{
+  "v1": {
+    "description": "Base ReAct prompt: WORLD CONTEXT, PLANNING PHASE order, BOOKING RULE, THOUGHT DISCIPLINE, LETHAL SCENARIOS",
+    "text_ref": "v1",
+    "created_at": "2026-01-15T00:00:00+00:00",
+    "notes": "Initial implementation. Do not use for new runs — regresses planning quality vs v2.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "v2": {
+    "description": "Default prompt: v1 + explicit constraint-tracking guidance + ITINERARY STATE section + cancel_booking instruction",
+    "text_ref": "v2",
+    "created_at": "2026-02-01T00:00:00+00:00",
+    "notes": "Standard for all training runs. Default in react_default.yaml.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "v3": {
+    "description": "v2 + strict format requirement with inline example + error-recovery + real-time budget tracking",
+    "text_ref": "v3",
+    "created_at": "2026-02-15T00:00:00+00:00",
+    "notes": "Better format compliance. Added after format failures and budget overruns in v2 runs.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "v4": {
+    "description": "v3 + CONTEXT SECTION GUIDE to reduce agent confusion between compressed-state sections",
+    "text_ref": "v4",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Experimental. Use when agents confuse HARD_CONSTRAINT_LEDGER with DECISIONS_MADE.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "v5": {
+    "description": "v4 + STEP-BUDGET PHASED PLANNING with hard deadlines per phase",
+    "text_ref": "v5",
+    "created_at": "2026-03-15T00:00:00+00:00",
+    "notes": "Current default for Colab training runs. Reduces deadline-missing failures.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_A": {
+    "description": "Grow-then-Prune strategy: build a candidate itinerary then prune to meet budget/constraints",
+    "text_ref": "sweep_A",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Standalone prompt-design experiment. Not derived from v-series.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_B": {
+    "description": "Ordered pipeline with per-category booking quotas",
+    "text_ref": "sweep_B",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Standalone prompt-design experiment.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_C": {
+    "description": "Commit-every-step: search-book pairs must alternate strictly",
+    "text_ref": "sweep_C",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Standalone prompt-design experiment.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_D": {
+    "description": "Minimal Viable First: book minimum viable itinerary (1 flight + 1 hotel + 1 activity) before enhancing",
+    "text_ref": "sweep_D",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Confirmed non-degenerate in 11 steps during baseline prompt sweep. Recommended for COMPRESSOR baseline.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_E": {
+    "description": "Step-budget phased planning with explicit phase deadlines",
+    "text_ref": "sweep_E",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Standalone prompt-design experiment.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_F": {
+    "description": "Stateless agent: no trajectory history, itinerary-only memory (STATELESS mode)",
+    "text_ref": "sweep_F",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Requires agent.mode=stateless. Cannot be used with COMPRESSOR or MCTS_COMPRESSOR.",
+    "deprecated": false,
+    "inline_text": null
+  },
+  "sweep_G": {
+    "description": "Commitment gate: every action must advance the booking state or exit",
+    "text_ref": "sweep_G",
+    "created_at": "2026-03-01T00:00:00+00:00",
+    "notes": "Requires agent.mode=stateless. Cannot be used with COMPRESSOR or MCTS_COMPRESSOR.",
+    "deprecated": false,
+    "inline_text": null
+  }
+}
