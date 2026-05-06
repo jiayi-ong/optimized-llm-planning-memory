@@ -99,6 +99,11 @@ class SimulatorAdapter:
         self._world_id_override = world_id
         self._init_services(seed)
 
+    @property
+    def world_id(self) -> str:
+        """The world ID of the currently loaded world."""
+        return getattr(self._ws, "world_id", f"world_{self._seed}")
+
     def _init_services(self, seed: int) -> None:
         """Instantiate the world and all service objects."""
         try:

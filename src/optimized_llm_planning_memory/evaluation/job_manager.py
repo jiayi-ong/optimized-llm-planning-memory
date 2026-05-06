@@ -64,6 +64,7 @@ class EvalJobConfig:
     agent_mode: str | None = None
     augmentation_id: str | None = None
     prompt_id: str | None = None
+    run_name: str | None = None
     parent_run_id: str | None = None
     judge_model: str = "openai/gpt-4o-mini"
     metric_version: str | None = None
@@ -100,11 +101,14 @@ class EvalJobManager:
         job_id = uuid.uuid4().hex[:12]
         args = self._build_args(config)
 
+        child_env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
         proc = subprocess.Popen(
             [sys.executable] + args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            env=child_env,
         )
 
         state: dict[str, Any] = {
@@ -210,6 +214,8 @@ class EvalJobManager:
             args += ["--augmentation_id", cfg.augmentation_id]
         if cfg.prompt_id:
             args += ["--prompt_id", cfg.prompt_id]
+        if cfg.run_name:
+            args += ["--run_name", cfg.run_name]
         if cfg.parent_run_id:
             args += ["--parent_run_id", cfg.parent_run_id]
         if cfg.eval_mode != "deterministic":

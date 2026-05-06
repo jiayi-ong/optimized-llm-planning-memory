@@ -70,44 +70,61 @@ streamlit run app/main.py --server.address 0.0.0.0
 
 ## 4. Running an Experiment — Step by Step
 
-A complete experiment cycle has five stages. The eval UI covers stages 4 and 5; stages 1–3 are CLI-only.
+A complete experiment cycle has four stages. **All four stages can be driven from the UI** (page 1 — Eval Dashboard) or from the CLI. Each stage can be used independently when earlier outputs already exist.
 
 ```
-1. Generate world(s)
-2. Generate user requests
-3. Run agent episodes
-4. Evaluate episodes         ← UI control panel or CLI
-5. Analyse results           ← UI pages 1, 2, 3, 4
+Stage 1 — Worlds          → pick or generate a world set
+Stage 2 — Requests        → pick or generate user requests  
+Stage 3 — Agent Run       → run the ReAct agent to produce episodes
+Stage 4 — Score           → evaluate episodes (deterministic + LLM judge)
 ```
 
-### Stage 1 — Generate the travel world
+Open page 1 and expand whichever stages you need. The stage expanders are independent — skip Stage 1 and 2 if you already have requests, skip Stage 3 if you already have episodes.
+
+---
+
+### Stage 1 — Worlds
+
+**From the UI:** Expand **Stage 1 — Worlds** on page 1. Choose "Use existing world set" to pick from the `worlds/` dropdown, or "Generate new worlds" to create a batch.
+
+**From the CLI:**
 
 ```bash
-python scripts/generate_world.py --seed 42
-# → worlds/world_42_{timestamp}/
+# Generate a batch of 3 worlds under worlds/batch_1/
+python scripts/generate_worlds.py --set_name batch_1 --n_worlds 3 --base_seed 42
+# → worlds/batch_1/world_42_{ts}/, world_43_{ts}/, world_44_{ts}/
 ```
 
-Use the same seed for all conditions in an experiment so the world is held constant. For multi-seed experiments, generate one world per seed:
+World sets are named sub-folders under `worlds/`. All worlds in a set share the same geographic scale configuration. Use the same set for all conditions in one experiment so the world is held constant.
+
+---
+
+### Stage 2 — Requests
+
+**From the UI:** Expand **Stage 2 — Requests**. Choose "Use existing request set" to select a data split, or "Generate new requests" to generate from a world set with a configurable complexity mix.
+
+**From the CLI:**
 
 ```bash
-for seed in 42 123 456; do
-    python scripts/generate_world.py --seed $seed
-done
+# Generate 30 requests spread across all worlds in batch_1 — auto-named collection (timestamp)
+python scripts/generate_eval_dataset.py \
+    --world_set worlds/batch_1 \
+    --n_total 30 --seed 42
+# → data/user_requests/20260506_143022/request_*.json
+
+# Named collection — useful for ablation sets
+python scripts/generate_eval_dataset.py \
+    --world_set worlds/batch_1 \
+    --n_total 30 --collection val_seed42 --seed 42
+# → data/user_requests/val_seed42/request_*.json
+
+# Bias toward hard requests: 0 % low, 30 % medium, 70 % high
+python scripts/generate_eval_dataset.py \
+    --world_set worlds/batch_1 \
+    --n_total 50 --collection ablation_hard --complexity_weights 0 30 70
 ```
 
-### Stage 2 — Generate user requests
-
-Requests must be anchored to the world so city names match real simulator IDs:
-
-```bash
-python scripts/generate_user_requests.py \
-    --world_dir worlds/world_42_{timestamp} \
-    --n_train 40 --n_val 10 --n_test 10 \
-    --seed 42
-# → data/user_requests/{train,val,test}/request_*.json
-```
-
-Each request now includes a `metadata.complexity_breakdown` dict with five difficulty dimensions and a `complexity_tier` (`"low"` / `"medium"` / `"high"`). The **Request Browser** (page 5) lets you inspect the distribution before running any episodes.
+Each generated request embeds the `world_id` of the world it was created from. This link is used by Stage 3 to route each request back to the correct simulator instance.
 
 **Complexity tier definitions:**
 
@@ -117,51 +134,79 @@ Each request now includes a `metadata.complexity_breakdown` dict with five diffi
 | `medium` | 0.35–0.65 | 2 destinations, moderate constraints, standard group |
 | `high` | ≥ 0.65 | 3+ destinations, tight budget, children or accessibility needs, many soft constraints |
 
-To generate a targeted set of `high`-complexity requests only:
+---
+
+### Stage 3 — Agent Run
+
+This is the stage that produces episode files. The agent reads each `UserRequest`, queries the travel simulator via tool calls, and writes a plan as an `EpisodeLog`.
+
+**Key design:** each request carries a `world_id` field. The batch runner automatically searches `worlds/` (and its sub-folders) for a directory with that name and instantiates `SimulatorAdapter(world_id=...)` pointing at the correct world. This means re-running the same request set with a different agent config always targets the exact same travel graph — the only variable is the agent.
+
+**From the UI:** Expand **Stage 3 — Agent Run** on page 1. Select your request source (collection, re-run from eval run, or specific IDs), configure the agent, and click **▶ Run Agent**. A progress bar tracks episodes completed; once done, a banner in Stage 4 shows how many new episodes are ready to score.
+
+**From the CLI:**
 
 ```bash
-python scripts/generate_user_requests.py \
-    --world_dir worlds/world_42_{timestamp} \
-    --n_test 20 --seed 42 --complexity_tier high
-```
+# Condition 1: raw baseline (no compression) — named collection
+python scripts/run_agent_batch.py --collection val_seed42 --agent_mode raw
 
-### Stage 3 — Run agent episodes
+# Condition 2: LLM summary baseline — same collection for fair comparison
+python scripts/run_agent_batch.py --collection val_seed42 --agent_mode llm_summary
 
-Three conditions to generate episodes for comparison:
+# Condition 3: trained TGAD compressor from registry
+python scripts/run_agent_batch.py --collection val_seed42 \
+    --agent_mode compressor --augmentation_id tgad-trained-001
 
-```bash
-# Condition 1: raw (no compression)
-python scripts/run_episode.py agent=react_baseline_raw
+# Re-run the same request set as a prior eval run with a new compressor
+python scripts/run_agent_batch.py \
+    --from_eval_run outputs/eval_results/20260506_abc12345 \
+    --agent_mode compressor --augmentation_id tgad-trained-002
 
-# Condition 2: LLM summary baseline
-python scripts/run_episode.py agent=react_default compressor=llm_prompt
-
-# Condition 3: trained compressor (replace path with your checkpoint)
-python scripts/run_episode.py agent=react_default compressor=transformer \
-    training.resume_from=outputs/checkpoints/final/ppo_model.zip
+# Quick smoke test — two specific requests
+python scripts/run_agent_batch.py \
+    --request_ids req_abc123 req_def456 --agent_mode raw
 ```
 
 All episodes land in `outputs/episodes/ep_{uuid}.json`. The **Episode Browser** (page 6) and **Trajectory Viewer** (page 7) let you inspect individual episodes immediately, including live-polling during a running episode.
+
+`run_agent_batch.py` arguments:
+
+| Argument | Default | Purpose |
+|----------|---------|---------|
+| `--collection NAME` | — | Run on all requests in this named collection sub-folder |
+| `--request_ids ID [ID ...]` | — | Run on specific request IDs |
+| `--from_eval_run PATH` | — | Re-run request_ids from a prior eval manifest |
+| `--agent_mode` | required | `raw` / `llm_summary` / `compressor` / `mcts_compressor` |
+| `--augmentation_id` | None | Registry ID; overrides default compressor for the mode |
+| `--prompt_id` | None | Registry ID for system prompt |
+| `--llm_model_id` | `openai/gpt-4o-mini` | LLM for agent reasoning |
+| `--max_steps` | 30 | Maximum ReAct steps per episode |
+| `--worlds_root` | `worlds/` | Searched one level deep for world directories |
+| `--requests_dir` | `data/user_requests/` | Root of request collections |
+| `--output_dir` | `outputs/episodes/` | Where to write `ep_*.json` files |
 
 ---
 
 ## 5. Evaluating Episodes
 
-### 5a. From the UI (Control Panel)
+### 5a. From the UI (Stage 4 — Score Episodes)
 
-Open the **Eval Dashboard** (page 1) and expand **"▶ New Eval Run"** in the sidebar.
+Open the **Eval Dashboard** (page 1) and expand **Stage 4 — Score Episodes** (expanded by default).
 
 | Field | What to set | Notes |
 |-------|------------|-------|
+| Run name | Human-readable label, e.g. `sweep_D-ablation` | Groups related runs in the run table and ablation page |
 | Augmentation ID | Registry ID of the compressor, e.g. `tgad-trained-001` | Optional; leave blank for raw/llm_summary baselines |
 | Prompt ID | Registry ID of the system prompt, e.g. `sweep_D` | Optional |
 | Eval mode | `deterministic` / `full` / `llm_judge` | Start with `deterministic` — it's free and fast |
 | Judge model | `openai/gpt-4o-mini` | Only active when mode is `full` or `llm_judge` |
-| Episode selection | All episodes / filter by agent_mode / manual IDs | Use "filter by agent_mode" to score one condition at a time |
-| Parent run | Select a previous run to mark this as a re-run | Enables re-run lineage tracking |
-| Notes | Free-text description | Stored in manifest; searchable in page 1 |
+| Filter by agent_mode | e.g. `raw` | Blank = score all modes; useful to score one condition at a time |
+| Parent run (re-run lineage) | Select a previous run | Tags this run as a re-run of the selected one |
+| Notes | Free-text description | Stored in manifest |
 
-Click **▶ Start Eval Run**. A progress bar appears while the job runs. Results appear in the run table as soon as the job completes.
+Click **🔬 Score Episodes**. A progress bar appears in **Jobs in Progress** while the job runs. Results appear in the run table as soon as the job completes.
+
+**Chaining Stage 3 → Stage 4:** If an agent run just completed (Stage 3), a banner in Stage 4 shows how many new episodes are ready. When you click Score Episodes immediately after, only those new episode IDs are passed to the scorer — you don't re-evaluate old episodes.
 
 ### 5b. From the CLI
 
@@ -362,7 +407,7 @@ python scripts/run_eval.py \
 
 The second run's `manifest.parent_run_id` records the lineage. In the UI run table, both runs appear separately; use `parent_run_id` in Python to join them if needed.
 
-From the UI control panel (page 1 sidebar): select the original run in the **"Parent run (re-run)"** dropdown, set **Eval mode** to `llm_judge`, manually enter the episode IDs, and click **▶ Start Eval Run**.
+From the UI (page 1 — Stage 4): select the original run in the **"Parent run"** dropdown, set **Eval mode** to `llm_judge`, leave episode filter blank (it will find episodes from that run automatically), and click **🔬 Score Episodes**.
 
 ---
 

@@ -44,6 +44,7 @@ Complexity weighting
 from __future__ import annotations
 
 import argparse
+import datetime
 import itertools
 import random
 import sys
@@ -51,6 +52,9 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
+
+# Early diagnostic — proves the script started before any other imports can fail
+print(f"[generate_eval_dataset] starting, args={sys.argv[1:]}", flush=True)
 
 from optimized_llm_planning_memory.utils.logging import configure_logging, get_logger
 from optimized_llm_planning_memory.utils.seed import set_seed
@@ -86,16 +90,19 @@ def _parse_args() -> argparse.Namespace:
         help="Total number of requests to generate across all worlds (default: 20).",
     )
     parser.add_argument(
-        "--split",
-        default="val",
-        choices=["train", "val", "test"],
-        help="Data split sub-directory to write requests into (default: val).",
+        "--collection",
+        default=None,
+        help=(
+            "Name for this collection of requests — used as the sub-folder under "
+            "--output_dir (e.g. 'ablation_hard', 'val_seed42'). "
+            "Defaults to a UTC timestamp (YYYYMMDD_HHMMSS) if not specified."
+        ),
     )
     parser.add_argument(
         "--output_dir",
         type=Path,
         default=_REPO_ROOT / "data" / "user_requests",
-        help="Base output directory; <split> is appended automatically.",
+        help="Base output directory; <collection> name is appended automatically.",
     )
     parser.add_argument(
         "--seed",
@@ -145,7 +152,6 @@ def _tier_quotas(n: int, weights: list[float] | None) -> dict[str, int]:
 def _generate_for_world(
     world_path: Path,
     n: int,
-    split: str,
     output_dir: Path,
     rng: random.Random,
     log,
@@ -155,17 +161,48 @@ def _generate_for_world(
 
     Returns the number of requests successfully saved.
     """
-    # Import generation primitives from the existing script (bypasses @hydra.main)
+    # Import generation primitives from the existing script.
+    # We stub hydra/omegaconf in sys.modules before exec_module so that Hydra's
+    # @hydra.main decorator (which runs at import time) never tries to load a
+    # config file. The stub provides a no-op @hydra.main and minimal omegaconf
+    # stubs; since we never call main(), these are sufficient.
     import importlib.util
     import types
 
-    spec = importlib.util.spec_from_file_location(
-        "gen_requests",
-        _REPO_ROOT / "scripts" / "generate_user_requests.py",
-    )
-    gen_mod = types.ModuleType("gen_requests")
-    assert spec and spec.loader
-    spec.loader.exec_module(gen_mod)  # type: ignore[union-attr]
+    def _make_stub(name: str) -> types.ModuleType:
+        stub = types.ModuleType(name)
+        stub.main = lambda *a, **kw: (lambda f: f)  # no-op decorator
+        stub.DictConfig = dict
+        class _OmegaConf:
+            @staticmethod
+            def select(cfg, key, default=None):
+                return default
+        stub.OmegaConf = _OmegaConf()
+        return stub
+
+    _saved: dict[str, object] = {}
+    for _name in ("hydra", "omegaconf"):
+        if _name not in sys.modules:
+            _saved[_name] = None
+            sys.modules[_name] = _make_stub(_name)
+
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "gen_requests",
+            _REPO_ROOT / "scripts" / "generate_user_requests.py",
+        )
+        gen_mod = types.ModuleType("gen_requests")
+        # __file__ must be set before exec_module so top-level code in the imported
+        # script can resolve _REPO_ROOT via Path(__file__).parent.parent.
+        gen_mod.__file__ = str(_REPO_ROOT / "scripts" / "generate_user_requests.py")
+        assert spec and spec.loader
+        spec.loader.exec_module(gen_mod)  # type: ignore[union-attr]
+    finally:
+        for _name, _orig in _saved.items():
+            if _orig is None:
+                sys.modules.pop(_name, None)
+            else:
+                sys.modules[_name] = _orig  # type: ignore[assignment]
 
     generate_from_world_dir = gen_mod.generate_from_world_dir
     load_world_cities = gen_mod.load_world_cities
@@ -190,6 +227,9 @@ def _generate_for_world(
     city_ids = list(city_registry.keys())
     rng.shuffle(city_ids)
 
+    # Single-destination pairs (A→B) give geo_score=0; multi-destination pairs
+    # (A→{B,C}) give geo_score=0.5, enabling "high" complexity tier.  Both are
+    # included so the cycle covers the full complexity range.
     city_pairs = [
         gen_mod.CityPair(
             origin_id=city_ids[i],
@@ -200,6 +240,16 @@ def _generate_for_world(
         for i in range(len(city_ids))
         if city_ids[i] != city_ids[(i + 1) % len(city_ids)]
     ]
+    if len(city_ids) >= 3:
+        for i in range(len(city_ids)):
+            others = [cid for j, cid in enumerate(city_ids) if j != i]
+            if len(others) >= 2:
+                city_pairs.append(gen_mod.CityPair(
+                    origin_id=city_ids[i],
+                    origin_name=city_registry[city_ids[i]],
+                    dest_ids=others[:2],
+                    dest_names=[city_registry[cid] for cid in others[:2]],
+                ))
 
     if not city_pairs:
         log.warning("no_city_pairs", world=str(world_path))
@@ -233,7 +283,7 @@ def _generate_for_world(
 
     # Tier-based rejection sampling
     buckets: dict[str, list[dict]] = {t: [] for t in tier_quotas}
-    max_attempts = n * 5  # overgenerate up to 5× to fill quotas
+    max_attempts = n * 20  # overgenerate up to 20× to fill quotas
     attempt = 0
     i = 0
 
@@ -258,6 +308,37 @@ def _generate_for_world(
             buckets[tier].append(req_dict)
         i += 1
         attempt += 1
+
+    # Fallback: if some tier quotas still unmet (world can't produce that tier),
+    # fill the deficit with unconstrained requests so the total count is met.
+    n_filled = sum(len(v) for v in buckets.values())
+    deficit = n - n_filled
+    if deficit > 0:
+        log.warning(
+            "tier_quota_fallback",
+            world=str(world_path),
+            deficit=deficit,
+            detail="world cannot produce all requested complexity tiers; filling with unconstrained requests",
+        )
+        for _ in range(deficit * 5):  # allow up to 5× attempts to fill the deficit
+            if deficit <= 0:
+                break
+            pair = next(pairs_cycle)
+            archetype = _ARCHETYPES[i % n_archetypes]
+            tone_idx = i // n_archetypes
+            budget = rng.choice(archetype["budget_usd"])
+            duration = rng.choice(archetype["duration_days"])
+            start_date, end_date = _anchor_date_range(sim_date, duration, rng)
+            req_dict = _make_request(pair, archetype, budget, start_date, end_date, tone_idx)
+            req_dict["world_id"] = world_id
+            req_dict["metadata"]["world_id"] = world_id
+            _inject_complexity(req_dict)
+            # Accept any tier to fill the gap
+            t = req_dict.get("metadata", {}).get("complexity_breakdown", {}).get("complexity_tier", "unknown")
+            if t in buckets:
+                buckets[t].append(req_dict)
+                deficit -= 1
+            i += 1
 
     saved = 0
     for tier_reqs in buckets.values():
@@ -313,22 +394,25 @@ def main() -> None:
         tier_quotas_total = _tier_quotas(args.n_total, list(args.complexity_weights))
         log.info("complexity_quotas", **tier_quotas_total)
 
-    output_dir = args.output_dir / args.split
+    collection = args.collection or datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
+    output_dir = args.output_dir / collection
     total_saved = 0
 
     for world_dir, n_for_world in zip(world_dirs, world_counts):
         if n_for_world == 0:
             continue
 
-        # Compute per-world tier quotas proportional to world count
+        # Compute per-world tier quotas proportional to world count.
+        # No floor of 1: a tier that rounds to 0 for a given world simply
+        # won't be demanded from it, avoiding unsatisfiable quotas in small worlds.
         world_tier_quotas: dict[str, int] | None = None
         if tier_quotas_total is not None:
             fraction = n_for_world / args.n_total
             world_tier_quotas = {
-                t: max(1, round(q * fraction))
+                t: max(0, round(q * fraction))
                 for t, q in tier_quotas_total.items()
             }
-            # Adjust to exact n_for_world
+            # Adjust to exact n_for_world (add/remove from medium bucket)
             diff = n_for_world - sum(world_tier_quotas.values())
             if diff != 0:
                 world_tier_quotas["medium"] = max(0, world_tier_quotas["medium"] + diff)
@@ -337,7 +421,6 @@ def main() -> None:
         saved = _generate_for_world(
             world_path=world_dir,
             n=n_for_world,
-            split=args.split,
             output_dir=output_dir,
             rng=rng,
             log=log,
@@ -346,14 +429,14 @@ def main() -> None:
         log.info("world_done", world_dir=str(world_dir), saved=saved)
         total_saved += saved
 
-    print(f"\n{'─' * 50}")
+    print(f"\n{'-' * 50}")
     print(f"  Total generated : {total_saved} / {args.n_total} requests")
-    print(f"  Split           : {args.split}")
+    print(f"  Collection      : {collection}")
     print(f"  Output dir      : {output_dir.resolve()}")
     print(f"  Worlds used     : {n_worlds}")
     if tier_quotas_total:
         print(f"  Complexity mix  : {tier_quotas_total}")
-    print(f"{'─' * 50}\n")
+    print(f"{'-' * 50}\n")
 
 
 if __name__ == "__main__":

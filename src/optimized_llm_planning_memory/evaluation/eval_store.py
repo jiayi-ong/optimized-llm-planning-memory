@@ -95,9 +95,10 @@ class EvalStore:
                     continue
         return None
 
-    def list_requests(self, split: str | None = None) -> list[UserRequest]:
-        """Return all UserRequest objects, optionally restricted to one split."""
-        dirs = [self.requests_dir / split] if split else self._split_dirs()
+    def list_requests(self, split: str | None = None, collection: str | None = None) -> list[UserRequest]:
+        """Return all UserRequest objects, optionally restricted to one collection (or legacy split)."""
+        name = collection or split
+        dirs = [self.requests_dir / name] if name else self._split_dirs()
         requests: list[UserRequest] = []
         for d in dirs:
             if not d.exists():
@@ -188,6 +189,16 @@ class EvalStore:
     # ── Internal helpers ──────────────────────────────────────────────────────
 
     def _split_dirs(self) -> list[Path]:
-        """Return existing train/val/test sub-directories plus the root."""
-        dirs = [self.requests_dir / s for s in ("train", "val", "test")]
-        return [d for d in dirs if d.exists()] or [self.requests_dir]
+        """Return all immediate sub-directories of requests_dir that contain request files.
+
+        Searches every sub-folder (not just train/val/test) so that any named
+        collection (e.g. 'ablation_hard', '20260506_143022') is found automatically.
+        Falls back to requests_dir itself if no sub-directories exist.
+        """
+        if not self.requests_dir.exists():
+            return [self.requests_dir]
+        subdirs = [
+            d for d in sorted(self.requests_dir.iterdir())
+            if d.is_dir() and any(d.glob("request_*.json"))
+        ]
+        return subdirs or [self.requests_dir]

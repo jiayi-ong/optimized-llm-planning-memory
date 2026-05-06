@@ -42,6 +42,9 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
+# Early diagnostic — proves the script started before heavy imports
+print(f"[generate_worlds] starting, args={sys.argv[1:]}", flush=True)
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -71,9 +74,12 @@ def _parse_args() -> argparse.Namespace:
         default=_REPO_ROOT / "worlds",
         help="Root worlds directory (default: <repo>/worlds).",
     )
-    # Optional world generator config overrides
+    # Optional world generator config overrides.
+    # num_cities_per_region defaults to 4: the simulator default (1) is too few
+    # for travel planning.  4 cities allows 3-destination trips (geo_score=1.0),
+    # enabling the full low/medium/high complexity range.
     parser.add_argument("--num_regions", type=int, default=None)
-    parser.add_argument("--num_cities_per_region", type=int, default=None)
+    parser.add_argument("--num_cities_per_region", type=int, default=4)
     parser.add_argument("--num_districts_per_city", type=int, default=None)
     parser.add_argument("--num_hotels_per_district", type=int, default=None)
     parser.add_argument("--num_attractions_per_district", type=int, default=None)
@@ -112,7 +118,7 @@ def main() -> None:
     created: list[str] = []
     for i in range(args.n_worlds):
         seed = args.base_seed + i
-        print(f"[{i + 1}/{args.n_worlds}] Generating world (seed={seed})…", flush=True)
+        print(f"[{i + 1}/{args.n_worlds}] Generating world (seed={seed})...", flush=True)
         try:
             sim = SimulatorAdapter(
                 seed=seed,
@@ -121,14 +127,14 @@ def main() -> None:
             )
             world_id = sim.world_id
             created.append(world_id)
-            print(f"  ✓ {world_id}", flush=True)
+            print(f"  [OK] {world_id}", flush=True)
         except Exception as exc:
-            print(f"  ✗ ERROR: {exc}", flush=True)
+            print(f"  [FAIL] ERROR: {exc}", flush=True)
 
-    print(f"\n{'─' * 52}")
+    print(f"\n{'-' * 52}")
     print(f"  Generated : {len(created)} / {args.n_worlds} worlds")
     print(f"  Set folder: {set_dir.resolve()}")
-    print(f"{'─' * 52}\n")
+    print(f"{'-' * 52}\n")
 
 
 if __name__ == "__main__":
