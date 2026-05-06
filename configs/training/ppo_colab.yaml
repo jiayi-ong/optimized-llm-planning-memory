@@ -1,18 +1,33 @@
 # configs/training/ppo_colab.yaml
-# Colab-friendly config: smaller batch, fewer parallel envs, GPU auto-detect.
+# Colab-friendly config: tuned for real LLM API latency (~10-15 s/call on T4).
+#
+# Key changes from original:
+#   - num_timesteps: 600   (50k was written for mock agents; 600 ≈ 4 h at real API rates)
+#   - n_steps: 16          (rollout = 32 transitions → first PPO update ~25 min in)
+#   - batch_size: 8        (4 mini-batches per rollout; better gradient diversity)
+#   - checkpoint_every_n_steps: 50  (~12 checkpoints over the run)
+#   - env.steps_per_compression: 2  (2 LLM calls per env.step instead of 5)
+#
+# Throughput with SubprocVecEnv (now default for stateless compressors):
+#   2 envs × 2 LLM calls × ~12 s/call → ~24 s per wall-clock step (parallel)
+#   600 steps × 24 s ≈ 4 hours on T4
+#
+# PPO update budget: 600 / (16 × 2) = ~18 updates
+#   each update: 4 epochs × (32 / 8) mini-batches = 16 gradient steps
+#   total gradient steps: ~288
 # @package training
-num_timesteps: 50000
+num_timesteps: 600
 n_envs: 2
 seed: 42
 resume_from: null
-checkpoint_every_n_steps: 1000  # was 5000 — lower so checkpoints appear within ~30 min
+checkpoint_every_n_steps: 50
 device: auto                    # T4 GPU detected automatically in Colab
 episode_save_freq: 0            # storage-limited on Colab — use JSONL only
 run_name: null                  # set at CLI: training.run_name=...
 ppo:
   learning_rate: 3.0e-5
-  n_steps: 64    # was 512 — with 2 envs, rollout = 128 steps → first PPO update in ~5-10 min
-  batch_size: 32
+  n_steps: 16    # rollout = 16 × 2 envs = 32 transitions; first PPO update ~25 min in
+  batch_size: 8  # 4 mini-batches per rollout (32 / 8); must divide n_steps × n_envs
   n_epochs: 4
   gamma: 0.99
   gae_lambda: 0.95
@@ -22,3 +37,6 @@ ppo:
   max_grad_norm: 1.0
   lr_schedule: constant       # switch to 'linear' for longer runs (>100k steps)
   normalize_advantage: false  # prevents policy_loss≈0 at init when ratio≈1 and batch mean(adv)≈0
+env:
+  steps_per_compression: 2    # 2 LLM calls per env.step (was 5); keep in sync with agent.compress_every_n_steps
+  max_agent_steps: 30         # total ReAct steps per episode before truncation

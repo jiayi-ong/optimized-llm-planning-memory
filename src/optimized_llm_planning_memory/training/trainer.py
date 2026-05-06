@@ -42,7 +42,7 @@ from stable_baselines3.common.callbacks import (
     CheckpointCallback,
 )
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import VecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 
 from optimized_llm_planning_memory.compressor.trainable_base import TrainableCompressorBase
 from optimized_llm_planning_memory.core.config import EnvConfig, PPOHyperparams, RewardConfig, SimulatorConfig, TrainingConfig
@@ -692,10 +692,35 @@ class RLTrainer:
                 tokenizer=tokenizer,
             )
 
+        # SubprocVecEnv runs each env in a separate process, overlapping LLM
+        # API calls and cutting wall time roughly in half on Colab (Linux fork).
+        #
+        # Safety constraint: if the compressor has learnable weights, PPO updates
+        # in the main process would NOT propagate to subprocess copies — those
+        # agents would always use the initial weights, creating a train/inference
+        # mismatch. For such compressors we fall back to DummyVecEnv (sequential
+        # but weight-consistent).
+        _has_learnable_weights = False
+        try:
+            _has_learnable_weights = any(
+                p.requires_grad for p in self._compressor.parameters()  # type: ignore[union-attr]
+            )
+        except (AttributeError, StopIteration):
+            pass  # non-PyTorch compressor (e.g. IdentityCompressor) → treat as stateless
+
+        if _has_learnable_weights:
+            vec_env_cls: type[VecEnv] = DummyVecEnv
+            log.info("vec_env.dummy", reason="compressor has learnable weights; SubprocVecEnv would break weight sync")
+        else:
+            vec_env_cls = SubprocVecEnv
+            log.info("vec_env.subproc", n_envs=self._config.n_envs,
+                     note="parallel LLM calls; ~2x wall-time speedup on Colab")
+
         vec_env = make_vec_env(
             env_factory,
             n_envs=self._config.n_envs,
             seed=getattr(self._config, "seed", None),
+            vec_env_cls=vec_env_cls,
         )
         return vec_env
 
