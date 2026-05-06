@@ -18,7 +18,9 @@ Panels
 
 from __future__ import annotations
 
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -133,14 +135,62 @@ with st.sidebar:
         pct_med = c2.number_input("Med %", 0, 100, 34, key="pct_med")
         pct_high = c3.number_input("High %", 0, 100, 33, key="pct_high")
 
+        # ── Generation status (persists across reruns via session_state) ──────
+        gen_job = st.session_state.get("gen_job")
+        if gen_job is not None:
+            proc: subprocess.Popen = gen_job["proc"]
+            rc = proc.poll()  # None = still running
+            if rc is None:
+                st.info(f"⏳ Running… (PID {proc.pid}, started {gen_job['started_at']})")
+                if st.button("■ Cancel generation"):
+                    proc.terminate()
+                    st.session_state.pop("gen_job", None)
+                    st.rerun()
+            elif rc == 0:
+                st.success(f"✅ Done — {gen_job['n_total']} requests into `{gen_job['split']}`")
+                st.caption(gen_job["cmd"])
+                if st.button("Clear status"):
+                    st.session_state.pop("gen_job", None)
+                    st.rerun()
+            else:
+                output = ""
+                try:
+                    output = proc.stdout.read() if proc.stdout else ""  # type: ignore[union-attr]
+                except Exception:
+                    pass
+                st.error(f"❌ Failed (exit {rc})")
+                if output:
+                    st.code(output[-800:], language="text")
+                if st.button("Clear error"):
+                    st.session_state.pop("gen_job", None)
+                    st.rerun()
+
         if st.button("⚙ Generate & Eval"):
-            st.info(
-                "Generation via the UI calls `scripts/generate_eval_dataset.py` as a subprocess.  \n"
-                "You can also run it directly:  \n"
-                f"`python scripts/generate_eval_dataset.py "
-                f"--world_dirs {worlds_dir_in} --n_total {n_total_in} "
-                f"--split {gen_split} --seed {gen_seed}`"
+            cmd = [
+                sys.executable,
+                str(BASE_DIR / "scripts" / "generate_eval_dataset.py"),
+                "--world_dirs", worlds_dir_in,
+                "--n_total", str(int(n_total_in)),
+                "--split", gen_split,
+                "--seed", str(int(gen_seed)),
+                "--output_dir", str(REQUESTS_DIR),
+                "--complexity_weights", str(pct_low), str(pct_med), str(pct_high),
+            ]
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=str(BASE_DIR),
             )
+            st.session_state["gen_job"] = {
+                "proc": proc,
+                "cmd": " ".join(cmd),
+                "started_at": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                "split": gen_split,
+                "n_total": int(n_total_in),
+            }
+            st.rerun()
 
     st.markdown("---")
     if st.button("🔄 Refresh"):
