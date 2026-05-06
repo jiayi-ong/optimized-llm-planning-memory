@@ -256,8 +256,10 @@ class ConstraintSatisfactionEngine:
                     f"booking(s) vs required >={min_stars}."
                 )
             else:
-                satisfied, score = True, 1.0
-                explanation = "Hotels booked; star ratings not recorded, assuming satisfied."
+                # Star ratings absent — cannot verify; neutral score rather than
+                # silently passing (previous behaviour inflated soft scores).
+                satisfied, score = False, 0.5
+                explanation = "Hotels booked but star ratings not recorded; neutral score 0.5."
         else:
             nights_with_hotel = len(all_bookings)
             satisfied = nights_with_hotel == total_nights
@@ -326,13 +328,16 @@ class ConstraintSatisfactionEngine:
     def _evaluate_group(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
-        """Constraint.value = required group size (int). Always satisfied for now."""
-        # TODO: verify hotel/activity capacity against group size
+        """Constraint.value = required group size (int).
+        TODO: verify hotel/activity capacity against group size once the itinerary
+        model tracks per-person occupancy. Until then, score 0.5 (neutral) instead
+        of the previous 1.0 which gave every episode a free hard-constraint point.
+        """
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
-            satisfied=True,
-            score=1.0,
-            explanation="Group size check not yet implemented; defaulting to satisfied.",
+            satisfied=False,
+            score=0.5,
+            explanation="Group size check not yet implemented; neutral score 0.5.",
         )
 
     def _evaluate_accessibility(
