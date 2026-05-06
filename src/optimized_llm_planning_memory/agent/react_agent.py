@@ -44,6 +44,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time as _time
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -64,8 +65,11 @@ from optimized_llm_planning_memory.core.models import (
     EpisodeLog,
     Itinerary,
     ItineraryDay,
+    MODEL_COST_PER_TOKEN,
+    PerformanceMetrics,
     ReActStep,
     RewardComponents,
+    StepPerfLog,
     ToolCall,
     ToolResult,
     TrajectoryModel,
@@ -187,6 +191,8 @@ class ReActAgent:
         success = True
         error_msg: str | None = None
         termination_reason: str | None = None
+        _episode_start = _time.perf_counter()
+        _step_perfs: list[StepPerfLog] = []
 
         try:
             for step_index in range(self._config.max_steps):
@@ -202,9 +208,10 @@ class ReActAgent:
                 )
 
                 # Call the LLM (with format-reminder retries on parse failure)
-                thought, tool_call, is_done, exit_reason = self._call_and_parse(
+                thought, tool_call, is_done, exit_reason, step_perf = self._call_and_parse(
                     context, step_index, episode_id
                 )
+                _step_perfs.append(step_perf)
 
                 log.info(
                     "react.step.thought",
@@ -229,6 +236,7 @@ class ReActAgent:
                         observation=None,
                         itinerary_snapshot=final_itinerary,
                         timestamp=_now(),
+                        perf=step_perf,
                     )
                     trajectory.add_step(step)
                     if live_writer is not None:
@@ -251,6 +259,7 @@ class ReActAgent:
                         observation=None,
                         itinerary_snapshot=final_itinerary,
                         timestamp=_now(),
+                        perf=step_perf,
                     )
                     trajectory.add_step(step)
                     if live_writer is not None:
@@ -291,6 +300,7 @@ class ReActAgent:
                     observation=tool_result,
                     itinerary_snapshot=itinerary_snapshot,
                     timestamp=_now(),
+                    perf=step_perf,
                 )
                 trajectory.add_step(step)
 
@@ -351,16 +361,27 @@ class ReActAgent:
         # Build placeholder reward (will be overwritten by RewardFunction in training)
         reward_components = _zero_reward()
 
+        _episode_wall_ms = (_time.perf_counter() - _episode_start) * 1000.0
+        trajectory_model = trajectory.to_model()
+        performance_metrics = _build_performance_metrics(
+            step_perfs=_step_perfs,
+            tool_stats=tuple(tracker.get_stats()),
+            episode_wall_ms=_episode_wall_ms,
+            model_id=self._llm_model_id,
+            trajectory=trajectory_model,
+        )
+
         episode_log = EpisodeLog(
             episode_id=episode_id,
             request_id=request.request_id,
             agent_mode=self._mode.value,
-            trajectory=trajectory.to_model(),
+            trajectory=trajectory_model,
             compressed_states=tuple(compressed_states),
             final_itinerary=final_itinerary,
             reward_components=reward_components,
             tool_stats=tuple(tracker.get_stats()),
             total_steps=trajectory.total_steps,
+            performance_metrics=performance_metrics,
             mcts_stats=self._last_mcts_stats,
             success=success,
             error=error_msg,
@@ -433,7 +454,7 @@ class ReActAgent:
             )
 
             try:
-                thought, tool_call, is_done, _exit_reason = self._call_and_parse(context, step_index)
+                thought, tool_call, is_done, _exit_reason, _step_perf = self._call_and_parse(context, step_index)
             except Exception as exc:
                 error_msg = f"LLM error at step {step_index}: {type(exc).__name__}: {exc}"
                 done = True
@@ -482,11 +503,16 @@ class ReActAgent:
 
     # ── LLM call ──────────────────────────────────────────────────────────────
 
-    def _call_llm(self, context: str) -> str:
+    def _call_llm(self, context: str) -> tuple[str, int, int, float]:
         """Call the planning LLM with the assembled context string.
 
         Splits the leading [SYSTEM] block into a proper system message so
         OpenAI models follow the ReAct format instructions reliably.
+
+        Returns
+        -------
+        (response_text, prompt_tokens, completion_tokens, latency_ms)
+        Token counts are 0 when the provider does not return usage data.
         """
         system_content = ""
         user_content = context
@@ -502,13 +528,20 @@ class ReActAgent:
             messages.append({"role": "system", "content": system_content})
         messages.append({"role": "user", "content": user_content})
 
+        t0 = _time.perf_counter()
         response = litellm.completion(
             model=self._llm_model_id,
             messages=messages,
             temperature=self._config.temperature,
             max_tokens=self._config.max_tokens_per_response,
         )
-        return response.choices[0].message.content or ""
+        latency_ms = (_time.perf_counter() - t0) * 1000.0
+
+        usage = getattr(response, "usage", None)
+        prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+        completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+
+        return response.choices[0].message.content or "", prompt_tokens, completion_tokens, latency_ms
 
     # ── Response parsing ──────────────────────────────────────────────────────
 
@@ -591,14 +624,15 @@ class ReActAgent:
         context: str,
         step_index: int,
         episode_id: str = "unknown",
-    ) -> tuple[str, ToolCall | None, bool, str | None]:
+    ) -> tuple[str, ToolCall | None, bool, str | None, StepPerfLog]:
         """
         Call the LLM and parse, retrying with a format reminder when no Action
         line is produced.  Terminal signals (DONE, EXIT) are never retried.
 
-        Returns (thought, tool_call, is_done, exit_reason).
+        Returns (thought, tool_call, is_done, exit_reason, step_perf).
         ``exit_reason`` is the EXIT reason code or None (see _parse_response).
         ``tool_call`` is None after all retries failed (is_done will be False).
+        ``step_perf`` accumulates latency and token counts across all attempts.
         """
         _FORMAT_REMINDER = (
             "\n\n[FORMAT REMINDER]\n"
@@ -608,13 +642,26 @@ class ReActAgent:
             "  Action: DONE\n"
             "  Action: EXIT(reason=<code>)\n"
         )
+        # Estimate context size once (chars // 4 ≈ English tokens, ±30%).
+        context_tokens = len(context) // 4
+
         thought, tool_call, is_done, exit_reason = "", None, False, None
+        total_llm_latency_ms = 0.0
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        parse_retries = 0
+
         for attempt in range(self._config.max_retries_per_action):
             prompt = context if attempt == 0 else context + _FORMAT_REMINDER
-            llm_response = self._call_llm(prompt)
+            llm_response, p_tok, c_tok, lat_ms = self._call_llm(prompt)
+            total_llm_latency_ms += lat_ms
+            total_prompt_tokens += p_tok
+            total_completion_tokens += c_tok
+
             thought, tool_call, is_done, exit_reason = self._parse_response(llm_response)
             if tool_call is not None or is_done:
-                return thought, tool_call, is_done, exit_reason
+                break
+            parse_retries += 1
             log.warning(
                 "react.parse.no_action",
                 episode_id=episode_id,
@@ -623,7 +670,16 @@ class ReActAgent:
                 max_retries=self._config.max_retries_per_action,
                 response_preview=llm_response[:300],
             )
-        return thought, None, False, None
+
+        step_perf = StepPerfLog(
+            step_index=step_index,
+            llm_latency_ms=total_llm_latency_ms,
+            prompt_tokens=total_prompt_tokens,
+            completion_tokens=total_completion_tokens,
+            context_tokens=context_tokens,
+            parse_retries=parse_retries,
+        )
+        return thought, tool_call, is_done, exit_reason, step_perf
 
     # ── Tool execution ────────────────────────────────────────────────────────
 
@@ -911,4 +967,113 @@ def _zero_reward() -> RewardComponents:
         logical_consistency_score=0.0,
         terminal_itinerary_score=None,
         total_reward=0.0,
+    )
+
+
+def _compute_revision_metrics_from_trajectory(
+    trajectory: TrajectoryModel,
+) -> tuple[int, float]:
+    """
+    Scan the trajectory for book → cancel sequences.
+
+    A revision is a successful cancellation of a booking_ref that was
+    previously confirmed by book_hotel, book_event, or select_flight.
+
+    Returns (revision_count, revision_rate).
+    revision_rate = revision_count / max(1, total_successful_bookings).
+    """
+    _BOOKING_TOOLS = {"book_hotel", "book_event", "select_flight"}
+    _CANCEL_TOOL = "cancel_booking"
+
+    booked_refs: set[str] = set()
+    total_successful_bookings = 0
+    revision_count = 0
+
+    for step in trajectory.steps:
+        if step.action is None or step.observation is None or not step.observation.success:
+            continue
+
+        tool = step.action.tool_name.lower()
+        result = step.observation.result
+        if not isinstance(result, dict):
+            continue
+
+        # Unwrap the redundancy-warning envelope emitted by BaseTool on 3+ repeat calls.
+        if "result" in result and "agent_warning" in result:
+            inner = result.get("result")
+            if isinstance(inner, dict):
+                result = inner
+
+        if tool in _BOOKING_TOOLS:
+            ref = result.get("booking_id")
+            if ref:
+                booked_refs.add(str(ref))
+                total_successful_bookings += 1
+
+        elif tool == _CANCEL_TOOL:
+            cancelled_ref = result.get("cancelled_booking_ref")
+            if cancelled_ref and str(cancelled_ref) in booked_refs:
+                revision_count += 1
+                booked_refs.discard(str(cancelled_ref))
+
+    rate = revision_count / total_successful_bookings if total_successful_bookings > 0 else 0.0
+    return revision_count, rate
+
+
+def _build_performance_metrics(
+    step_perfs: list[StepPerfLog],
+    tool_stats: tuple,
+    episode_wall_ms: float,
+    model_id: str,
+    trajectory: TrajectoryModel,
+) -> PerformanceMetrics:
+    """
+    Aggregate per-step perf logs into an episode-level PerformanceMetrics object.
+
+    Called once per episode, after the ReAct loop completes.
+    Pure computation — no LLM calls, no side effects, no reward interaction.
+    """
+    if not step_perfs:
+        return PerformanceMetrics(episode_wall_time_ms=episode_wall_ms)
+
+    n_steps = len(step_perfs)
+    total_llm_ms = sum(p.llm_latency_ms for p in step_perfs)
+    total_tool_ms = sum(getattr(s, "total_latency_ms", 0.0) for s in tool_stats)
+
+    total_prompt = sum(p.prompt_tokens for p in step_perfs)
+    total_completion = sum(p.completion_tokens for p in step_perfs)
+    total_tokens = total_prompt + total_completion
+    total_retries = sum(p.parse_retries for p in step_perfs)
+
+    context_sizes = [p.context_tokens for p in step_perfs if p.context_tokens > 0]
+
+    # Cost estimation from static price table; None when model not in table.
+    price = MODEL_COST_PER_TOKEN.get(model_id, {})
+    estimated_cost: float | None = None
+    if price and total_tokens > 0:
+        estimated_cost = (
+            total_prompt * price.get("prompt", 0.0)
+            + total_completion * price.get("completion", 0.0)
+        )
+
+    combined_ms = total_llm_ms + total_tool_ms
+    revision_count, revision_rate = _compute_revision_metrics_from_trajectory(trajectory)
+
+    return PerformanceMetrics(
+        episode_wall_time_ms=episode_wall_ms,
+        total_llm_latency_ms=total_llm_ms,
+        total_tool_latency_ms=total_tool_ms,
+        llm_latency_fraction=total_llm_ms / combined_ms if combined_ms > 0 else None,
+        avg_step_llm_latency_ms=total_llm_ms / n_steps,
+        total_prompt_tokens=total_prompt if total_prompt > 0 else None,
+        total_completion_tokens=total_completion if total_completion > 0 else None,
+        total_tokens=total_tokens if total_tokens > 0 else None,
+        tokens_per_step=total_tokens / n_steps if total_tokens > 0 else None,
+        estimated_cost_usd=estimated_cost,
+        avg_context_tokens=sum(context_sizes) / len(context_sizes) if context_sizes else None,
+        max_context_tokens=max(context_sizes) if context_sizes else None,
+        booking_revision_count=revision_count,
+        booking_revision_rate=revision_rate,
+        total_parse_retries=total_retries,
+        parse_retry_rate=total_retries / n_steps,
     )

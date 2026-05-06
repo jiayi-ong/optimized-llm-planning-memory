@@ -26,9 +26,10 @@ Model hierarchy (read top-to-bottom)
 3. Itinerary (transport, accommodation, activity, day, itinerary)
 4. ReAct trajectory (tool call/result, step, trajectory)
 5. Compressed state
-6. Episode log (the central data contract)
-7. RL transition
-8. Evaluation result
+6. System performance metrics (StepPerfLog, PerformanceMetrics)
+7. Episode log (the central data contract)
+8. RL transition
+9. Evaluation result
 """
 
 from __future__ import annotations
@@ -343,6 +344,7 @@ class ReActStep(BaseModel):
     observation: ToolResult | None = None
     itinerary_snapshot: Itinerary | None = None
     timestamp: str | None = Field(default=None, description="ISO 8601 datetime when this step was recorded.")
+    perf: "StepPerfLog | None" = Field(default=None, description="Per-step LLM performance data (latency, tokens, retries).")
 
 
 class TrajectoryModel(BaseModel):
@@ -495,7 +497,81 @@ class CompressedState(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 6. Episode Log — the central data contract
+# 6. System Performance Metrics
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Static price table keyed by litellm model-string.  Prices are per token (USD)
+# as of mid-2025.  Update this dict when provider prices change.
+MODEL_COST_PER_TOKEN: dict[str, dict[str, float]] = {
+    "openai/gpt-4o":                          {"prompt": 2.50e-6,  "completion": 10.00e-6},
+    "openai/gpt-4o-mini":                     {"prompt": 0.15e-6,  "completion":  0.60e-6},
+    "openai/gpt-4-turbo":                     {"prompt": 10.00e-6, "completion": 30.00e-6},
+    "openai/gpt-3.5-turbo":                   {"prompt": 0.50e-6,  "completion":  1.50e-6},
+    "anthropic/claude-3-5-sonnet-20241022":   {"prompt": 3.00e-6,  "completion": 15.00e-6},
+    "anthropic/claude-3-haiku-20240307":      {"prompt": 0.25e-6,  "completion":  1.25e-6},
+    "gemini/gemini-1.5-flash":                {"prompt": 0.075e-6, "completion":  0.30e-6},
+    "gemini/gemini-1.5-pro":                  {"prompt": 3.50e-6,  "completion": 10.50e-6},
+}
+
+
+class StepPerfLog(BaseModel):
+    """
+    Per-step LLM performance data captured during ``_call_and_parse()``.
+
+    Accumulated across retry attempts within a single ReAct step.
+    ``context_tokens`` is estimated as ``len(context) // 4`` (English ~4 chars/token)
+    when no tokenizer is available — sufficient for diagnostic use.
+    """
+    step_index: int
+    llm_latency_ms: float = 0.0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    context_tokens: int = 0
+    parse_retries: int = 0   # extra _call_llm attempts beyond the first successful one
+
+
+class PerformanceMetrics(BaseModel):
+    """
+    Episode-level aggregation of system-side performance metrics.
+
+    All fields are ``None`` when data was unavailable (e.g., a provider that
+    does not return token counts), not zero.  This prevents spurious zeros from
+    biasing aggregate statistics when mixing episodes from different providers.
+
+    These metrics are **observational only** — they are injected into
+    ``EpisodeLog`` and surfaced in ``EvalResult.deterministic_scores`` under the
+    ``perf_`` prefix, but they are never included in ``overall_score`` or the RL
+    reward signal.  The training-evaluation invariant is fully preserved.
+    """
+    model_config = ConfigDict(frozen=True)
+
+    # Latency
+    episode_wall_time_ms: float | None = None
+    total_llm_latency_ms: float | None = None
+    total_tool_latency_ms: float | None = None
+    llm_latency_fraction: float | None = None      # LLM / (LLM + tool) time
+    avg_step_llm_latency_ms: float | None = None
+
+    # Tokens & cost
+    total_prompt_tokens: int | None = None
+    total_completion_tokens: int | None = None
+    total_tokens: int | None = None
+    tokens_per_step: float | None = None
+    estimated_cost_usd: float | None = None
+    avg_context_tokens: float | None = None
+    max_context_tokens: int | None = None
+
+    # Plan stability (book → cancel sequences)
+    booking_revision_count: int | None = None
+    booking_revision_rate: float | None = None
+
+    # Parse reliability
+    total_parse_retries: int | None = None
+    parse_retry_rate: float | None = None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 7. Episode Log — the central data contract
 # ══════════════════════════════════════════════════════════════════════════════
 
 class ToolCallStats(BaseModel):
@@ -560,6 +636,14 @@ class EpisodeLog(BaseModel):
     tool_stats: tuple[ToolCallStats, ...] = Field(default_factory=tuple)
     total_steps: int = Field(ge=0)
     total_tokens_used: int | None = None
+    performance_metrics: PerformanceMetrics | None = Field(
+        default=None,
+        description=(
+            "System-side performance metrics (latency, tokens, cost, revision tracking). "
+            "None for episodes recorded before this feature was added. "
+            "Never used in reward computation — observational only."
+        ),
+    )
     mcts_stats: "MCTSStats | None" = Field(
         default=None,
         description="MCTS search statistics per episode. None for non-MCTS episodes.",
@@ -588,7 +672,7 @@ class EpisodeLog(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 7. RL Transition
+# 8. RL Transition
 # ══════════════════════════════════════════════════════════════════════════════
 
 class PPOTransition(BaseModel):
@@ -611,7 +695,7 @@ class PPOTransition(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 8. Evaluation Result
+# 9. Evaluation Result
 # ══════════════════════════════════════════════════════════════════════════════
 
 class EvalResult(BaseModel):

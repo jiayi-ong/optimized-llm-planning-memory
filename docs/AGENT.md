@@ -223,6 +223,21 @@ Additional parser properties:
 
 ---
 
+## System Performance Capture
+
+`ReActAgent` captures system-side metrics at each step with no overhead to the ReAct logic:
+
+- **`_call_llm(context)`** returns `(response_text, prompt_tokens, completion_tokens, latency_ms)`. Token counts come from `response.usage` (litellm); they are `0` when the provider doesn't return usage data.
+- **`_call_and_parse(context, step_index, episode_id)`** returns `(thought, tool_call, is_done, exit_reason, StepPerfLog)`. `StepPerfLog` accumulates totals across all retry attempts for that step, including `parse_retries` (extra attempts beyond the first successful one) and a character-level context token estimate.
+- At episode end, `_build_performance_metrics()` aggregates all `StepPerfLog` objects into a `PerformanceMetrics` object attached to `EpisodeLog.performance_metrics`.
+- `run_steps()` (used by `CompressionEnv` during training) discards the `StepPerfLog` since training uses `EpisodeLogCallback` rather than `EpisodeLog` for diagnostics.
+
+Each `ReActStep` also carries `perf: StepPerfLog | None` for fine-grained per-step analysis. This field is `None` for steps recorded before this feature was added (backward compatible).
+
+See [docs/EVALUATION.md — System Performance Metrics](EVALUATION.md#system-performance-metrics-perf_-prefix) for the full list of 16 `perf_*` metrics.
+
+---
+
 ## Trajectory and Token Budget
 
 `Trajectory` tracks all `ReActStep` objects and exposes:
