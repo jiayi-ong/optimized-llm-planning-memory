@@ -62,13 +62,22 @@ def _parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__.split("Usage\n-----")[1],
     )
-    parser.add_argument(
-        "--world_dirs",
-        nargs="+",
-        required=True,
+    world_grp = parser.add_mutually_exclusive_group(required=True)
+    world_grp.add_argument(
+        "--world_set",
         type=Path,
         metavar="PATH",
-        help="One or more world directories (e.g. worlds/world_42_20260502_084804).",
+        help=(
+            "World-set folder (e.g. worlds/batch_1). All world_* sub-directories "
+            "inside are used as individual world sources."
+        ),
+    )
+    world_grp.add_argument(
+        "--world_dirs",
+        nargs="+",
+        type=Path,
+        metavar="PATH",
+        help="One or more individual world directories (legacy / explicit mode).",
     )
     parser.add_argument(
         "--n_total",
@@ -271,7 +280,21 @@ def main() -> None:
     set_seed(args.seed)
     rng = random.Random(args.seed)
 
-    world_dirs = [Path(p) for p in args.world_dirs]
+    # Resolve world directories from either --world_set or --world_dirs
+    if args.world_set:
+        world_set_dir = Path(args.world_set)
+        if not world_set_dir.exists():
+            log.error("world_set_missing", path=str(world_set_dir))
+            sys.exit(1)
+        world_dirs = sorted(world_set_dir.glob("world_*"))
+        if not world_dirs:
+            log.error("no_worlds_in_set", path=str(world_set_dir))
+            print(f"ERROR: No world_* sub-folders found in {world_set_dir}")
+            sys.exit(1)
+        log.info("world_set_expanded", set_dir=str(world_set_dir), n_worlds=len(world_dirs))
+    else:
+        world_dirs = [Path(p) for p in args.world_dirs]
+
     n_worlds = len(world_dirs)
 
     for wd in world_dirs:

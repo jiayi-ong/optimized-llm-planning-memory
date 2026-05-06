@@ -56,15 +56,23 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebar"] * { color: #D0D8FF !important; }
 [data-testid="stSidebar"] label { font-size: 13px; }
 
-/* Input / select widgets inside sidebar */
+/* Input / select widgets inside sidebar — typed text must be bright */
 [data-testid="stSidebar"] input,
 [data-testid="stSidebar"] textarea,
 [data-testid="stSidebar"] select,
 [data-testid="stSidebar"] [data-baseweb="select"] span,
-[data-testid="stSidebar"] [data-baseweb="input"] input {
-    color: #E0E0E0 !important;
+[data-testid="stSidebar"] [data-baseweb="input"] input,
+[data-testid="stSidebar"] [data-testid="stNumberInput"] input,
+[data-testid="stSidebar"] [data-testid="stTextInput"] input,
+[data-testid="stSidebar"] [data-testid="stTextArea"] textarea {
+    color: #F0F2FF !important;
     background-color: #25253A !important;
+    caret-color: #FF6B35 !important;
 }
+
+/* Placeholder text — visible but clearly secondary */
+[data-testid="stSidebar"] input::placeholder,
+[data-testid="stSidebar"] textarea::placeholder { color: #7070A0 !important; opacity: 1 !important; }
 
 /* Slider value labels */
 [data-testid="stSidebar"] [data-testid="stTickBarMin"],
@@ -80,6 +88,27 @@ html, body, [data-testid="stAppViewContainer"] {
 h1 { font-size: 1.8rem !important; color: #E84545 !important; font-weight: 700; }
 h2 { font-size: 1.3rem !important; color: #FF6B35 !important; }
 h3 { font-size: 1.05rem !important; color: #E0E0E0 !important; }
+
+/* ── Main content text — boost weight so light fonts are readable ──────────── */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stMarkdownContainer"] td,
+[data-testid="stMarkdownContainer"] th {
+    color: #E4E4F0 !important;
+    font-weight: 450;
+}
+
+/* ── Tab navigation buttons ───────────────────────────────────────────────── */
+[data-baseweb="tab-list"] button {
+    color: #B0B8D8 !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+}
+[data-baseweb="tab-list"] button[aria-selected="true"] {
+    color: #FF6B35 !important;
+    font-weight: 700 !important;
+    border-bottom-color: #FF6B35 !important;
+}
 
 /* ── Metric widgets ───────────────────────────────────────────────────────── */
 [data-testid="stMetric"] { background: #2A2A3E; border-radius: 8px; padding: 0.6rem 1rem; }

@@ -10,12 +10,14 @@ The three core ablation axes for this project:
 
 Panels
 ------
-1. Condition selection   — pick 2–4 eval runs or augmentation_ids to compare.
-2. Metric table          — mean ± std per metric per condition.
-3. Bar chart             — overall_score per condition with error bars.
-4. Radar chart           — 6 key metrics per condition.
-5. Complexity breakdown  — overall_score by complexity_tier for each condition.
-6. Constraint breakdown  — which constraint categories are most often violated.
+1. Dimension selector    — prominent dropdown on the main page to choose what
+                           to compare across (agent_mode, augmentation_id, …).
+2. Condition selection   — sidebar multiselect, dynamically filtered to the
+                           chosen dimension.
+3. Metric table          — mean ± std per metric per condition.
+4. Bar chart             — overall_score per condition with error bars.
+5. Radar chart           — 6 key metrics per condition.
+6. Complexity breakdown  — overall_score by complexity_tier for each condition.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from app.utils.ui_style import PALETTE, PLOTLY_LAYOUT, inject_css
+from app.utils.ui_style import PALETTE, PLOTLY_LAYOUT, inject_css, sidebar_header
 from optimized_llm_planning_memory.evaluation.eval_store import EvalStore
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -46,6 +48,18 @@ KEY_METRICS = [
     "logical_consistency", "tool_efficiency", "destination_coverage_ratio",
 ]
 
+# Human-readable labels for each axis the user can compare across
+AXIS_LABELS: dict[str, str] = {
+    "agent_mode":       "Agent Mode  (raw vs llm_summary vs compressor vs mcts)",
+    "augmentation_id":  "Augmentation / Checkpoint  (init vs trained)",
+    "run_name":         "Experiment Name  (run_name grouping)",
+    "run_id":           "Run ID  (exact eval invocation)",
+    "prompt_id":        "Prompt Variant  (prompt_id)",
+    "world_seed":       "World Seed  (cross-seed robustness)",
+    "complexity_tier":  "Complexity Tier  (low vs medium vs high)",
+    "archetype":        "Request Archetype  (solo_adventurer vs family_trip vs …)",
+}
+
 # ── Load all results ──────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=20)
@@ -54,7 +68,6 @@ def _all_results(eval_dir: str) -> pd.DataFrame:
     df = _store.flat_results()
     if df.empty:
         return df
-    # Join complexity_tier from request metadata
     req_meta: dict[str, dict] = {}
     try:
         for req in _store.list_requests():
@@ -78,20 +91,43 @@ if raw_df.empty:
     st.info("No evaluation results found. Run evaluations first via the Eval Dashboard.")
     st.stop()
 
-# ── Sidebar — condition selection ─────────────────────────────────────────────
+# ── Main page: dimension selector ─────────────────────────────────────────────
+
+st.markdown("## 📊 Ablation Comparison")
+st.caption(
+    "Side-by-side metric comparison across agent modes, augmentation checkpoints, or prompt variants. "
+    "Select a comparison dimension below, then choose which values to compare in the sidebar."
+)
+
+# Only offer axes that are actually present as columns in the data
+available_axes = [ax for ax in AXIS_LABELS if ax in raw_df.columns]
+
+comparison_axis = st.selectbox(
+    "**Comparison Dimension** — what to compare across:",
+    options=available_axes,
+    format_func=lambda ax: AXIS_LABELS.get(ax, ax),
+    index=0,
+    help=(
+        "Changing this dimension updates the condition selector in the sidebar "
+        "and recomputes all panels below."
+    ),
+)
+
+# ── Sidebar — conditions + filters (reactive to comparison_axis) ──────────────
 
 with st.sidebar:
     st.markdown("## Condition Selection")
-    comparison_axis = st.radio(
-        "Compare by", ["agent_mode", "augmentation_id", "run_id"], horizontal=True
-    )
+
+    sidebar_header("Conditions")
 
     unique_vals = sorted(raw_df[comparison_axis].dropna().unique().tolist())
     selected_conditions = st.multiselect(
-        f"Select {comparison_axis}s to compare (2–4)",
+        f"Select {comparison_axis} values to compare (2–4)",
         unique_vals,
         default=unique_vals[:min(3, len(unique_vals))],
     )
+
+    sidebar_header("Filters")
 
     metric_version_filter = st.selectbox(
         "Metric version",
@@ -100,14 +136,26 @@ with st.sidebar:
 
     if "archetype" in raw_df.columns:
         all_archetypes = sorted(raw_df["archetype"].dropna().unique().tolist())
-        sel_archetypes = st.multiselect("Archetype filter", ["(all)"] + all_archetypes, default=["(all)"])
+        sel_archetypes = st.multiselect(
+            "Archetype", ["(all)"] + all_archetypes, default=["(all)"]
+        )
     else:
         sel_archetypes = ["(all)"]
 
     if "complexity_tier" in raw_df.columns:
-        sel_tiers = st.multiselect("Complexity tier filter", ["(all)", "low", "medium", "high"], default=["(all)"])
+        sel_tiers = st.multiselect(
+            "Complexity tier", ["(all)", "low", "medium", "high"], default=["(all)"]
+        )
     else:
         sel_tiers = ["(all)"]
+
+    if "run_name" in raw_df.columns:
+        all_run_names = sorted(raw_df["run_name"].dropna().unique().tolist())
+        sel_run_names = st.multiselect(
+            "Run name (experiment)", ["(all)"] + all_run_names, default=["(all)"]
+        )
+    else:
+        sel_run_names = ["(all)"]
 
 
 if len(selected_conditions) < 2:
@@ -123,17 +171,17 @@ if "(all)" not in sel_archetypes and "archetype" in df.columns:
     df = df[df["archetype"].isin(sel_archetypes)]
 if "(all)" not in sel_tiers and "complexity_tier" in df.columns:
     df = df[df["complexity_tier"].isin(sel_tiers)]
+if "(all)" not in sel_run_names and "run_name" in df.columns:
+    df = df[df["run_name"].isin(sel_run_names)]
 
 if df.empty:
     st.warning("No results match the selected conditions and filters.")
     st.stop()
 
-st.markdown(f"## 📊 Ablation: comparing by **{comparison_axis}**")
 st.caption(
-    "Side-by-side metric comparison across agent modes, augmentation checkpoints, or prompt variants. "
-    "Select 2–4 conditions in the sidebar to compare."
+    f"Comparing **{len(selected_conditions)} {comparison_axis}** values · "
+    f"{len(df)} episode results after filters"
 )
-st.caption(f"{len(df)} episode results across {len(selected_conditions)} conditions")
 
 # ── Panel 1: Metric comparison table ─────────────────────────────────────────
 
@@ -150,15 +198,13 @@ for metric in all_det_metrics:
     row: dict = {"Metric": metric}
     for cond in selected_conditions:
         sub = df[df[comparison_axis] == cond][col].dropna()
-        if len(sub) == 0:
-            row[str(cond)[:24]] = "—"
-        else:
-            row[str(cond)[:24]] = f"{sub.mean():.3f} ± {sub.std():.3f} (n={len(sub)})"
+        row[str(cond)[:24]] = (
+            f"{sub.mean():.3f} ± {sub.std():.3f} (n={len(sub)})" if len(sub) > 0 else "—"
+        )
     table_rows.append(row)
 
-table_df = pd.DataFrame(table_rows)
 with st.container(height=360):
-    st.dataframe(table_df, use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
 
 # ── Panel 2: Bar chart — overall score per condition ─────────────────────────
 
@@ -197,37 +243,36 @@ st.markdown("### Radar Chart (Key Metrics)")
 
 available_key = [m for m in KEY_METRICS if f"det_{m}" in df.columns]
 
-try:
-    import plotly.graph_objects as go
-
-    fig_radar = go.Figure()
-    for i, cond in enumerate(selected_conditions):
-        sub = df[df[comparison_axis] == cond]
-        values = [sub[f"det_{m}"].mean() for m in available_key]
-        values_closed = values + [values[0]]
-        cats_closed = available_key + [available_key[0]]
-        fig_radar.add_trace(go.Scatterpolar(
-            r=values_closed,
-            theta=cats_closed,
-            fill="toself",
-            name=str(cond)[:28],
-            line_color=PALETTE[i % len(PALETTE)],
-            fillcolor=PALETTE[i % len(PALETTE)],
-            opacity=0.3,
-        ))
-    fig_radar.update_layout(
-        polar={"radialaxis": {"visible": True, "range": [0, 1]}},
-        height=400,
-        legend={"orientation": "h", "y": -0.1},
-        **PLOTLY_LAYOUT,
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
-except ImportError:
-    pass
+if available_key:
+    try:
+        fig_radar = go.Figure()
+        for i, cond in enumerate(selected_conditions):
+            sub = df[df[comparison_axis] == cond]
+            values = [sub[f"det_{m}"].mean() for m in available_key]
+            values_closed = values + [values[0]]
+            cats_closed = available_key + [available_key[0]]
+            fig_radar.add_trace(go.Scatterpolar(
+                r=values_closed,
+                theta=cats_closed,
+                fill="toself",
+                name=str(cond)[:28],
+                line_color=PALETTE[i % len(PALETTE)],
+                fillcolor=PALETTE[i % len(PALETTE)],
+                opacity=0.3,
+            ))
+        fig_radar.update_layout(
+            polar={"radialaxis": {"visible": True, "range": [0, 1]}},
+            height=400,
+            legend={"orientation": "h", "y": -0.1},
+            **PLOTLY_LAYOUT,
+        )
+        st.plotly_chart(fig_radar, use_container_width=True)
+    except (ImportError, NameError):
+        pass
 
 # ── Panel 4: Complexity stratification ────────────────────────────────────────
 
-if "complexity_tier" in df.columns:
+if "complexity_tier" in df.columns and comparison_axis != "complexity_tier":
     st.markdown("### Performance by Complexity Tier")
     tiers = ["low", "medium", "high"]
     try:
