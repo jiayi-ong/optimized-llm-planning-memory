@@ -52,7 +52,9 @@ Selection flags (mutually exclusive)
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -62,7 +64,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
-from optimized_llm_planning_memory.core.models import EpisodeLog, UserRequest
+from optimized_llm_planning_memory.core.models import EpisodeLog, EvalResult, UserRequest
 from optimized_llm_planning_memory.evaluation.deterministic import DeterministicEvaluator, METRIC_VERSION
 from optimized_llm_planning_memory.evaluation.evaluator import Evaluator
 from optimized_llm_planning_memory.evaluation.manifest import EvalRunManifest
@@ -139,6 +141,43 @@ def resolve_user_request(
                 continue
 
     return None
+
+
+def _score_one(
+    ep: EpisodeLog,
+    req: UserRequest,
+    evaluator: Evaluator,
+    augmentation_id: str | None,
+    prompt_id: str | None,
+    total: int,
+    counter: dict,
+    lock: threading.Lock,
+    log,
+) -> EvalResult | None:
+    """Score a single episode. Safe to call from multiple threads.
+
+    DeterministicEvaluator is stateless; LLMJudge makes HTTP calls that are
+    I/O-bound and thread-safe. Returns None on failure so callers can filter.
+    """
+    try:
+        result = evaluator.evaluate_episode(ep, req)
+        itinerary_id = ep.final_itinerary.itinerary_id if ep.final_itinerary else None
+        result = result.model_copy(update={
+            "itinerary_id": itinerary_id,
+            "augmentation_id": augmentation_id,
+            "prompt_id": prompt_id,
+        })
+        with lock:
+            counter["done"] += 1
+            n = counter["done"]
+        print(f"EPISODE_DONE: {n}/{total} {ep.episode_id}", flush=True)
+        log.info("episode.scored", episode_id=ep.episode_id, n_done=n, total=total)
+        return result
+    except Exception as exc:
+        with lock:
+            counter["failed"] += 1
+        log.warning("score_failed", episode_id=ep.episode_id, error=str(exc))
+        return None
 
 
 def _print_summary(results) -> None:
@@ -253,6 +292,16 @@ def main() -> None:
         help="Free-text note recorded in the eval run manifest.",
     )
     parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=5,
+        help=(
+            "Number of episodes to score in parallel (default 5). "
+            "Set to 1 for sequential. "
+            "Reduce if hitting LLM rate limits when using --eval_mode llm_judge or full."
+        ),
+    )
+    parser.add_argument(
         "--log_file",
         default=None,
         metavar="PATH",
@@ -342,23 +391,30 @@ def main() -> None:
     )
 
     # ── Score episodes ────────────────────────────────────────────────────────
-    log.info("scoring_episodes", n=len(pairs), eval_mode=eval_mode_label)
-    results = []
-    for ep, req in pairs:
-        try:
-            result = evaluator.evaluate_episode(ep, req)
-            # Inject provenance fields not available inside Evaluator
-            itinerary_id = (
-                ep.final_itinerary.itinerary_id if ep.final_itinerary else None
-            )
-            result = result.model_copy(update={
-                "itinerary_id": itinerary_id,
-                "augmentation_id": args.augmentation_id,
-                "prompt_id": args.prompt_id,
-            })
-            results.append(result)
-        except Exception as e:
-            log.warning("score_failed", episode_id=ep.episode_id, error=str(e))
+    log.info("scoring_episodes", n=len(pairs), eval_mode=eval_mode_label, concurrency=args.concurrency)
+    total = len(pairs)
+    counter: dict = {"done": 0, "failed": 0}
+    lock = threading.Lock()
+
+    worker_kwargs = dict(
+        evaluator=evaluator,
+        augmentation_id=args.augmentation_id,
+        prompt_id=args.prompt_id,
+        total=total,
+        counter=counter,
+        lock=lock,
+        log=log,
+    )
+
+    print(f"Scoring {total} episodes · concurrency={args.concurrency}", flush=True)
+    if args.concurrency == 1:
+        raw_results = [_score_one(ep, req, **worker_kwargs) for ep, req in pairs]
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = [pool.submit(_score_one, ep, req, **worker_kwargs) for ep, req in pairs]
+            raw_results = [f.result() for f in futures]
+
+    results = [r for r in raw_results if r is not None]
 
     if not results:
         print("All scoring attempts failed. Check logs.")
