@@ -34,6 +34,14 @@ WARNING = "#FFC107"
 # For Plotly / matplotlib charts
 PALETTE = [PRIMARY, SECONDARY, ACCENT_LIGHT, "#4A90D9", "#A78BFA", "#34D399"]
 
+# Shared Plotly figure layout — use as `fig.update_layout(**PLOTLY_LAYOUT)`
+PLOTLY_LAYOUT: dict = dict(
+    plot_bgcolor="#1E1E2E",
+    paper_bgcolor="#1E1E2E",
+    font={"color": "#E0E0E0"},
+    margin={"t": 40, "b": 10, "l": 10, "r": 10},
+)
+
 CSS = """
 <style>
 /* ── Base ─────────────────────────────────────────────────────────────────── */
@@ -42,7 +50,31 @@ html, body, [data-testid="stAppViewContainer"] {
     color: #E0E0E0;
 }
 [data-testid="stSidebar"] { background: #1A1A2E; }
-[data-testid="stSidebar"] label { font-size: 13px; color: #C0C0D8; }
+
+/* Blanket sidebar text override — Streamlit defaults to dark text on its themed
+   sidebar; this forces everything to the light palette. */
+[data-testid="stSidebar"] * { color: #D0D8FF !important; }
+[data-testid="stSidebar"] label { font-size: 13px; }
+
+/* Input / select widgets inside sidebar */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea,
+[data-testid="stSidebar"] select,
+[data-testid="stSidebar"] [data-baseweb="select"] span,
+[data-testid="stSidebar"] [data-baseweb="input"] input {
+    color: #E0E0E0 !important;
+    background-color: #25253A !important;
+}
+
+/* Slider value labels */
+[data-testid="stSidebar"] [data-testid="stTickBarMin"],
+[data-testid="stSidebar"] [data-testid="stTickBarMax"],
+[data-testid="stSidebar"] [class*="StyledThumbValue"] {
+    color: #D0D8FF !important;
+}
+
+/* Checkbox text */
+[data-testid="stSidebar"] [data-testid="stCheckbox"] p { color: #D0D8FF !important; }
 
 /* ── Headings ─────────────────────────────────────────────────────────────── */
 h1 { font-size: 1.8rem !important; color: #E84545 !important; font-weight: 700; }
@@ -119,6 +151,15 @@ def badge(status: str) -> str:
     """Return an HTML badge span for a job/run status string."""
     cls = f"badge-{status.lower()}"
     return f'<span class="{cls}">{status.upper()}</span>'
+
+
+def sidebar_header(label: str) -> None:
+    """Render an ALL-CAPS section divider inside the sidebar."""
+    st.sidebar.markdown(
+        f"<div style='font-size:11px;font-weight:700;color:#FF6B35;"
+        f"letter-spacing:1.5px;margin:14px 0 4px'>{label.upper()}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def metric_card(label: str, value: str, delta: str | None = None) -> None:

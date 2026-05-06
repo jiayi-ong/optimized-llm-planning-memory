@@ -243,6 +243,11 @@ def main() -> None:
         help="run_id of the eval run this is a re-run of (for lineage tracking).",
     )
     parser.add_argument(
+        "--run_name",
+        default=None,
+        help="Human-readable experiment name grouping multiple eval runs (e.g. 'sweep_D-ablation').",
+    )
+    parser.add_argument(
         "--note",
         default=None,
         help="Free-text note recorded in the eval run manifest.",
@@ -372,6 +377,7 @@ def main() -> None:
     manifest = EvalRunManifest(
         run_id=run_id,
         created_at=datetime.now(timezone.utc).isoformat(),
+        run_name=args.run_name,
         compressor_type="unknown",  # eval runs on existing episodes; type is in episode
         agent_mode=agent_mode_str,
         judge_model_id=args.judge_model if run_llm_judge else "none",

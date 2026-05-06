@@ -28,7 +28,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from app.utils.ui_style import PALETTE, inject_css
+from app.utils.ui_style import PALETTE, PLOTLY_LAYOUT, inject_css
 from optimized_llm_planning_memory.evaluation.eval_store import EvalStore
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -129,6 +129,10 @@ if df.empty:
     st.stop()
 
 st.markdown(f"## 📊 Ablation: comparing by **{comparison_axis}**")
+st.caption(
+    "Side-by-side metric comparison across agent modes, augmentation checkpoints, or prompt variants. "
+    "Select 2–4 conditions in the sidebar to compare."
+)
 st.caption(f"{len(df)} episode results across {len(selected_conditions)} conditions")
 
 # ── Panel 1: Metric comparison table ─────────────────────────────────────────
@@ -180,8 +184,8 @@ try:
     )
     fig_bar.update_layout(
         yaxis={"range": [0, 1.05], "title": "Overall score (mean ± std)"},
-        plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-        font={"color": "#E0E0E0"}, height=340,
+        height=340,
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 except ImportError:
@@ -213,9 +217,9 @@ try:
         ))
     fig_radar.update_layout(
         polar={"radialaxis": {"visible": True, "range": [0, 1]}},
-        plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-        font={"color": "#E0E0E0"}, height=400,
+        height=400,
         legend={"orientation": "h", "y": -0.1},
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_radar, use_container_width=True)
 except ImportError:
@@ -242,8 +246,8 @@ if "complexity_tier" in df.columns:
         fig_tier.update_layout(
             barmode="group",
             yaxis={"range": [0, 1], "title": "Mean overall score"},
-            plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-            font={"color": "#E0E0E0"}, height=320,
+            height=320,
+            **PLOTLY_LAYOUT,
         )
         st.plotly_chart(fig_tier, use_container_width=True)
     except Exception:

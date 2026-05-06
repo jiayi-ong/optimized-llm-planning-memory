@@ -116,6 +116,7 @@ class EvalStore:
     def flat_results(
         self,
         run_ids: list[str] | None = None,
+        run_names: list[str] | None = None,
         augmentation_ids: list[str] | None = None,
         agent_modes: list[str] | None = None,
         complexity_tiers: list[str] | None = None,
@@ -125,7 +126,7 @@ class EvalStore:
 
         Columns include all deterministic scores (prefixed ``det_``), all LLM judge
         scores (prefixed ``llm_``), and manifest-level columns (``run_id``,
-        ``augmentation_id``, ``prompt_id``, ``episode_source``).
+        ``run_name``, ``augmentation_id``, ``prompt_id``, ``episode_source``).
 
         Filters are applied in-memory after loading. For large stores, prefer
         scoping to specific ``run_ids`` to avoid loading all results files.
@@ -144,6 +145,7 @@ class EvalStore:
             for r in results:
                 row: dict = {
                     "run_id": manifest.run_id,
+                    "run_name": manifest.run_name,
                     "episode_id": r.episode_id,
                     "request_id": r.request_id,
                     "itinerary_id": r.itinerary_id,
@@ -170,6 +172,8 @@ class EvalStore:
         df = pd.DataFrame(rows)
 
         # Apply filters
+        if run_names is not None:
+            df = df[df["run_name"].isin(run_names)]
         if augmentation_ids is not None:
             df = df[df["augmentation_id"].isin(augmentation_ids)]
         if agent_modes is not None:

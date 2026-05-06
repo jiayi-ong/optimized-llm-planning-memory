@@ -20,7 +20,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from app.utils.ui_style import PALETTE, PRIMARY, SUCCESS, WARNING, inject_css
+from app.utils.ui_style import PALETTE, PLOTLY_LAYOUT, PRIMARY, SUCCESS, WARNING, inject_css, sidebar_header
 from optimized_llm_planning_memory.evaluation.eval_store import EvalStore
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -69,6 +69,7 @@ all_req_df = _load_requests(str(REQUESTS_DIR))
 
 with st.sidebar:
     st.markdown("## Filters")
+    sidebar_header("Request Attributes")
     if not all_req_df.empty:
         all_archetypes = sorted(all_req_df["archetype"].dropna().unique().tolist())
         sel_archetypes = st.multiselect("Archetype", ["(all)"] + all_archetypes, default=["(all)"])
@@ -102,6 +103,10 @@ df = df.reset_index(drop=True)
 
 st.markdown(f"## 📂 Request Browser  <span style='color:#9090A8;font-size:14px'>({len(df)} requests)</span>",
             unsafe_allow_html=True)
+st.caption(
+    "Explore the user request population: complexity distribution charts, "
+    "filterable request table, and per-request constraint breakdown."
+)
 
 # ── Distribution charts ───────────────────────────────────────────────────────
 
@@ -118,8 +123,7 @@ try:
                      color="tier",
                      color_discrete_map={"low": "#4CAF50", "medium": "#FFC107", "high": "#E84545"},
                      height=240)
-        fig.update_layout(showlegend=False, plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-                          font={"color": "#E0E0E0"}, margin={"t": 30, "b": 10})
+        fig.update_layout(showlegend=False, **{**PLOTLY_LAYOUT, "margin": {"t": 30, "b": 10}})
         st.plotly_chart(fig, use_container_width=True)
 
     with chart_cols[1]:
@@ -127,8 +131,7 @@ try:
         arch_counts.columns = ["archetype", "count"]
         fig2 = px.pie(arch_counts, names="archetype", values="count", title="Archetype",
                       color_discrete_sequence=PALETTE, height=240)
-        fig2.update_layout(plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-                           font={"color": "#E0E0E0"}, margin={"t": 30, "b": 10})
+        fig2.update_layout(**{**PLOTLY_LAYOUT, "margin": {"t": 30, "b": 10}})
         st.plotly_chart(fig2, use_container_width=True)
 
     with chart_cols[2]:
@@ -136,8 +139,7 @@ try:
         grp_counts.columns = ["group_type", "count"]
         fig3 = px.bar(grp_counts, x="group_type", y="count", title="Group Type",
                       color_discrete_sequence=PALETTE, height=240)
-        fig3.update_layout(showlegend=False, plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-                           font={"color": "#E0E0E0"}, margin={"t": 30, "b": 10})
+        fig3.update_layout(showlegend=False, **{**PLOTLY_LAYOUT, "margin": {"t": 30, "b": 10}})
         st.plotly_chart(fig3, use_container_width=True)
 
     with chart_cols[3]:
@@ -145,8 +147,7 @@ try:
         geo_counts.columns = ["geo", "count"]
         fig4 = px.pie(geo_counts, names="geo", values="count", title="Geographic",
                       color_discrete_sequence=PALETTE, height=240)
-        fig4.update_layout(plot_bgcolor="#1E1E2E", paper_bgcolor="#1E1E2E",
-                           font={"color": "#E0E0E0"}, margin={"t": 30, "b": 10})
+        fig4.update_layout(**{**PLOTLY_LAYOUT, "margin": {"t": 30, "b": 10}})
         st.plotly_chart(fig4, use_container_width=True)
 
 except ImportError:

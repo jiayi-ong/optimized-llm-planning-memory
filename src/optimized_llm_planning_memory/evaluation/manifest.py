@@ -64,6 +64,14 @@ class EvalRunManifest(BaseModel):
 
     run_id: str
     created_at: str = Field(description="ISO 8601 UTC timestamp.")
+    run_name: str | None = Field(
+        default=None,
+        description=(
+            "Human-readable experiment name grouping multiple eval invocations into one "
+            "logical experiment (e.g. 'sweep_D-ablation'). Multiple run_ids can share the "
+            "same run_name for aggregated comparison in the UI."
+        ),
+    )
     compressor_type: str
     agent_mode: str
     judge_model_id: str

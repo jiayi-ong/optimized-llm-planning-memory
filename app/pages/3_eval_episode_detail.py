@@ -36,6 +36,10 @@ store = EvalStore(EVAL_DIR, EPISODES_DIR, REQUESTS_DIR)
 # ── Episode ID input ──────────────────────────────────────────────────────────
 
 st.markdown("## 🔍 Episode Detail")
+st.caption(
+    "Full drill-down for a single evaluated episode: request card, day-by-day itinerary, "
+    "step-by-step trajectory, and all eval scores."
+)
 
 episode_id_in = st.text_input(
     "Episode ID",
