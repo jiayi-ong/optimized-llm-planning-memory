@@ -256,8 +256,10 @@ class ConstraintSatisfactionEngine:
                     f"booking(s) vs required >={min_stars}."
                 )
             else:
-                satisfied, score = True, 1.0
-                explanation = "Hotels booked; star ratings not recorded, assuming satisfied."
+                # Star ratings absent — cannot verify; neutral score rather than
+                # silently passing (previous behaviour inflated soft scores).
+                satisfied, score = False, 0.5
+                explanation = "Hotels booked but star ratings not recorded; neutral score 0.5."
         else:
             nights_with_hotel = len(all_bookings)
             satisfied = nights_with_hotel == total_nights
@@ -312,27 +314,48 @@ class ConstraintSatisfactionEngine:
     def _evaluate_transport(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
-        """Constraint.value = required transport mode (e.g., 'flight')."""
-        required_mode = str(constraint.value).lower()
-        all_segments = [s for day in itinerary.days for s in day.transport_segments]
-        found = any(s.mode.lower() == required_mode for s in all_segments)
+        """Constraint.value = required transport mode (e.g., 'flight') when unit='mode'.
+
+        When unit='preference' (e.g., value='direct' or 'business_class'), the
+        TransportSegment model has no field to verify those attributes; return
+        neutral 0.5 instead of 0.0 (which would silently penalise unverifiable
+        constraints) or 1.0 (which would silently reward them).
+        """
+        if constraint.unit == "mode":
+            required_mode = str(constraint.value).lower()
+            all_segments = [s for day in itinerary.days for s in day.transport_segments]
+            found = any(s.mode.lower() == required_mode for s in all_segments)
+            return ConstraintSatisfactionResult(
+                constraint_id=constraint.constraint_id,
+                satisfied=found,
+                score=1.0 if found else 0.0,
+                explanation=f"Transport mode '{required_mode}' {'found' if found else 'not found'}.",
+            )
+        # unit='preference' (e.g., 'direct', 'business_class') — cannot be verified
+        # from TransportSegment fields; return neutral rather than silently 0.0.
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
-            satisfied=found,
-            score=1.0 if found else 0.0,
-            explanation=f"Transport mode '{required_mode}' {'found' if found else 'not found'}.",
+            satisfied=False,
+            score=0.5,
+            explanation=(
+                f"Transport preference '{constraint.value}' cannot be verified "
+                f"from segment data (unit={constraint.unit!r}); neutral score 0.5."
+            ),
         )
 
     def _evaluate_group(
         self, itinerary: Itinerary, constraint: Constraint
     ) -> ConstraintSatisfactionResult:
-        """Constraint.value = required group size (int). Always satisfied for now."""
-        # TODO: verify hotel/activity capacity against group size
+        """Constraint.value = required group size (int).
+        TODO: verify hotel/activity capacity against group size once the itinerary
+        model tracks per-person occupancy. Until then, score 0.5 (neutral) instead
+        of the previous 1.0 which gave every episode a free hard-constraint point.
+        """
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,
-            satisfied=True,
-            score=1.0,
-            explanation="Group size check not yet implemented; defaulting to satisfied.",
+            satisfied=False,
+            score=0.5,
+            explanation="Group size check not yet implemented; neutral score 0.5.",
         )
 
     def _evaluate_accessibility(
@@ -371,10 +394,10 @@ class ConstraintSatisfactionEngine:
                 value in (a.category or "").lower() or value in (a.activity_name or "").lower()
                 for a in all_activities
             )
-            satisfied, score = matched, 0.7 if matched else 0.3
+            satisfied, score = matched, 1.0 if matched else 0.0
             explanation = (
                 f"Preference '{value}' matched in itinerary."
-                if matched else f"Preference '{value}' not matched; partial credit."
+                if matched else f"Preference '{value}' not matched."
             )
         return ConstraintSatisfactionResult(
             constraint_id=constraint.constraint_id,

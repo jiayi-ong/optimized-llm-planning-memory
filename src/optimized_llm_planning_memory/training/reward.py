@@ -195,9 +195,13 @@ class RewardFunction:
         self, itinerary: Itinerary | None, request: UserRequest
     ) -> float:
         """Weighted average soft constraint satisfaction. [0.0, 1.0]"""
-        if itinerary is None or not request.soft_constraints:
-            # 1.0 matches constraints.py::soft_satisfaction_score() for the no-constraint case,
-            # preserving the training-reward ≡ evaluation-metric invariant (H5 fix).
+        if itinerary is None:
+            # No itinerary yet — soft constraints not satisfied, same as hard_score.
+            # Returning 1.0 here (previous H5 behaviour) killed the training signal:
+            # most steps have no itinerary, so soft_score was flat at 1.0 all episode.
+            return 0.0
+        if not request.soft_constraints:
+            # No preferences expressed → fully satisfied (H5 invariant preserved).
             return 1.0
         results = self._engine.evaluate(itinerary, list(request.soft_constraints))
         return self._engine.soft_satisfaction_score(results, list(request.soft_constraints))

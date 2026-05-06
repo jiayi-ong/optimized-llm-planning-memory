@@ -124,9 +124,10 @@ class DeterministicEvaluator:
     def _soft_constraint_score(
         self, itinerary: Itinerary | None, request: UserRequest
     ) -> float:
-        if itinerary is None or not request.soft_constraints:
-            # 1.0 matches constraints.py and reward.py: no constraints = fully satisfied (H5 fix).
-            return 1.0
+        if itinerary is None:
+            return 0.0  # no itinerary = not satisfied (mirrors reward.py)
+        if not request.soft_constraints:
+            return 1.0  # no preferences = fully satisfied (H5 invariant)
         results = self._engine.evaluate(itinerary, list(request.soft_constraints))
         return self._engine.soft_satisfaction_score(results, list(request.soft_constraints))
 
