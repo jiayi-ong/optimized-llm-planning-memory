@@ -522,6 +522,19 @@ tensorboard --logdir outputs/logs    # local
 | `train/clip_fraction` | 0.1–0.2 | >0.3 (LR too high) |
 | `train/approx_kl` | ~0.01 | >0.05 (large policy update, consider lower LR) |
 
+**System performance tags** (observational only — no reward impact):
+
+| Tag | Unit | Purpose |
+|---|---|---|
+| `episode/perf_wall_time_ms` | ms | Total episode wall-clock time — cost of one training episode |
+| `episode/perf_total_llm_latency_ms` | ms | LLM-side latency per episode — identifies bottleneck |
+| `episode/perf_llm_latency_fraction` | [0, 1] | LLM vs. tool time ratio — a rising fraction means longer contexts |
+| `episode/perf_total_tokens` | count | Total tokens per episode — proxy for API cost |
+| `episode/perf_estimated_cost_usd` | USD | Estimated API cost per episode |
+| `episode/perf_total_parse_retries` | count | Format retries — a rising count signals model formatting degradation |
+
+These tags also appear in `episode_metrics.jsonl` (fields: `perf_episode_wall_time_ms`, `perf_total_llm_latency_ms`, `perf_llm_latency_fraction`, `perf_total_tokens`, `perf_estimated_cost_usd`, `perf_total_parse_retries`). All fields are `None` when the episode was run without the performance capture layer.
+
 ---
 
 ## Google Colab

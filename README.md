@@ -47,13 +47,15 @@ ReActAgent  ──────────────────────�
                                                                       │
 EpisodeLog ◄──────────────────────────────────────────────────────────┘
     │   frozen data contract: trajectory, compressed_states,
-    │   final_itinerary, reward_components, tool_stats, termination_reason
+    │   final_itinerary, reward_components, tool_stats,
+    │   performance_metrics, termination_reason
     │
     ├─► RewardFunction            (PPO training signal)
     │       uses ConstraintSatisfactionEngine
     │
     └─► Evaluator
-            DeterministicEvaluator   (15 metrics: 8 v1 + 6 v2 + 1 v3, no LLM)
+            DeterministicEvaluator   (15 constraint metrics: 8 v1 + 6 v2 + 1 v3, no LLM)
+                                     + 16 perf_* system metrics (observational, no reward impact)
             LLMJudge                 (up to 10 rubric dimensions)
 ```
 
@@ -63,6 +65,7 @@ EpisodeLog ◄──────────────────────
 2. **`EpisodeLog`** is the universal data contract. Nothing downstream reads `Trajectory` directly.
 3. **`CompressedStateTemplate`** enforces a fixed 6-section output schema, preventing the compressor from drifting toward unstructured actions.
 4. **`SimulatorProtocol`** uses `typing.Protocol` structural typing so the external simulator never imports from this codebase.
+5. **`perf_*` metrics** (`EpisodeLog.performance_metrics`) are observational system metrics (latency, tokens, cost, revision rate). They are injected into `EvalResult.deterministic_scores` under the `perf_` prefix but are **never referenced by `_compute_overall()` or `RewardFunction`** — invariant 1 is fully preserved.
 
 ---
 

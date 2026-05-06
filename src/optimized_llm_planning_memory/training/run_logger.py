@@ -136,6 +136,13 @@ class EpisodeMetricsSummary(BaseModel):
         default=None,
         description="Rolling mean of total_reward over the last 20 episodes.",
     )
+    # ── System performance fields (None for episodes without perf data) ────────
+    perf_episode_wall_time_ms: float | None = None
+    perf_total_llm_latency_ms: float | None = None
+    perf_llm_latency_fraction: float | None = None
+    perf_total_tokens: int | None = None
+    perf_estimated_cost_usd: float | None = None
+    perf_total_parse_retries: int | None = None
     timestamp: str = Field(default_factory=_now)
 
 

@@ -165,6 +165,22 @@ class EpisodeLogCallback(BaseCallback):
             self.logger.record(f"{self._prefix}/tool_success_rate", tool_success_rate)
             self.logger.record(f"{self._prefix}/num_compressions", num_compressions)
 
+            # ── System performance metrics (observational, no reward impact) ────
+            _pm = getattr(episode_log, "performance_metrics", None) if episode_log else None
+            if _pm is not None:
+                if _pm.episode_wall_time_ms is not None:
+                    self.logger.record(f"{self._prefix}/perf_wall_time_ms", _pm.episode_wall_time_ms)
+                if _pm.total_llm_latency_ms is not None:
+                    self.logger.record(f"{self._prefix}/perf_total_llm_latency_ms", _pm.total_llm_latency_ms)
+                if _pm.llm_latency_fraction is not None:
+                    self.logger.record(f"{self._prefix}/perf_llm_latency_fraction", _pm.llm_latency_fraction)
+                if _pm.total_tokens is not None:
+                    self.logger.record(f"{self._prefix}/perf_total_tokens", float(_pm.total_tokens))
+                if _pm.estimated_cost_usd is not None:
+                    self.logger.record(f"{self._prefix}/perf_estimated_cost_usd", _pm.estimated_cost_usd)
+                if _pm.total_parse_retries is not None:
+                    self.logger.record(f"{self._prefix}/perf_total_parse_retries", float(_pm.total_parse_retries))
+
             # Flush episode metrics to TensorBoard immediately rather than waiting
             # for the rollout boundary (n_steps × n_envs steps away).
             self.logger.dump(self.num_timesteps)
@@ -188,6 +204,12 @@ class EpisodeLogCallback(BaseCallback):
                     tool_success_rate=tool_success_rate,
                     num_compressions=num_compressions,
                     reward_mean_20=reward_mean,
+                    perf_episode_wall_time_ms=getattr(_pm, "episode_wall_time_ms", None) if _pm else None,
+                    perf_total_llm_latency_ms=getattr(_pm, "total_llm_latency_ms", None) if _pm else None,
+                    perf_llm_latency_fraction=getattr(_pm, "llm_latency_fraction", None) if _pm else None,
+                    perf_total_tokens=getattr(_pm, "total_tokens", None) if _pm else None,
+                    perf_estimated_cost_usd=getattr(_pm, "estimated_cost_usd", None) if _pm else None,
+                    perf_total_parse_retries=getattr(_pm, "total_parse_retries", None) if _pm else None,
                 )
                 self._run_logger.log_episode_summary(summary)
 

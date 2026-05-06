@@ -90,7 +90,7 @@ class DeterministicEvaluator:
         itinerary = episode_log.final_itinerary
         stats = episode_log.tool_stats
 
-        return {
+        scores: dict[str, float] = {
             # ── v1 metrics (unchanged) ───────────────────────────────────────
             "hard_constraint_ratio": self._hard_constraint_ratio(itinerary, user_request),
             "soft_constraint_score": self._soft_constraint_score(itinerary, user_request),
@@ -110,6 +110,11 @@ class DeterministicEvaluator:
             # ── v3 metrics (completion gate) ─────────────────────────────────
             "completion_rate": self._completion_rate(itinerary, user_request),
         }
+        # ── perf_* metrics (observational only — do NOT affect overall_score) ──
+        # perf_* keys are never referenced by Evaluator._compute_overall() and are
+        # not used in RewardFunction, so the training-evaluation invariant is safe.
+        scores.update(self._extract_performance_metrics(episode_log))
+        return scores
 
     # ── Component scorers ─────────────────────────────────────────────────────
 
@@ -419,3 +424,42 @@ class DeterministicEvaluator:
             return 1.0
         booked_days = len(itinerary.days)
         return min(1.0, booked_days / required_days)
+
+    # ── System performance metrics (observational, no reward impact) ───────────
+
+    def _extract_performance_metrics(self, episode_log: EpisodeLog) -> dict[str, float]:
+        """
+        Extract system performance metrics from EpisodeLog.performance_metrics.
+
+        Returns empty dict (not zeros) for episodes without performance data so
+        that aggregate statistics are not biased by missing observations.
+        All keys use the 'perf_' prefix to avoid any collision with constraint
+        metrics and to make it trivial to filter them out of overall_score.
+        """
+        pm = getattr(episode_log, "performance_metrics", None)
+        if pm is None:
+            return {}
+
+        result: dict[str, float] = {}
+
+        def _add(key: str, val: float | int | None) -> None:
+            if val is not None:
+                result[key] = float(val)
+
+        _add("perf_episode_wall_time_ms",    pm.episode_wall_time_ms)
+        _add("perf_total_llm_latency_ms",    pm.total_llm_latency_ms)
+        _add("perf_total_tool_latency_ms",   pm.total_tool_latency_ms)
+        _add("perf_llm_latency_fraction",    pm.llm_latency_fraction)
+        _add("perf_avg_step_llm_latency_ms", pm.avg_step_llm_latency_ms)
+        _add("perf_total_prompt_tokens",     pm.total_prompt_tokens)
+        _add("perf_total_completion_tokens", pm.total_completion_tokens)
+        _add("perf_total_tokens",            pm.total_tokens)
+        _add("perf_tokens_per_step",         pm.tokens_per_step)
+        _add("perf_estimated_cost_usd",      pm.estimated_cost_usd)
+        _add("perf_avg_context_tokens",      pm.avg_context_tokens)
+        _add("perf_max_context_tokens",      pm.max_context_tokens)
+        _add("perf_booking_revision_count",  pm.booking_revision_count)
+        _add("perf_booking_revision_rate",   pm.booking_revision_rate)
+        _add("perf_total_parse_retries",     pm.total_parse_retries)
+        _add("perf_parse_retry_rate",        pm.parse_retry_rate)
+        return result

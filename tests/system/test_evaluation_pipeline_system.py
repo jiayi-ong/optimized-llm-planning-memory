@@ -95,6 +95,9 @@ class TestFullEvaluationPipeline:
         result = evaluator.evaluate_episode(log, paris_request)
 
         for key, val in result.deterministic_scores.items():
+            if key.startswith("perf_"):
+                # perf_* metrics are raw measurements (ms, token counts, USD) — not bounded to [0,1].
+                continue
             assert 0.0 <= val <= 1.0, f"Score '{key}' = {val} out of bounds"
 
     def test_save_reload_episode_gives_same_scores(self, paris_request, mock_sim):

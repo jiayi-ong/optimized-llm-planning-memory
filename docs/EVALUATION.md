@@ -56,9 +56,40 @@ Evaluation runs in two independent layers. Layer 1 (deterministic) is fast, free
 |---|---|---|
 | `completion_rate` | [0, 1] | `booked_days / required_trip_days`. Fraction of required trip days that have at least one booking. Guards against empty-itinerary score inflation: without this metric, `budget_adherence`, `schedule_overlap_score`, and `logical_consistency` trivially score 1.0 when the agent books nothing. Returns 0.0 if `final_itinerary` is None or has no days. Returns 1.0 if `required_days ≤ 0`. |
 
+### System Performance Metrics (`perf_*` prefix)
+
+`DeterministicEvaluator.score()` also injects 16 system-side metrics under the `perf_` prefix. These are **observational only** — they are never referenced by `Evaluator._compute_overall()` and have **zero weight in `overall_score`**. They are also never used in `RewardFunction`, so the training-evaluation invariant is fully preserved.
+
+`perf_*` keys are absent (empty dict contribution, not zeros) for episodes recorded before this feature was added, so aggregate statistics remain unbiased when mixing old and new episodes.
+
+| Metric key | Unit | Description |
+|---|---|---|
+| `perf_episode_wall_time_ms` | ms | Total wall-clock time for the episode |
+| `perf_total_llm_latency_ms` | ms | Sum of all LLM call durations |
+| `perf_total_tool_latency_ms` | ms | Sum of all tool call durations |
+| `perf_llm_latency_fraction` | [0, 1] | `LLM_time / (LLM_time + tool_time)` — workload balance |
+| `perf_avg_step_llm_latency_ms` | ms | Mean LLM latency per ReAct step |
+| `perf_total_prompt_tokens` | count | Total prompt tokens consumed |
+| `perf_total_completion_tokens` | count | Total completion tokens generated |
+| `perf_total_tokens` | count | `prompt + completion` tokens |
+| `perf_tokens_per_step` | count | Average tokens per ReAct step |
+| `perf_estimated_cost_usd` | USD | Estimated API cost (static price table in `core/models.py`) |
+| `perf_avg_context_tokens` | count | Average context window size at each LLM call |
+| `perf_max_context_tokens` | count | Peak context window usage |
+| `perf_booking_revision_count` | count | Successful bookings later cancelled (book → cancel sequences) |
+| `perf_booking_revision_rate` | [0, 1] | `revision_count / total_successful_bookings` |
+| `perf_total_parse_retries` | count | Total format-reminder retries across the episode |
+| `perf_parse_retry_rate` | [0, 1] | `retries / total_steps` |
+
+**Cost estimation** uses `MODEL_COST_PER_TOKEN` in `core/models.py` (keyed by litellm model string). Prices are approximate mid-2025 values — update the dict when provider prices change. `estimated_cost_usd` is `None` when the model string is not in the table or no token counts were returned by the provider.
+
+**Context tokens** are estimated as `len(context_string) // 4` (English ~4 chars/token, ±30%). Sufficient for diagnostic use; not billing-grade.
+
 ### Critical invariant
 
 `DeterministicEvaluator` uses `ConstraintSatisfactionEngine` from `core/constraints.py`. `RewardFunction` uses the **same class**. This guarantees that training reward ≡ evaluation metric for every constraint-based score. Breaking this link (e.g., by adding local logic to either module instead of the engine) invalidates the experiment.
+
+The 16 `perf_*` metrics do not interact with this invariant in any way.
 
 ---
 
