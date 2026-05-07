@@ -275,14 +275,14 @@ def main(cfg: DictConfig) -> None:
         reward_config=reward_cfg,
         simulator_config=simulator_cfg,
         tensorboard_log=output_dir / "logs" / cfg.project.run_name,
-        checkpoint_dir=output_dir / "checkpoints",
+        checkpoint_dir=output_dir / "checkpoints" / cfg.project.run_name,
         reward_predictor=reward_predictor,
         reward_predictor_fit_every=rp_fit_every,
         tokenizer=compressor_tokenizer,
     )
 
     trainer.train()
-    trainer.save_checkpoint(output_dir / "checkpoints" / "final")
+    trainer.save_checkpoint(output_dir / "checkpoints" / cfg.project.run_name / "final")
     log.info("training.complete")
 
     # ── Auto-register trained checkpoint in augmentation registry ─────────────
@@ -305,7 +305,7 @@ def main(cfg: DictConfig) -> None:
         _ckpt_abs.parent.mkdir(parents=True, exist_ok=True)
         # Copy final compressor weights to the named augmentation path
         import shutil as _shutil
-        _src = output_dir / "checkpoints" / "final" / "compressor"
+        _src = output_dir / "checkpoints" / cfg.project.run_name / "final" / "compressor"
         for _f in _src.glob("*.pt") if _src.exists() else []:
             _shutil.copy2(_f, _ckpt_abs)
             break
