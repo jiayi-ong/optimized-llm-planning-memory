@@ -2,28 +2,36 @@
 # Colab-friendly config: tuned for real LLM API latency (~10-15 s/call on T4).
 #
 # Key changes from original:
-#   - num_timesteps: 600   (50k was written for mock agents; 600 ≈ 4 h at real API rates)
+#   - num_timesteps: 1500  (600 gave only 18 PPO updates; 1500 → 46 updates, ~736 grad steps)
 #   - n_steps: 16          (rollout = 32 transitions → first PPO update ~25 min in)
 #   - batch_size: 8        (4 mini-batches per rollout; better gradient diversity)
-#   - checkpoint_every_n_steps: 50  (~12 checkpoints over the run)
-#   - env.steps_per_compression: 2  (2 LLM calls per env.step instead of 5)
+#   - checkpoint_every_n_steps: 100  (~15 checkpoints over the run)
+#   - env.steps_per_compression: 2   (2 LLM calls per env.step instead of 5)
+#   - env.max_agent_steps: 20        (appropriate for low/medium complexity; saves ~30% API calls)
+#   - ent_coef: 0.02                 (slight increase to prevent premature action-space collapse)
 #
 # Throughput with SubprocVecEnv (now default for stateless compressors):
 #   2 envs × 2 LLM calls × ~12 s/call → ~24 s per wall-clock step (parallel)
-#   600 steps × 24 s ≈ 4 hours on T4
+#   1500 steps × 24 s ≈ 10 hours on T4  (use notebook overrides to adjust T)
 #
-# PPO update budget: 600 / (16 × 2) = ~18 updates
+# PPO update budget: 1500 / (16 × 2) = ~46 updates
 #   each update: 4 epochs × (32 / 8) mini-batches = 16 gradient steps
-#   total gradient steps: ~288
+#   total gradient steps: ~736
+#
+# Val monitoring: val_eval_freq=100 → 15 val evaluation events over the run.
+#   Each fires n_val_episodes=4 sequential episodes on the val split.
+#   Total extra API calls: 15 × 4 × ~15 LLM calls ≈ 900 (~15% overhead).
 # @package training
-num_timesteps: 600
+num_timesteps: 1500
 n_envs: 2
 seed: 42
 resume_from: null
-checkpoint_every_n_steps: 50
+checkpoint_every_n_steps: 100
 device: auto                    # T4 GPU detected automatically in Colab
 episode_save_freq: 0            # storage-limited on Colab — use JSONL only
 run_name: null                  # set at CLI: training.run_name=...
+val_eval_freq: 100              # run val episodes every N timesteps (0 = disabled)
+n_val_episodes: 4               # val episodes per evaluation event
 ppo:
   learning_rate: 3.0e-5
   n_steps: 16    # rollout = 16 × 2 envs = 32 transitions; first PPO update ~25 min in
@@ -32,11 +40,11 @@ ppo:
   gamma: 0.99
   gae_lambda: 0.95
   clip_epsilon: 0.2
-  ent_coef: 0.01
+  ent_coef: 0.02  # +0.01 vs original; prevents premature collapse in the large action space
   vf_coef: 0.5
   max_grad_norm: 1.0
   lr_schedule: constant       # switch to 'linear' for longer runs (>100k steps)
   normalize_advantage: false  # prevents policy_loss≈0 at init when ratio≈1 and batch mean(adv)≈0
 env:
-  steps_per_compression: 2    # 2 LLM calls per env.step (was 5); keep in sync with agent.compress_every_n_steps
-  max_agent_steps: 30         # total ReAct steps per episode before truncation
+  steps_per_compression: 2    # 2 LLM calls per env.step; keep in sync with agent.compress_every_n_steps
+  max_agent_steps: 20         # reduced from 30; appropriate for low/medium complexity requests

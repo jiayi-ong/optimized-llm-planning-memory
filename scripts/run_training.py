@@ -64,7 +64,19 @@ def main(cfg: DictConfig) -> None:
             UserRequest.model_validate(json.loads(f.read_text()))
             for f in sorted(train_dir.glob("*.json"))
         ]
-    log.info("loaded_requests", n=len(user_requests))
+    log.info("loaded_requests", split="train", n=len(user_requests))
+
+    val_dir = _REPO_ROOT / "data/user_requests/val"
+    val_requests = (
+        [
+            UserRequest.model_validate(json.loads(f.read_text()))
+            for f in sorted(val_dir.glob("*.json"))
+        ]
+        if val_dir.exists() and list(val_dir.glob("*.json"))
+        else []
+    )
+    log.info("loaded_requests", split="val", n=len(val_requests),
+             note="val monitoring active" if val_requests else "no val requests — val eval disabled")
 
     # ── Registry resolution (optional) ───────────────────────────────────────
     # When project.augmentation_id is set, the registry drives compressor type,
@@ -257,6 +269,7 @@ def main(cfg: DictConfig) -> None:
         agent_factory=agent_factory,
         simulator_factory=simulator_factory,
         user_requests=user_requests,
+        val_requests=val_requests,
         config=training_cfg,
         env_config=env_cfg,
         reward_config=reward_cfg,

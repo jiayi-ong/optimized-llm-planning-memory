@@ -246,6 +246,22 @@ class TrainingConfig(BaseModel):
         default=None,
         description="Human-readable name for this training run (appears in manifest).",
     )
+    val_eval_freq: int = Field(
+        default=100,
+        ge=0,
+        description=(
+            "Run val episodes every N timesteps and log val/mean_reward to TensorBoard. "
+            "0 = disabled. Only active when val requests are passed to RLTrainer."
+        ),
+    )
+    n_val_episodes: int = Field(
+        default=4,
+        ge=1,
+        description=(
+            "Number of val episodes to run per evaluation event. "
+            "More episodes → lower variance but higher API cost (~15 LLM calls each)."
+        ),
+    )
     seed: int = Field(default=42, description="Global random seed for reproducibility.")
 
 

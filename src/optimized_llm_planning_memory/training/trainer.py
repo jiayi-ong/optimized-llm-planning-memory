@@ -397,6 +397,89 @@ class MCTSMetricsCallback(BaseCallback):
         return True
 
 
+class ValEvalCallback(BaseCallback):
+    """
+    SB3 callback that periodically evaluates the current policy on a held-out
+    validation set and logs the results to TensorBoard.
+
+    Fires every ``eval_freq`` timesteps. Runs ``n_val_episodes`` complete
+    episodes sequentially (DummyVecEnv, 1 env) using the val split of user
+    requests — separate from the training pool — to give an unbiased reward
+    estimate. Metrics appear under the ``val/`` TensorBoard prefix and can be
+    used to detect overfitting or guide early stopping.
+
+    Why DummyVecEnv (not SubprocVecEnv)?
+    -------------------------------------
+    Val eval runs synchronously in the main process so it can query
+    ``self.model.predict()`` with the live policy weights. SubprocVecEnv
+    would fork worker processes that carry stale weights, producing incorrect
+    evaluation results.
+
+    Parameters
+    ----------
+    val_env_factory : Callable that returns a fresh CompressionEnv built from
+                      the val user requests pool.
+    n_val_episodes  : Number of complete episodes to run per evaluation event.
+    eval_freq       : Evaluate every this many timesteps. 0 = disabled.
+    verbose         : SB3 verbosity level.
+    """
+
+    def __init__(
+        self,
+        val_env_factory: Callable[[], "CompressionEnv"],
+        n_val_episodes: int = 4,
+        eval_freq: int = 100,
+        verbose: int = 0,
+    ) -> None:
+        super().__init__(verbose=verbose)
+        self._factory = val_env_factory
+        self._n_val_episodes = n_val_episodes
+        self._eval_freq = eval_freq
+        self._last_eval = 0
+
+    def _on_step(self) -> bool:
+        if self._eval_freq == 0 or self.num_timesteps - self._last_eval < self._eval_freq:
+            return True
+        self._last_eval = self.num_timesteps
+        self._run_eval()
+        return True
+
+    def _run_eval(self) -> None:
+        env = DummyVecEnv([self._factory])
+        obs = env.reset()
+        rewards: list[float] = []
+        hard_scores: list[float] = []
+        soft_scores: list[float] = []
+        episodes_done = 0
+
+        while episodes_done < self._n_val_episodes:
+            action, _ = self.model.predict(obs, deterministic=True)
+            obs, _reward, dones, infos = env.step(action)
+            for done, info in zip(dones, infos):
+                if done:
+                    rc = info.get("reward_components")
+                    if rc is not None:
+                        rewards.append(float(getattr(rc, "total_reward", 0.0)))
+                        hard_scores.append(float(getattr(rc, "hard_constraint_score", 0.0)))
+                        soft_scores.append(float(getattr(rc, "soft_constraint_score", 0.0)))
+                    episodes_done += 1
+
+        env.close()
+
+        if rewards:
+            self.logger.record("val/mean_reward", float(np.mean(rewards)))
+            self.logger.record("val/hard_constraint_score", float(np.mean(hard_scores)))
+            self.logger.record("val/soft_constraint_score", float(np.mean(soft_scores)))
+            self.logger.dump(self.num_timesteps)
+            log.info(
+                "val_eval.done",
+                timestep=self.num_timesteps,
+                n_episodes=len(rewards),
+                mean_reward=round(float(np.mean(rewards)), 4),
+                hard_score=round(float(np.mean(hard_scores)), 4),
+            )
+
+
 class PPOUpdateMetricsCallback(BaseCallback):
     """
     Captures per-PPO-update diagnostics from SB3's internal logger and writes
@@ -503,6 +586,8 @@ class RLTrainer:
     agent_factory     : Callable[[], ReActAgent] — creates a fresh agent per episode.
     simulator_factory : Callable[[int], SimulatorProtocol] — creates a fresh sim per episode.
     user_requests     : Training set of UserRequest objects.
+    val_requests      : Optional validation set. When non-empty, a ValEvalCallback is added
+                        that logs val/mean_reward to TensorBoard every val_eval_freq timesteps.
     config            : Full training configuration (n_envs, PPO hyperparams, paths).
     env_config        : Environment configuration (max token dims).
     reward_config     : Reward component weights.
@@ -524,6 +609,7 @@ class RLTrainer:
         agent_factory: Callable,
         simulator_factory: Callable[[int], SimulatorProtocol],
         user_requests: list[UserRequest],
+        val_requests: list[UserRequest] | None = None,
         config: TrainingConfig | None = None,
         env_config: EnvConfig | None = None,
         reward_config: RewardConfig | None = None,
@@ -539,6 +625,7 @@ class RLTrainer:
         self._agent_factory = agent_factory
         self._simulator_factory = simulator_factory
         self._user_requests = user_requests
+        self._val_requests: list[UserRequest] = val_requests or []
         self._config = config or TrainingConfig()
         self._env_config = env_config or EnvConfig()
         self._reward_config = reward_config or RewardConfig()
@@ -603,6 +690,17 @@ class RLTrainer:
         # Build vectorised env (with WorldPool if configured)
         vec_env = self._make_vec_env()
 
+        # Build val env factory if a val split was provided.
+        # Kept separate from the training WorldPool so val episodes always run on
+        # a fresh, deterministic simulator rather than sharing pool state.
+        val_env_factory = (
+            self._make_val_env_factory(self._val_requests)
+            if self._val_requests
+            else None
+        )
+        if val_env_factory is None:
+            log.info("val_eval.skipped", reason="no val requests provided")
+
         # Build or restore PPO model and move to device
         if self._config.resume_from:
             self._ppo = self._load_ppo(self._config.resume_from, vec_env)
@@ -618,7 +716,7 @@ class RLTrainer:
             pass  # non-HF compressors (IdentityCompressor) may not expose .to()
 
         # Build callbacks
-        callbacks = self._build_callbacks(run_logger=run_logger)
+        callbacks = self._build_callbacks(run_logger=run_logger, val_env_factory=val_env_factory)
 
         # Run training
         try:
@@ -746,6 +844,33 @@ class RLTrainer:
         )
         return vec_env
 
+    def _make_val_env_factory(self, val_requests: list[UserRequest]) -> Callable[[], "CompressionEnv"]:
+        """
+        Build a factory for val evaluation environments.
+
+        Uses the raw simulator_factory (no WorldPool) so val episodes always
+        get a fresh, deterministic simulator rather than sharing pool state
+        with the training envs.  DummyVecEnv wraps a single instance of this
+        factory for sequential, weight-consistent evaluation.
+        """
+        reward_fn = RewardFunction(config=self._reward_config)
+        env_config = self._env_config
+        tokenizer = self._tokenizer
+        agent_factory = self._agent_factory
+        simulator_factory = self._simulator_factory
+
+        def factory() -> "CompressionEnv":
+            return CompressionEnv(
+                agent_factory=agent_factory,
+                simulator_factory=simulator_factory,
+                reward_fn=reward_fn,
+                user_requests=val_requests,
+                config=env_config,
+                tokenizer=tokenizer,
+            )
+
+        return factory
+
     @staticmethod
     def _make_lr_schedule(base_lr: float, schedule: str, num_timesteps: int) -> Any:
         """
@@ -845,7 +970,11 @@ class RLTrainer:
         )
         return ppo
 
-    def _build_callbacks(self, run_logger: "RLRunLogger") -> CallbackList:
+    def _build_callbacks(
+        self,
+        run_logger: "RLRunLogger",
+        val_env_factory: Callable[[], "CompressionEnv"] | None = None,
+    ) -> CallbackList:
         """
         Build the list of SB3 callbacks used during ``ppo.learn()``.
 
@@ -855,10 +984,13 @@ class RLTrainer:
         - ``EpisodeLogCallback`` — reward components, episode stats → TensorBoard + JSONL.
         - ``PPOUpdateMetricsCallback`` — per-update PPO diagnostics → TensorBoard + JSONL.
         - ``MCTSMetricsCallback`` — MCTS tree stats → TensorBoard (no-op for non-MCTS runs).
+        - ``ValEvalCallback`` — val reward logging (only when val_env_factory is provided).
 
         Parameters
         ----------
-        run_logger : Active ``RLRunLogger`` for this training run.
+        run_logger      : Active ``RLRunLogger`` for this training run.
+        val_env_factory : Factory for val CompressionEnvs. When provided, a
+                          ValEvalCallback is added. When None, val eval is skipped.
         """
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self._tensorboard_log.mkdir(parents=True, exist_ok=True)
@@ -905,5 +1037,22 @@ class RLTrainer:
                 verbose=1,
             )
             callbacks.append(rp_cb)
+
+        if val_env_factory is not None:
+            val_eval_freq = getattr(self._config, "val_eval_freq", 100)
+            n_val_episodes = getattr(self._config, "n_val_episodes", 4)
+            val_cb = ValEvalCallback(
+                val_env_factory=val_env_factory,
+                n_val_episodes=n_val_episodes,
+                eval_freq=val_eval_freq,
+                verbose=0,
+            )
+            callbacks.append(val_cb)
+            log.info(
+                "val_eval.scheduled",
+                n_val_requests=len(self._val_requests),
+                eval_freq=val_eval_freq,
+                n_val_episodes=n_val_episodes,
+            )
 
         return CallbackList(callbacks)
