@@ -1,0 +1,699 @@
+{
+  "episode_id": "13e144d6-a91e-418e-8b2b-4f6ba6ab314f",
+  "request_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "f127e932-4caa-4e72-a827-5900971610b5",
+    "request_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "Starting to plan the trip from Brindor to Duskport for a family of 4. First, I need to discover the available routes to ensure both cities exist in this simulation.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_71_20260506_141958_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a affluent city in Northern Europe, moderately visited by international visitors. As a mountain retreat, it offers a distinctive character shaped by its primary identity. The climate is mild winters and hot summers, making it generally safe with the usual urban precautions. The food scene leans toward Italian and American cuisine, and the city is known for its vibrant festival and sports scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "American",
+                "Greek"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "viewpoint"
+              ],
+              "dominant_event_categories": [
+                "festival",
+                "sports",
+                "market"
+              ]
+            },
+            {
+              "city_id": "city_world_71_20260506_141958_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a budget-conscious city in Northern Europe, highly popular by international visitors. As a nature escape, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it presenting elevated safety concerns — plan carefully. The food scene leans toward Thai and Mediterranean cuisine, and the city is known for its vibrant festival and sports scene.",
+              "dominant_cuisines": [
+                "Thai",
+                "Mediterranean",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "park",
+                "viewpoint"
+              ],
+              "dominant_event_categories": [
+                "festival",
+                "sports"
+              ]
+            },
+            {
+              "city_id": "city_world_71_20260506_141958_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a prosperous city in Northern Europe, moderately visited by international visitors. As a foodie haven, it offers a distinctive character shaped by its primary identity. The climate is cold with long winters, making it generally safe with the usual urban precautions. The food scene leans toward French and Italian cuisine, and the city is known for its vibrant food and market scene.",
+              "dominant_cuisines": [
+                "French",
+                "Italian"
+              ],
+              "dominant_attraction_categories": [
+                "food_market",
+                "cultural_site",
+                "landmark"
+              ],
+              "dominant_event_categories": [
+                "food",
+                "market",
+                "festival"
+              ]
+            },
+            {
+              "city_id": "city_world_71_20260506_141958_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a affluent city in Northern Europe, highly popular by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is cold winters and warm summers, making it requiring a degree of caution, especially after dark. The food scene leans toward French and Mediterranean cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "French",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater",
+                "exhibition"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.03999999898951501
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:36.892661+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 1613.844399995287,
+          "prompt_tokens": 2024,
+          "completion_tokens": 47,
+          "context_tokens": 2185,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 1,
+        "thought": "I have confirmed that both Brindor and Duskport exist in the simulation. Now, I will search for available flights from Brindor to Duskport for the specified dates.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "from": "city_world_71_20260506_141958_0001",
+            "to": "city_world_71_20260506_141958_0003",
+            "start_date": "2026-06-07",
+            "end_date": "2026-06-16",
+            "passengers": 4
+          },
+          "raw_text": "search_flights({\"from\": \"city_world_71_20260506_141958_0001\", \"to\": \"city_world_71_20260506_141958_0003\", \"start_date\": \"2026-06-07\", \"end_date\": \"2026-06-16\", \"passengers\": 4})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": false,
+          "result": null,
+          "error_message": "Tool 'search_flights' rejected invalid arguments: field 'origin_city_id': Field required; field 'destination_city_id': Field required; field 'departure_date': Field required. Expected schema: {'properties': {'origin_city_id': {'description': 'City ID for departure. Obtain from get_available_routes.', 'title': 'Origin City Id', 'type': 'string'}, 'destination_city_id': {'description': 'City ID for arrival. Obtain from get_available_routes.', 'title': 'Destination City Id', 'type': 'string'}, 'departure_date': {'description': 'Travel date in ISO 8601 format (YYYY-MM-DD).', 'title': 'Departure Date', 'type': 'string'}, 'passengers': {'default': 1, 'description': 'Total number of passengers. Always pass this to match your group size.', 'maximum': 20, 'minimum': 1, 'title': 'Passengers', 'type': 'integer'}, 'max_results': {'default': 10, 'description': 'Maximum number of results to return, sorted by total price (cheapest first).', 'maximum': 50, 'minimum': 1, 'title': 'Max Results', 'type': 'integer'}}, 'required': ['origin_city_id', 'destination_city_id', 'departure_date'], 'title': 'SearchFlightsInput', 'type': 'object'}.",
+          "latency_ms": 0.0
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:40.446120+00:00",
+        "perf": {
+          "step_index": 1,
+          "llm_latency_ms": 3352.62320000038,
+          "prompt_tokens": 2777,
+          "completion_tokens": 115,
+          "context_tokens": 2991,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 2,
+        "thought": "I need to search for available flights from Brindor to Duskport for the specified dates. I will use the correct city IDs this time.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "origin_city_id": "city_world_71_20260506_141958_0001",
+            "destination_city_id": "city_world_71_20260506_141958_0003",
+            "departure_date": "2026-06-07",
+            "passengers": 4
+          },
+          "raw_text": "search_flights({\"origin_city_id\": \"city_world_71_20260506_141958_0001\", \"destination_city_id\": \"city_world_71_20260506_141958_0003\", \"departure_date\": \"2026-06-07\", \"passengers\": 4})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": true,
+          "result": [
+            {
+              "edge_id": "edge_world_71_20260506_141958_0143",
+              "airline": "StarFly",
+              "flight_number": "ST510",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T09:00:00",
+              "arrival_datetime": "2026-06-07T14:53:00",
+              "duration_min": 353,
+              "price_per_person": 478.1,
+              "total_price": 1912.4,
+              "passengers": 4,
+              "seats_available": 34,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2453.2,
+              "baggage_included": true,
+              "expected_delay_min": 3
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0060",
+              "airline": "ZenithAir",
+              "flight_number": "ZE412",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T09:00:00",
+              "arrival_datetime": "2026-06-07T12:35:00",
+              "duration_min": 215,
+              "price_per_person": 485.57,
+              "total_price": 1942.27,
+              "passengers": 4,
+              "seats_available": 60,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 19
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0063",
+              "airline": "ZenithAir",
+              "flight_number": "ZE415",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T15:00:00",
+              "arrival_datetime": "2026-06-07T17:45:00",
+              "duration_min": 165,
+              "price_per_person": 496.01,
+              "total_price": 1984.04,
+              "passengers": 4,
+              "seats_available": 60,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 41
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0061",
+              "airline": "ZenithAir",
+              "flight_number": "ZE413",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T11:00:00",
+              "arrival_datetime": "2026-06-07T13:45:00",
+              "duration_min": 165,
+              "price_per_person": 504.64,
+              "total_price": 2018.58,
+              "passengers": 4,
+              "seats_available": 58,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 32
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0059",
+              "airline": "ZenithAir",
+              "flight_number": "ZE411",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T07:00:00",
+              "arrival_datetime": "2026-06-07T09:40:00",
+              "duration_min": 160,
+              "price_per_person": 534.89,
+              "total_price": 2139.57,
+              "passengers": 4,
+              "seats_available": 7,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 57
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0062",
+              "airline": "ZenithAir",
+              "flight_number": "ZE414",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T13:00:00",
+              "arrival_datetime": "2026-06-07T15:40:00",
+              "duration_min": 160,
+              "price_per_person": 563.04,
+              "total_price": 2252.17,
+              "passengers": 4,
+              "seats_available": 57,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 12
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0144",
+              "airline": "StarFly",
+              "flight_number": "ST511",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T13:00:00",
+              "arrival_datetime": "2026-06-07T18:53:00",
+              "duration_min": 353,
+              "price_per_person": 565.35,
+              "total_price": 2261.39,
+              "passengers": 4,
+              "seats_available": 15,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2453.2,
+              "baggage_included": true,
+              "expected_delay_min": 28
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0065",
+              "airline": "ZenithAir",
+              "flight_number": "ZE417",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T19:00:00",
+              "arrival_datetime": "2026-06-07T22:15:00",
+              "duration_min": 195,
+              "price_per_person": 584.58,
+              "total_price": 2338.33,
+              "passengers": 4,
+              "seats_available": 66,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 32
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0067",
+              "airline": "ZenithAir",
+              "flight_number": "ZE419",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T23:00:00",
+              "arrival_datetime": "2026-06-08T02:30:00",
+              "duration_min": 210,
+              "price_per_person": 623.06,
+              "total_price": 2492.22,
+              "passengers": 4,
+              "seats_available": 43,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_71_20260506_141958_0064",
+              "airline": "ZenithAir",
+              "flight_number": "ZE416",
+              "origin_city_id": "city_world_71_20260506_141958_0001",
+              "destination_city_id": "city_world_71_20260506_141958_0003",
+              "origin_hub_id": "hub_world_71_20260506_141958_0002",
+              "destination_hub_id": "hub_world_71_20260506_141958_0006",
+              "departure_datetime": "2026-06-07T17:00:00",
+              "arrival_datetime": "2026-06-07T20:35:00",
+              "duration_min": 215,
+              "price_per_person": 625.82,
+              "total_price": 2503.3,
+              "passengers": 4,
+              "seats_available": 28,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2076.92,
+              "baggage_included": true,
+              "expected_delay_min": 61
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 5.7071999908657745
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:42.223216+00:00",
+        "perf": {
+          "step_index": 2,
+          "llm_latency_ms": 1744.3350000103237,
+          "prompt_tokens": 3186,
+          "completion_tokens": 103,
+          "context_tokens": 3373,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "I have found several flight options from Brindor to Duskport. The cheapest direct flight is with ZenithAir, flight ZE412, costing $1942.27 for the family of 4. I will select this flight to confirm the booking.",
+        "action": {
+          "tool_name": "select_flight",
+          "arguments": {
+            "edge_id": "edge_world_71_20260506_141958_0060"
+          },
+          "raw_text": "select_flight({\"edge_id\": \"edge_world_71_20260506_141958_0060\"})"
+        },
+        "observation": {
+          "tool_name": "select_flight",
+          "success": true,
+          "result": {
+            "booking_id": "FLT-5335EAFD",
+            "edge_id": "edge_world_71_20260506_141958_0060",
+            "origin_city_name": "city_world_71_20260506_141958_0001",
+            "destination_city_name": "city_world_71_20260506_141958_0003",
+            "departure_datetime": "2026-06-07T09:00:00",
+            "arrival_datetime": "2026-06-07T12:35:00",
+            "total_price": 9307.22,
+            "status": "selected",
+            "confirmation_datetime": "2026-05-07T01:02:48.355538+00:00"
+          },
+          "error_message": null,
+          "latency_ms": 0.029399991035461426
+        },
+        "itinerary_snapshot": {
+          "itinerary_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+          "request_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+          "days": [
+            {
+              "date": "2026-06-07",
+              "city": "city_world_71_20260506_141958_0001",
+              "transport_segments": [
+                {
+                  "mode": "flight",
+                  "from_location": "city_world_71_20260506_141958_0001",
+                  "to_location": "city_world_71_20260506_141958_0003",
+                  "departure_datetime": "2026-06-07T09:00:00",
+                  "arrival_datetime": "2026-06-07T12:35:00",
+                  "cost_usd": 9307.22,
+                  "booking_ref": "FLT-5335EAFD"
+                }
+              ],
+              "accommodation": null,
+              "activities": [],
+              "notes": ""
+            }
+          ],
+          "total_cost_usd": 9307.22,
+          "is_complete": false,
+          "version": 0
+        },
+        "timestamp": "2026-05-07T01:02:48.355538+00:00",
+        "perf": {
+          "step_index": 3,
+          "llm_latency_ms": 6119.2534000001615,
+          "prompt_tokens": 5730,
+          "completion_tokens": 83,
+          "context_tokens": 5092,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 4
+  },
+  "compressed_states": [],
+  "final_itinerary": {
+    "itinerary_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+    "request_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+    "days": [
+      {
+        "date": "2026-06-07",
+        "city": "city_world_71_20260506_141958_0001",
+        "transport_segments": [
+          {
+            "mode": "flight",
+            "from_location": "city_world_71_20260506_141958_0001",
+            "to_location": "city_world_71_20260506_141958_0003",
+            "departure_datetime": "2026-06-07T09:00:00",
+            "arrival_datetime": "2026-06-07T12:35:00",
+            "cost_usd": 9307.22,
+            "booking_ref": "FLT-5335EAFD"
+          }
+        ],
+        "accommodation": null,
+        "activities": [],
+        "notes": ""
+      }
+    ],
+    "total_cost_usd": 9307.22,
+    "is_complete": false,
+    "version": 0
+  },
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.03999999898951501,
+      "avg_latency_ms": 0.03999999898951501,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "search_flights",
+      "call_count": 2,
+      "success_count": 1,
+      "failure_count": 1,
+      "total_latency_ms": 5.7071999908657745,
+      "avg_latency_ms": 2.8535999954328872,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "select_flight",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.029399991035461426,
+      "avg_latency_ms": 0.029399991035461426,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 4,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 16819.550399988657,
+    "total_llm_latency_ms": 12830.056000006152,
+    "total_tool_latency_ms": 5.776599980890751,
+    "llm_latency_fraction": 0.9995499629699988,
+    "avg_step_llm_latency_ms": 3207.514000001538,
+    "total_prompt_tokens": 13717,
+    "total_completion_tokens": 348,
+    "total_tokens": 14065,
+    "tokens_per_step": 3516.25,
+    "estimated_cost_usd": 0.00226635,
+    "avg_context_tokens": 3410.25,
+    "max_context_tokens": 5092,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 196169, Requested 5340. Please try again in 452ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "bd21db2e-88ad-4fd3-84f1-f00e4a355cb1",
+    "raw_text": "Family of 4 (2 adults, 2 kids under 12) heading from Brindor to Duskport for 9 days. Budget is $4000. We need family-friendly activities and theme parks.",
+    "origin_city": "city_world_71_20260506_141958_0001",
+    "destination_cities": [
+      "city_world_71_20260506_141958_0003"
+    ],
+    "start_date": "2026-06-07",
+    "end_date": "2026-06-16",
+    "budget_usd": 4000.0,
+    "traveler_profile": {
+      "num_adults": 2,
+      "num_children": 2,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-e9d587",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $4000 USD.",
+        "value": 4000.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-f3d1fc",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-06-07 and end by 2026-06-16.",
+        "value": "2026-06-07 to 2026-06-16",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-763987",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 9 days long.",
+        "value": 9,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-237e61",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 4 (2 adult(s), 2 child(ren)); all pricing and reservations must accommodate the full group.",
+        "value": 4,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-07923d",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one park or family-friendly outdoor activity.",
+        "value": "park",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-7c7716",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Prefer family rooms or suites at 3-star hotels or above.",
+        "value": 3,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-transport-3a4d03",
+        "constraint_type": "soft",
+        "category": "transport",
+        "description": "Prefer direct flights to minimise travel time with young children.",
+        "value": "direct",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-dfa34d",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one major family attraction (theme park, beach, or zoo) per 3 days.",
+        "value": "family_attraction",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-785a4a",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Hotel should have a pool or dedicated play area for children.",
+        "value": "child_amenities",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "family-friendly activities",
+      "theme parks",
+      "kid-friendly dining",
+      "beaches",
+      "safe neighborhoods"
+    ],
+    "world_id": "world_71_20260506_141958",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "family_trip",
+      "tone_variant": 0,
+      "origin_name": "Brindor",
+      "dest_names": [
+        "Duskport"
+      ],
+      "world_id": "world_71_20260506_141958",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 4,
+        "n_destinations": 1,
+        "trip_duration_days": 9,
+        "budget_per_traveler_per_day": 111.11,
+        "constraint_density": 1.0,
+        "geographic_complexity": "single_city",
+        "group_type": "family",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.2,
+        "geographic_complexity_score": 0.0,
+        "budget_tightness_score": 0.7556,
+        "group_complexity_score": 0.4,
+        "preference_specificity_score": 0.6667,
+        "complexity_score": 0.3611,
+        "complexity_tier": "medium"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T01:02:52.065129+00:00"
+}

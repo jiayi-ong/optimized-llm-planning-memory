@@ -1,0 +1,465 @@
+{
+  "episode_id": "67219f32-7385-4d6c-b579-70e822ec319e",
+  "request_id": "c629eebd-a322-418b-9e06-bef8bcf5d76e",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "46a1a111-a674-44ba-b41c-7ecba872b0c8",
+    "request_id": "c629eebd-a322-418b-9e06-bef8bcf5d76e",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "Starting the planning process by discovering available routes from Brindor to Caelum. No bookings confirmed yet.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_65_20260506_141951_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a prosperous city in Northern Europe, moderately visited by international visitors. As a adventure destination, it offers a distinctive character shaped by its primary identity. The climate is cold winters and warm summers, making it generally safe with the usual urban precautions. The food scene leans toward American and French cuisine, and the city is known for its vibrant sports and festival scene.",
+              "dominant_cuisines": [
+                "American",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "park",
+                "viewpoint"
+              ],
+              "dominant_event_categories": [
+                "sports",
+                "festival"
+              ]
+            },
+            {
+              "city_id": "city_world_65_20260506_141951_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a affluent city in Northern Europe, off-the-beaten-path by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it requiring a degree of caution, especially after dark. The food scene leans toward Italian and American cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "American",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_65_20260506_141951_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a prosperous city in Northern Europe, highly popular by international visitors. As a historic city, it offers a distinctive character shaped by its primary identity. The climate is warm and humid year-round, making it considered very safe for travellers. The food scene leans toward Spanish and French cuisine, and the city is known for its vibrant culture and exhibition scene.",
+              "dominant_cuisines": [
+                "Spanish",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "historic_site",
+                "landmark",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "exhibition",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_65_20260506_141951_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a emerging city in Northern Europe, highly popular by international visitors. As a tech hub, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it presenting elevated safety concerns — plan carefully. The food scene leans toward Indian and Japanese cuisine, and the city is known for its vibrant exhibition and culture scene.",
+              "dominant_cuisines": [
+                "Indian",
+                "Japanese",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "landmark",
+                "shopping"
+              ],
+              "dominant_event_categories": [
+                "exhibition",
+                "culture",
+                "comedy"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.029400005587376654
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:38.628138+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 1064.630799999577,
+          "prompt_tokens": 2023,
+          "completion_tokens": 29,
+          "context_tokens": 2185,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 1,
+        "thought": "Starting the planning process by discovering available routes from Brindor to Caelum. No bookings confirmed yet.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes({})"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_65_20260506_141951_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a prosperous city in Northern Europe, moderately visited by international visitors. As a adventure destination, it offers a distinctive character shaped by its primary identity. The climate is cold winters and warm summers, making it generally safe with the usual urban precautions. The food scene leans toward American and French cuisine, and the city is known for its vibrant sports and festival scene.",
+              "dominant_cuisines": [
+                "American",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "park",
+                "viewpoint"
+              ],
+              "dominant_event_categories": [
+                "sports",
+                "festival"
+              ]
+            },
+            {
+              "city_id": "city_world_65_20260506_141951_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a affluent city in Northern Europe, off-the-beaten-path by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it requiring a degree of caution, especially after dark. The food scene leans toward Italian and American cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "American",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_65_20260506_141951_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a prosperous city in Northern Europe, highly popular by international visitors. As a historic city, it offers a distinctive character shaped by its primary identity. The climate is warm and humid year-round, making it considered very safe for travellers. The food scene leans toward Spanish and French cuisine, and the city is known for its vibrant culture and exhibition scene.",
+              "dominant_cuisines": [
+                "Spanish",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "historic_site",
+                "landmark",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "exhibition",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_65_20260506_141951_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a emerging city in Northern Europe, highly popular by international visitors. As a tech hub, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it presenting elevated safety concerns — plan carefully. The food scene leans toward Indian and Japanese cuisine, and the city is known for its vibrant exhibition and culture scene.",
+              "dominant_cuisines": [
+                "Indian",
+                "Japanese",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "landmark",
+                "shopping"
+              ],
+              "dominant_event_categories": [
+                "exhibition",
+                "culture",
+                "comedy"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.035200006095692515
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:41.649838+00:00",
+        "perf": {
+          "step_index": 1,
+          "llm_latency_ms": 3001.383499999065,
+          "prompt_tokens": 2760,
+          "completion_tokens": 30,
+          "context_tokens": 2977,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 2,
+        "thought": "I will start by searching for available flights from Brindor to Caelum for the specified dates. No bookings confirmed yet.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "from": "city_world_65_20260506_141951_0001",
+            "to": "city_world_65_20260506_141951_0002",
+            "start_date": "2026-06-10",
+            "end_date": "2026-06-23",
+            "passengers": 4
+          },
+          "raw_text": "search_flights({\"from\": \"city_world_65_20260506_141951_0001\", \"to\": \"city_world_65_20260506_141951_0002\", \"start_date\": \"2026-06-10\", \"end_date\": \"2026-06-23\", \"passengers\": 4})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": false,
+          "result": null,
+          "error_message": "Tool 'search_flights' rejected invalid arguments: field 'origin_city_id': Field required; field 'destination_city_id': Field required; field 'departure_date': Field required. Expected schema: {'properties': {'origin_city_id': {'description': 'City ID for departure. Obtain from get_available_routes.', 'title': 'Origin City Id', 'type': 'string'}, 'destination_city_id': {'description': 'City ID for arrival. Obtain from get_available_routes.', 'title': 'Destination City Id', 'type': 'string'}, 'departure_date': {'description': 'Travel date in ISO 8601 format (YYYY-MM-DD).', 'title': 'Departure Date', 'type': 'string'}, 'passengers': {'default': 1, 'description': 'Total number of passengers. Always pass this to match your group size.', 'maximum': 20, 'minimum': 1, 'title': 'Passengers', 'type': 'integer'}, 'max_results': {'default': 10, 'description': 'Maximum number of results to return, sorted by total price (cheapest first).', 'maximum': 50, 'minimum': 1, 'title': 'Max Results', 'type': 'integer'}}, 'required': ['origin_city_id', 'destination_city_id', 'departure_date'], 'title': 'SearchFlightsInput', 'type': 'object'}.",
+          "latency_ms": 0.0
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:46.523166+00:00",
+        "perf": {
+          "step_index": 2,
+          "llm_latency_ms": 4861.44810001133,
+          "prompt_tokens": 3504,
+          "completion_tokens": 101,
+          "context_tokens": 3777,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 3
+  },
+  "compressed_states": [],
+  "final_itinerary": null,
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 2,
+      "success_count": 2,
+      "failure_count": 0,
+      "total_latency_ms": 0.06460001168306917,
+      "avg_latency_ms": 0.032300005841534585,
+      "redundant_call_count": 1
+    },
+    {
+      "tool_name": "search_flights",
+      "call_count": 1,
+      "success_count": 0,
+      "failure_count": 1,
+      "total_latency_ms": 0.0,
+      "avg_latency_ms": 0.0,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 3,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 12117.207499992219,
+    "total_llm_latency_ms": 8927.462400009972,
+    "total_tool_latency_ms": 0.06460001168306917,
+    "llm_latency_fraction": 0.9999927639522476,
+    "avg_step_llm_latency_ms": 2975.820800003324,
+    "total_prompt_tokens": 8287,
+    "total_completion_tokens": 160,
+    "total_tokens": 8447,
+    "tokens_per_step": 2815.6666666666665,
+    "estimated_cost_usd": 0.0013390499999999998,
+    "avg_context_tokens": 2979.6666666666665,
+    "max_context_tokens": 3777,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 196987, Requested 4165. Please try again in 345ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "c629eebd-a322-418b-9e06-bef8bcf5d76e",
+    "raw_text": "Family of 4 (2 adults, 2 kids under 12) heading from Brindor to Caelum for 13 days. Budget is $4000. We need family-friendly activities and theme parks.",
+    "origin_city": "city_world_65_20260506_141951_0001",
+    "destination_cities": [
+      "city_world_65_20260506_141951_0002"
+    ],
+    "start_date": "2026-06-10",
+    "end_date": "2026-06-23",
+    "budget_usd": 4000.0,
+    "traveler_profile": {
+      "num_adults": 2,
+      "num_children": 2,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-5269d7",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $4000 USD.",
+        "value": 4000.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-802f18",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-06-10 and end by 2026-06-23.",
+        "value": "2026-06-10 to 2026-06-23",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-35c712",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 13 days long.",
+        "value": 13,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-7e8f1a",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 4 (2 adult(s), 2 child(ren)); all pricing and reservations must accommodate the full group.",
+        "value": 4,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-b3eefc",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one park or family-friendly outdoor activity.",
+        "value": "park",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-971c38",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Prefer family rooms or suites at 3-star hotels or above.",
+        "value": 3,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-transport-c8dc77",
+        "constraint_type": "soft",
+        "category": "transport",
+        "description": "Prefer direct flights to minimise travel time with young children.",
+        "value": "direct",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-256fa4",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one major family attraction (theme park, beach, or zoo) per 3 days.",
+        "value": "family_attraction",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-119170",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Hotel should have a pool or dedicated play area for children.",
+        "value": "child_amenities",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "family-friendly activities",
+      "theme parks",
+      "kid-friendly dining",
+      "beaches",
+      "safe neighborhoods"
+    ],
+    "world_id": "world_65_20260506_141951",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "family_trip",
+      "tone_variant": 0,
+      "origin_name": "Brindor",
+      "dest_names": [
+        "Caelum"
+      ],
+      "world_id": "world_65_20260506_141951",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 4,
+        "n_destinations": 1,
+        "trip_duration_days": 13,
+        "budget_per_traveler_per_day": 76.92,
+        "constraint_density": 0.692,
+        "geographic_complexity": "single_city",
+        "group_type": "family",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.1385,
+        "geographic_complexity_score": 0.0,
+        "budget_tightness_score": 0.8923,
+        "group_complexity_score": 0.4,
+        "preference_specificity_score": 0.6667,
+        "complexity_score": 0.3731,
+        "complexity_tier": "medium"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T01:02:49.659619+00:00"
+}

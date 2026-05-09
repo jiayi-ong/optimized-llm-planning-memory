@@ -1,0 +1,683 @@
+{
+  "episode_id": "c475b289-14b0-48e9-b2c5-e81823bce779",
+  "request_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "b480dee6-7420-4886-b360-77b11df99a28",
+    "request_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "The last observation showed that I need to discover the available cities for the trip from Duskport to Brindor. I will start by calling the get_available_routes tool to find the city IDs for both destinations.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_51_20260506_141935_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a prosperous city in Northern Europe, highly popular by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it requiring a degree of caution, especially after dark. The food scene leans toward Mediterranean and Italian cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Mediterranean",
+                "Italian",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_51_20260506_141935_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a emerging city in Northern Europe, moderately visited by international visitors. As a foodie haven, it offers a distinctive character shaped by its primary identity. The climate is mild winters and hot summers, making it generally safe with the usual urban precautions. The food scene leans toward Italian and French cuisine, and the city is known for its vibrant food and market scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "food_market",
+                "cultural_site",
+                "landmark"
+              ],
+              "dominant_event_categories": [
+                "food",
+                "market"
+              ]
+            },
+            {
+              "city_id": "city_world_51_20260506_141935_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a emerging city in Northern Europe, moderately visited by international visitors. As a nightlife city, it offers a distinctive character shaped by its primary identity. The climate is warm and humid year-round, making it requiring a degree of caution, especially after dark. The food scene leans toward Thai and Mexican cuisine, and the city is known for its vibrant music and comedy scene.",
+              "dominant_cuisines": [
+                "Thai",
+                "Mexican"
+              ],
+              "dominant_attraction_categories": [
+                "nightlife",
+                "food_market"
+              ],
+              "dominant_event_categories": [
+                "music",
+                "comedy"
+              ]
+            },
+            {
+              "city_id": "city_world_51_20260506_141935_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a mid-tier city in Northern Europe, moderately visited by international visitors. As a nature escape, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it requiring a degree of caution, especially after dark. The food scene leans toward Mediterranean and Thai cuisine, and the city is known for its vibrant festival and sports scene.",
+              "dominant_cuisines": [
+                "Mediterranean",
+                "Thai",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "park"
+              ],
+              "dominant_event_categories": [
+                "festival",
+                "sports"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.06299999949987978
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:51:16.640968+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 2237.155199996778,
+          "prompt_tokens": 2461,
+          "completion_tokens": 51,
+          "context_tokens": 2741,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 1,
+        "thought": "The last observation showed that I have successfully discovered the available cities for the trip from Duskport to Brindor. The cities are Duskport (city_id: city_world_51_20260506_141935_0003) and Brindor (city_id: city_world_51_20260506_141935_0001). I will now proceed to search for available flights from Duskport to Brindor on the specified date of July 3, 2026.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "from": "city_world_51_20260506_141935_0003",
+            "to": "city_world_51_20260506_141935_0001",
+            "date": "2026-07-03",
+            "passengers": 1
+          },
+          "raw_text": "search_flights({\"from\": \"city_world_51_20260506_141935_0003\", \"to\": \"city_world_51_20260506_141935_0001\", \"date\": \"2026-07-03\", \"passengers\": 1})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": false,
+          "result": null,
+          "error_message": "Tool 'search_flights' rejected invalid arguments: field 'origin_city_id': Field required; field 'destination_city_id': Field required; field 'departure_date': Field required. Expected schema: {'properties': {'origin_city_id': {'description': 'City ID for departure. Obtain from get_available_routes.', 'title': 'Origin City Id', 'type': 'string'}, 'destination_city_id': {'description': 'City ID for arrival. Obtain from get_available_routes.', 'title': 'Destination City Id', 'type': 'string'}, 'departure_date': {'description': 'Travel date in ISO 8601 format (YYYY-MM-DD).', 'title': 'Departure Date', 'type': 'string'}, 'passengers': {'default': 1, 'description': 'Total number of passengers. Always pass this to match your group size.', 'maximum': 20, 'minimum': 1, 'title': 'Passengers', 'type': 'integer'}, 'max_results': {'default': 10, 'description': 'Maximum number of results to return, sorted by total price (cheapest first).', 'maximum': 50, 'minimum': 1, 'title': 'Max Results', 'type': 'integer'}}, 'required': ['origin_city_id', 'destination_city_id', 'departure_date'], 'title': 'SearchFlightsInput', 'type': 'object'}.",
+          "latency_ms": 0.0
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:51:21.191515+00:00",
+        "perf": {
+          "step_index": 1,
+          "llm_latency_ms": 4511.208199997782,
+          "prompt_tokens": 3204,
+          "completion_tokens": 166,
+          "context_tokens": 3539,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 2,
+        "thought": "The last observation showed that I encountered an error while trying to search for flights due to missing required fields. I will correct the arguments by using the correct city IDs for the origin and destination cities, along with the specified departure date and number of passengers. I will now search for available flights from Duskport to Brindor on July 3, 2026.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "origin_city_id": "city_world_51_20260506_141935_0003",
+            "destination_city_id": "city_world_51_20260506_141935_0001",
+            "departure_date": "2026-07-03",
+            "passengers": 1
+          },
+          "raw_text": "search_flights({\"origin_city_id\": \"city_world_51_20260506_141935_0003\", \"destination_city_id\": \"city_world_51_20260506_141935_0001\", \"departure_date\": \"2026-07-03\", \"passengers\": 1})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": true,
+          "result": [
+            {
+              "edge_id": "edge_world_51_20260506_141935_0113",
+              "airline": "StarFly",
+              "flight_number": "ST235",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T15:00:00",
+              "arrival_datetime": "2026-07-03T18:25:00",
+              "duration_min": 205,
+              "price_per_person": 570.83,
+              "total_price": 570.83,
+              "passengers": 1,
+              "seats_available": 56,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 56
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0110",
+              "airline": "StarFly",
+              "flight_number": "ST232",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T09:00:00",
+              "arrival_datetime": "2026-07-03T13:00:00",
+              "duration_min": 240,
+              "price_per_person": 695.16,
+              "total_price": 695.16,
+              "passengers": 1,
+              "seats_available": 44,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 33
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0109",
+              "airline": "StarFly",
+              "flight_number": "ST231",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T07:00:00",
+              "arrival_datetime": "2026-07-03T10:30:00",
+              "duration_min": 210,
+              "price_per_person": 701.56,
+              "total_price": 701.56,
+              "passengers": 1,
+              "seats_available": 33,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 39
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0111",
+              "airline": "StarFly",
+              "flight_number": "ST233",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T11:00:00",
+              "arrival_datetime": "2026-07-03T14:45:00",
+              "duration_min": 225,
+              "price_per_person": 723.18,
+              "total_price": 723.18,
+              "passengers": 1,
+              "seats_available": 7,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 18
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0158",
+              "airline": "SkyLink",
+              "flight_number": "SK330",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T19:00:00",
+              "arrival_datetime": "2026-07-04T01:58:00",
+              "duration_min": 418,
+              "price_per_person": 729.41,
+              "total_price": 729.41,
+              "passengers": 1,
+              "seats_available": 14,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 3375.33,
+              "baggage_included": true,
+              "expected_delay_min": 15
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0112",
+              "airline": "StarFly",
+              "flight_number": "ST234",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T13:00:00",
+              "arrival_datetime": "2026-07-03T16:50:00",
+              "duration_min": 230,
+              "price_per_person": 758.4,
+              "total_price": 758.4,
+              "passengers": 1,
+              "seats_available": 42,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0115",
+              "airline": "StarFly",
+              "flight_number": "ST237",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T19:00:00",
+              "arrival_datetime": "2026-07-03T22:55:00",
+              "duration_min": 235,
+              "price_per_person": 767.35,
+              "total_price": 767.35,
+              "passengers": 1,
+              "seats_available": 40,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0114",
+              "airline": "StarFly",
+              "flight_number": "ST236",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T17:00:00",
+              "arrival_datetime": "2026-07-03T20:20:00",
+              "duration_min": 200,
+              "price_per_person": 831.53,
+              "total_price": 831.53,
+              "passengers": 1,
+              "seats_available": 51,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0159",
+              "airline": "SkyLink",
+              "flight_number": "SK331",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T21:00:00",
+              "arrival_datetime": "2026-07-04T03:58:00",
+              "duration_min": 418,
+              "price_per_person": 865.09,
+              "total_price": 865.09,
+              "passengers": 1,
+              "seats_available": 38,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 3375.33,
+              "baggage_included": true,
+              "expected_delay_min": 28
+            },
+            {
+              "edge_id": "edge_world_51_20260506_141935_0116",
+              "airline": "StarFly",
+              "flight_number": "ST238",
+              "origin_city_id": "city_world_51_20260506_141935_0003",
+              "destination_city_id": "city_world_51_20260506_141935_0001",
+              "origin_hub_id": "hub_world_51_20260506_141935_0006",
+              "destination_hub_id": "hub_world_51_20260506_141935_0002",
+              "departure_datetime": "2026-07-03T21:00:00",
+              "arrival_datetime": "2026-07-04T00:30:00",
+              "duration_min": 210,
+              "price_per_person": 874.86,
+              "total_price": 874.86,
+              "passengers": 1,
+              "seats_available": 25,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2341.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 3.266599989729002
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:51:24.879331+00:00",
+        "perf": {
+          "step_index": 2,
+          "llm_latency_ms": 3644.9174000008497,
+          "prompt_tokens": 3664,
+          "completion_tokens": 143,
+          "context_tokens": 3964,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "The last observation showed that I have successfully searched for available flights from Duskport to Brindor on July 3, 2026. The cheapest flight option is with StarFly, flight number ST235, departing at 15:00 and arriving at 18:25 for a total price of $570.83. I will proceed to select this flight to confirm the booking.",
+        "action": {
+          "tool_name": "select_flight",
+          "arguments": {
+            "edge_id": "edge_world_51_20260506_141935_0113"
+          },
+          "raw_text": "select_flight({\"edge_id\": \"edge_world_51_20260506_141935_0113\"})"
+        },
+        "observation": {
+          "tool_name": "select_flight",
+          "success": true,
+          "result": {
+            "booking_id": "FLT-E50D3B7C",
+            "edge_id": "edge_world_51_20260506_141935_0113",
+            "origin_city_name": "city_world_51_20260506_141935_0003",
+            "destination_city_name": "city_world_51_20260506_141935_0001",
+            "departure_datetime": "2026-07-03T15:00:00",
+            "arrival_datetime": "2026-07-03T18:25:00",
+            "total_price": 3080.57,
+            "status": "selected",
+            "confirmation_datetime": "2026-05-07T00:51:30.733143+00:00"
+          },
+          "error_message": null,
+          "latency_ms": 0.03279998782090843
+        },
+        "itinerary_snapshot": {
+          "itinerary_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+          "request_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+          "days": [
+            {
+              "date": "2026-07-03",
+              "city": "city_world_51_20260506_141935_0003",
+              "transport_segments": [
+                {
+                  "mode": "flight",
+                  "from_location": "city_world_51_20260506_141935_0003",
+                  "to_location": "city_world_51_20260506_141935_0001",
+                  "departure_datetime": "2026-07-03T15:00:00",
+                  "arrival_datetime": "2026-07-03T18:25:00",
+                  "cost_usd": 3080.57,
+                  "booking_ref": "FLT-E50D3B7C"
+                }
+              ],
+              "accommodation": null,
+              "activities": [],
+              "notes": ""
+            }
+          ],
+          "total_cost_usd": 3080.57,
+          "is_complete": false,
+          "version": 0
+        },
+        "timestamp": "2026-05-07T00:51:30.733143+00:00",
+        "perf": {
+          "step_index": 3,
+          "llm_latency_ms": 5834.676499987836,
+          "prompt_tokens": 6234,
+          "completion_tokens": 106,
+          "context_tokens": 5736,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 4
+  },
+  "compressed_states": [],
+  "final_itinerary": {
+    "itinerary_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+    "request_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+    "days": [
+      {
+        "date": "2026-07-03",
+        "city": "city_world_51_20260506_141935_0003",
+        "transport_segments": [
+          {
+            "mode": "flight",
+            "from_location": "city_world_51_20260506_141935_0003",
+            "to_location": "city_world_51_20260506_141935_0001",
+            "departure_datetime": "2026-07-03T15:00:00",
+            "arrival_datetime": "2026-07-03T18:25:00",
+            "cost_usd": 3080.57,
+            "booking_ref": "FLT-E50D3B7C"
+          }
+        ],
+        "accommodation": null,
+        "activities": [],
+        "notes": ""
+      }
+    ],
+    "total_cost_usd": 3080.57,
+    "is_complete": false,
+    "version": 0
+  },
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.06299999949987978,
+      "avg_latency_ms": 0.06299999949987978,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "search_flights",
+      "call_count": 2,
+      "success_count": 1,
+      "failure_count": 1,
+      "total_latency_ms": 3.266599989729002,
+      "avg_latency_ms": 1.633299994864501,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "select_flight",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.03279998782090843,
+      "avg_latency_ms": 0.03279998782090843,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 4,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 19522.931199986488,
+    "total_llm_latency_ms": 16227.957299983245,
+    "total_tool_latency_ms": 3.3623999770497903,
+    "llm_latency_fraction": 0.9997928449418035,
+    "avg_step_llm_latency_ms": 4056.9893249958113,
+    "total_prompt_tokens": 15563,
+    "total_completion_tokens": 466,
+    "total_tokens": 16029,
+    "tokens_per_step": 4007.25,
+    "estimated_cost_usd": 0.00261405,
+    "avg_context_tokens": 3995.0,
+    "max_context_tokens": 5736,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 196732, Requested 6016. Please try again in 824ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "14c5b662-b9d5-4bfa-8d6e-d2b3d63bf418",
+    "raw_text": "Solo trip from Duskport to Brindor — 4 days, $2500. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+    "origin_city": "city_world_51_20260506_141935_0003",
+    "destination_cities": [
+      "city_world_51_20260506_141935_0001"
+    ],
+    "start_date": "2026-07-03",
+    "end_date": "2026-07-07",
+    "budget_usd": 2500.0,
+    "traveler_profile": {
+      "num_adults": 1,
+      "num_children": 0,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-14a8b5",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $2500 USD.",
+        "value": 2500.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-6de42e",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-07-03 and end by 2026-07-07.",
+        "value": "2026-07-03 to 2026-07-07",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-3d1ffe",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 4 days long.",
+        "value": 4,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-975896",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+        "value": 1,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-a22e1d",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one hiking activity.",
+        "value": "hiking",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-99dc4d",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+        "value": 1,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-6a43d1",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one outdoor or adventure activity per day.",
+        "value": "outdoor",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-d6e40e",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Favour local community experiences over tourist-trap attractions.",
+        "value": "local_authentic",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "hiking",
+      "local cuisine",
+      "cultural sites",
+      "photography",
+      "street art"
+    ],
+    "world_id": "world_51_20260506_141935",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "solo_adventurer",
+      "tone_variant": 0,
+      "origin_name": "Duskport",
+      "dest_names": [
+        "Brindor"
+      ],
+      "world_id": "world_51_20260506_141935",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 3,
+        "n_destinations": 1,
+        "trip_duration_days": 4,
+        "budget_per_traveler_per_day": 625.0,
+        "constraint_density": 2.0,
+        "geographic_complexity": "single_city",
+        "group_type": "solo",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.4,
+        "geographic_complexity_score": 0.0,
+        "budget_tightness_score": 0.0,
+        "group_complexity_score": 0.0,
+        "preference_specificity_score": 0.5,
+        "complexity_score": 0.175,
+        "complexity_tier": "low"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T00:51:33.910176+00:00"
+}

@@ -1,0 +1,306 @@
+{
+  "episode_id": "53b0db4e-5eb7-4e1b-8a84-4b67dfb9be6a",
+  "request_id": "7115f374-13bc-42c9-a2b1-a4cd17cb517c",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "3da9daf2-e274-4976-a11b-78d2e8231514",
+    "request_id": "7115f374-13bc-42c9-a2b1-a4cd17cb517c",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "Starting to plan the trip from Aeloria to Duskport and Caelum. First, I need to discover the available routes to ensure these cities exist in the simulation.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_49_20260506_141933_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a affluent city in Northern Europe, moderately visited by international visitors. As a beach resort, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it presenting elevated safety concerns — plan carefully. The food scene leans toward American and Mediterranean cuisine, and the city is known for its vibrant festival and music scene.",
+              "dominant_cuisines": [
+                "American",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "beach",
+                "park",
+                "nightlife"
+              ],
+              "dominant_event_categories": [
+                "festival",
+                "music",
+                "sports"
+              ]
+            },
+            {
+              "city_id": "city_world_49_20260506_141933_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a emerging city in Northern Europe, moderately visited by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is warm and humid year-round, making it generally safe with the usual urban precautions. The food scene leans toward Italian and Mediterranean cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_49_20260506_141933_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a mid-tier city in Northern Europe, highly popular by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it generally safe with the usual urban precautions. The food scene leans toward Mediterranean and French cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Mediterranean",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_49_20260506_141933_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a affluent city in Northern Europe, off-the-beaten-path by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it considered very safe for travellers. The food scene leans toward Mediterranean and French cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Mediterranean",
+                "French",
+                "Italian"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.037699996028095484
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:01:29.612984+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 1900.0440999952843,
+          "prompt_tokens": 1991,
+          "completion_tokens": 44,
+          "context_tokens": 2144,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 1
+  },
+  "compressed_states": [],
+  "final_itinerary": null,
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.037699996028095484,
+      "avg_latency_ms": 0.037699996028095484,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 1,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 3109.9816000059946,
+    "total_llm_latency_ms": 1900.0440999952843,
+    "total_tool_latency_ms": 0.037699996028095484,
+    "llm_latency_fraction": 0.9999801587510452,
+    "avg_step_llm_latency_ms": 1900.0440999952843,
+    "total_prompt_tokens": 1991,
+    "total_completion_tokens": 44,
+    "total_tokens": 2035,
+    "tokens_per_step": 2035.0,
+    "estimated_cost_usd": 0.00032504999999999996,
+    "avg_context_tokens": 2144.0,
+    "max_context_tokens": 2144,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 199747, Requested 2958. Please try again in 811ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "7115f374-13bc-42c9-a2b1-a4cd17cb517c",
+    "raw_text": "Solo trip from Aeloria to Duskport and Caelum — 6 days, $1800. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+    "origin_city": "city_world_49_20260506_141933_0000",
+    "destination_cities": [
+      "city_world_49_20260506_141933_0003",
+      "city_world_49_20260506_141933_0002"
+    ],
+    "start_date": "2026-05-15",
+    "end_date": "2026-05-21",
+    "budget_usd": 1800.0,
+    "traveler_profile": {
+      "num_adults": 1,
+      "num_children": 0,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-13cd54",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $1800 USD.",
+        "value": 1800.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-d799b1",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-05-15 and end by 2026-05-21.",
+        "value": "2026-05-15 to 2026-05-21",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-8bae15",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 6 days long.",
+        "value": 6,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-2f8880",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+        "value": 1,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-1d9647",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one hiking activity.",
+        "value": "hiking",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-69df45",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+        "value": 1,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-79eb5a",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one outdoor or adventure activity per day.",
+        "value": "outdoor",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-cb3277",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Favour local community experiences over tourist-trap attractions.",
+        "value": "local_authentic",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "hiking",
+      "local cuisine",
+      "cultural sites",
+      "photography",
+      "street art"
+    ],
+    "world_id": "world_49_20260506_141933",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "solo_adventurer",
+      "tone_variant": 0,
+      "origin_name": "Aeloria",
+      "dest_names": [
+        "Duskport",
+        "Caelum"
+      ],
+      "world_id": "world_49_20260506_141933",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 3,
+        "n_destinations": 2,
+        "trip_duration_days": 6,
+        "budget_per_traveler_per_day": 300.0,
+        "constraint_density": 1.333,
+        "geographic_complexity": "multi_city",
+        "group_type": "solo",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.2667,
+        "geographic_complexity_score": 0.5,
+        "budget_tightness_score": 0.0,
+        "group_complexity_score": 0.0,
+        "preference_specificity_score": 0.5,
+        "complexity_score": 0.2667,
+        "complexity_tier": "low"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T01:01:30.807292+00:00"
+}

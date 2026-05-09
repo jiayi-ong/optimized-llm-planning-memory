@@ -1,0 +1,300 @@
+{
+  "episode_id": "0e5bcbe8-7b5e-44d6-bf22-b2c80369f339",
+  "request_id": "9e11e386-def3-46ca-a3ac-05bb767e0a83",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "14f2b7ca-35a3-4342-9e29-ec4d410d2a2c",
+    "request_id": "9e11e386-def3-46ca-a3ac-05bb767e0a83",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "Starting to plan a quick 2-day trip from Duskport to Caelum. First, I need to find available routes to confirm the city IDs.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_46_20260506_141929_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a budget-conscious city in Northern Europe, highly popular by international visitors. As a historic city, it offers a distinctive character shaped by its primary identity. The climate is mild winters and hot summers, making it considered very safe for travellers. The food scene leans toward Spanish and Mediterranean cuisine, and the city is known for its vibrant culture and exhibition scene.",
+              "dominant_cuisines": [
+                "Spanish",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "historic_site",
+                "landmark"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "exhibition"
+              ]
+            },
+            {
+              "city_id": "city_world_46_20260506_141929_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a affluent city in Northern Europe, highly popular by international visitors. As a nature escape, it offers a distinctive character shaped by its primary identity. The climate is mild winters and hot summers, making it considered very safe for travellers. The food scene leans toward Vietnamese and American cuisine, and the city is known for its vibrant festival and sports scene.",
+              "dominant_cuisines": [
+                "Vietnamese",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "park",
+                "viewpoint"
+              ],
+              "dominant_event_categories": [
+                "festival",
+                "sports"
+              ]
+            },
+            {
+              "city_id": "city_world_46_20260506_141929_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a prosperous city in Northern Europe, off-the-beaten-path by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it considered very safe for travellers. The food scene leans toward Italian and Mediterranean cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_46_20260506_141929_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a prosperous city in Northern Europe, off-the-beaten-path by international visitors. As a tech hub, it offers a distinctive character shaped by its primary identity. The climate is cold winters and warm summers, making it requiring a degree of caution, especially after dark. The food scene leans toward American and Japanese cuisine, and the city is known for its vibrant exhibition and culture scene.",
+              "dominant_cuisines": [
+                "American",
+                "Japanese"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "landmark"
+              ],
+              "dominant_event_categories": [
+                "exhibition",
+                "culture"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.027400004910305142
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T01:02:07.551058+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 1482.1605999895837,
+          "prompt_tokens": 1984,
+          "completion_tokens": 40,
+          "context_tokens": 2149,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 1
+  },
+  "compressed_states": [],
+  "final_itinerary": null,
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.027400004910305142,
+      "avg_latency_ms": 0.027400004910305142,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 1,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 2985.847800009651,
+    "total_llm_latency_ms": 1482.1605999895837,
+    "total_tool_latency_ms": 0.027400004910305142,
+    "llm_latency_fraction": 0.9999815138127481,
+    "avg_step_llm_latency_ms": 1482.1605999895837,
+    "total_prompt_tokens": 1984,
+    "total_completion_tokens": 40,
+    "total_tokens": 2024,
+    "tokens_per_step": 2024.0,
+    "estimated_cost_usd": 0.00032159999999999996,
+    "avg_context_tokens": 2149.0,
+    "max_context_tokens": 2149,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 197273, Requested 2937. Please try again in 62ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "9e11e386-def3-46ca-a3ac-05bb767e0a83",
+    "raw_text": "Quick 2-day trip from Duskport to Caelum, very tight $600 total. We want street food and free attractions. As cheap as possible.",
+    "origin_city": "city_world_46_20260506_141929_0003",
+    "destination_cities": [
+      "city_world_46_20260506_141929_0002"
+    ],
+    "start_date": "2026-06-30",
+    "end_date": "2026-07-02",
+    "budget_usd": 600.0,
+    "traveler_profile": {
+      "num_adults": 2,
+      "num_children": 0,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-d8ecbf",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $600 USD.",
+        "value": 600.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-ac3c12",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-06-30 and end by 2026-07-02.",
+        "value": "2026-06-30 to 2026-07-02",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-24c803",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 2 days long.",
+        "value": 2,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-a52d85",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+        "value": 2,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-transport-d9e09d",
+        "constraint_type": "hard",
+        "category": "transport",
+        "description": "Trip must use bus or public transit for at least one journey leg.",
+        "value": "bus",
+        "unit": "mode",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-3ac887",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Budget accommodation only — hostels or 1-2 star hotels.",
+        "value": 1,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-ada0ba",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Prioritise free or low-cost attractions (under $20 per person per activity).",
+        "value": "free_or_cheap",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-dfd593",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Maximise the number of distinct locations visited within the time and budget.",
+        "value": "coverage",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "street food",
+      "free attractions",
+      "walking tours",
+      "local markets",
+      "public transit"
+    ],
+    "world_id": "world_46_20260506_141929",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "short_budget_stay",
+      "tone_variant": 0,
+      "origin_name": "Duskport",
+      "dest_names": [
+        "Caelum"
+      ],
+      "world_id": "world_46_20260506_141929",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 3,
+        "n_destinations": 1,
+        "trip_duration_days": 2,
+        "budget_per_traveler_per_day": 150.0,
+        "constraint_density": 4.0,
+        "geographic_complexity": "single_city",
+        "group_type": "couple",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.8,
+        "geographic_complexity_score": 0.0,
+        "budget_tightness_score": 0.6,
+        "group_complexity_score": 0.0,
+        "preference_specificity_score": 0.5,
+        "complexity_score": 0.395,
+        "complexity_tier": "medium"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T01:02:08.999738+00:00"
+}

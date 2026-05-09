@@ -1,0 +1,730 @@
+{
+  "episode_id": "667aa937-2bdd-4eae-b0de-8ac86c8ef2c2",
+  "request_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+  "agent_mode": "mcts_compressor",
+  "trajectory": {
+    "trajectory_id": "0e9f5b5c-56be-4a53-870a-b00dc0ef5083",
+    "request_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "Starting to plan a solo trip from Aeloria to Duskport for 9 days, focusing on hiking and local cuisine. First, I need to discover available routes to confirm the city IDs.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_70_20260506_141957_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a prosperous city in Northern Europe, moderately visited by international visitors. As a tech hub, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it requiring a degree of caution, especially after dark. The food scene leans toward American and Japanese cuisine, and the city is known for its vibrant exhibition and culture scene.",
+              "dominant_cuisines": [
+                "American",
+                "Japanese"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "landmark",
+                "shopping"
+              ],
+              "dominant_event_categories": [
+                "exhibition",
+                "culture"
+              ]
+            },
+            {
+              "city_id": "city_world_70_20260506_141957_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a mid-tier city in Northern Europe, moderately visited by international visitors. As a foodie haven, it offers a distinctive character shaped by its primary identity. The climate is mild winters and hot summers, making it presenting elevated safety concerns — plan carefully. The food scene leans toward Italian and French cuisine, and the city is known for its vibrant food and market scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "food_market",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "food",
+                "market",
+                "festival"
+              ]
+            },
+            {
+              "city_id": "city_world_70_20260506_141957_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a budget-conscious city in Northern Europe, moderately visited by international visitors. As a tech hub, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it requiring a degree of caution, especially after dark. The food scene leans toward Japanese and Indian cuisine, and the city is known for its vibrant exhibition and culture scene.",
+              "dominant_cuisines": [
+                "Japanese",
+                "Indian"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "landmark",
+                "shopping"
+              ],
+              "dominant_event_categories": [
+                "exhibition",
+                "culture",
+                "comedy"
+              ]
+            },
+            {
+              "city_id": "city_world_70_20260506_141957_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a budget-conscious city in Northern Europe, highly popular by international visitors. As a foodie haven, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it considered very safe for travellers. The food scene leans toward Italian and Japanese cuisine, and the city is known for its vibrant food and market scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "Japanese",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "food_market",
+                "cultural_site",
+                "landmark"
+              ],
+              "dominant_event_categories": [
+                "food",
+                "market",
+                "festival"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.05970001802779734
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T16:42:42.936299+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 1397.5149000179954,
+          "prompt_tokens": 1973,
+          "completion_tokens": 49,
+          "context_tokens": 2133,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 1,
+        "thought": "I have discovered the available routes from Aeloria to Duskport. Now, I will search for flights from Aeloria to Duskport for the specified dates.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "from": "city_world_70_20260506_141957_0000",
+            "to": "city_world_70_20260506_141957_0003",
+            "start_date": "2026-05-14",
+            "end_date": "2026-05-23",
+            "passengers": 1
+          },
+          "raw_text": "search_flights({\"from\": \"city_world_70_20260506_141957_0000\", \"to\": \"city_world_70_20260506_141957_0003\", \"start_date\": \"2026-05-14\", \"end_date\": \"2026-05-23\", \"passengers\": 1})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": false,
+          "result": null,
+          "error_message": "Tool 'search_flights' rejected invalid arguments: field 'origin_city_id': Field required; field 'destination_city_id': Field required; field 'departure_date': Field required. Expected schema: {'properties': {'origin_city_id': {'description': 'City ID for departure. Obtain from get_available_routes.', 'title': 'Origin City Id', 'type': 'string'}, 'destination_city_id': {'description': 'City ID for arrival. Obtain from get_available_routes.', 'title': 'Destination City Id', 'type': 'string'}, 'departure_date': {'description': 'Travel date in ISO 8601 format (YYYY-MM-DD).', 'title': 'Departure Date', 'type': 'string'}, 'passengers': {'default': 1, 'description': 'Total number of passengers. Always pass this to match your group size.', 'maximum': 20, 'minimum': 1, 'title': 'Passengers', 'type': 'integer'}, 'max_results': {'default': 10, 'description': 'Maximum number of results to return, sorted by total price (cheapest first).', 'maximum': 50, 'minimum': 1, 'title': 'Max Results', 'type': 'integer'}}, 'required': ['origin_city_id', 'destination_city_id', 'departure_date'], 'title': 'SearchFlightsInput', 'type': 'object'}.",
+          "latency_ms": 0.0
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T16:42:45.285917+00:00",
+        "perf": {
+          "step_index": 1,
+          "llm_latency_ms": 2334.5314000034705,
+          "prompt_tokens": 2724,
+          "completion_tokens": 112,
+          "context_tokens": 2935,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 2,
+        "thought": "I need to search for flights from Aeloria to Duskport for the specified dates. I will include the correct city IDs and passenger count this time.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "origin_city_id": "city_world_70_20260506_141957_0000",
+            "destination_city_id": "city_world_70_20260506_141957_0003",
+            "departure_date": "2026-05-14",
+            "passengers": 1
+          },
+          "raw_text": "search_flights({\"origin_city_id\": \"city_world_70_20260506_141957_0000\", \"destination_city_id\": \"city_world_70_20260506_141957_0003\", \"departure_date\": \"2026-05-14\", \"passengers\": 1})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": true,
+          "result": [
+            {
+              "edge_id": "edge_world_70_20260506_141957_0033",
+              "airline": "StarFly",
+              "flight_number": "ST405",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T15:00:00",
+              "arrival_datetime": "2026-05-14T18:05:00",
+              "duration_min": 185,
+              "price_per_person": 514.65,
+              "total_price": 514.65,
+              "passengers": 1,
+              "seats_available": 57,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 20
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0030",
+              "airline": "StarFly",
+              "flight_number": "ST402",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T09:00:00",
+              "arrival_datetime": "2026-05-14T13:00:00",
+              "duration_min": 240,
+              "price_per_person": 525.13,
+              "total_price": 525.13,
+              "passengers": 1,
+              "seats_available": 29,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 14
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0135",
+              "airline": "GlobalAir",
+              "flight_number": "GL501",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T07:00:00",
+              "arrival_datetime": "2026-05-14T12:28:00",
+              "duration_min": 328,
+              "price_per_person": 539.66,
+              "total_price": 539.66,
+              "passengers": 1,
+              "seats_available": 97,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2519.66,
+              "baggage_included": true,
+              "expected_delay_min": 17
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0029",
+              "airline": "StarFly",
+              "flight_number": "ST401",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T07:00:00",
+              "arrival_datetime": "2026-05-14T10:50:00",
+              "duration_min": 230,
+              "price_per_person": 540.16,
+              "total_price": 540.16,
+              "passengers": 1,
+              "seats_available": 45,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 37
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0031",
+              "airline": "StarFly",
+              "flight_number": "ST403",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T11:00:00",
+              "arrival_datetime": "2026-05-14T14:45:00",
+              "duration_min": 225,
+              "price_per_person": 540.41,
+              "total_price": 540.41,
+              "passengers": 1,
+              "seats_available": 69,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0035",
+              "airline": "StarFly",
+              "flight_number": "ST407",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T19:00:00",
+              "arrival_datetime": "2026-05-14T22:00:00",
+              "duration_min": 180,
+              "price_per_person": 542.52,
+              "total_price": 542.52,
+              "passengers": 1,
+              "seats_available": 16,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 6
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0032",
+              "airline": "StarFly",
+              "flight_number": "ST404",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T13:00:00",
+              "arrival_datetime": "2026-05-14T16:15:00",
+              "duration_min": 195,
+              "price_per_person": 555.74,
+              "total_price": 555.74,
+              "passengers": 1,
+              "seats_available": 53,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 5
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0034",
+              "airline": "StarFly",
+              "flight_number": "ST406",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T17:00:00",
+              "arrival_datetime": "2026-05-14T20:30:00",
+              "duration_min": 210,
+              "price_per_person": 581.28,
+              "total_price": 581.28,
+              "passengers": 1,
+              "seats_available": 51,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 31
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0136",
+              "airline": "GlobalAir",
+              "flight_number": "GL502",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T17:00:00",
+              "arrival_datetime": "2026-05-14T22:28:00",
+              "duration_min": 328,
+              "price_per_person": 581.62,
+              "total_price": 581.62,
+              "passengers": 1,
+              "seats_available": 66,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2519.66,
+              "baggage_included": true,
+              "expected_delay_min": 53
+            },
+            {
+              "edge_id": "edge_world_70_20260506_141957_0028",
+              "airline": "StarFly",
+              "flight_number": "ST400",
+              "origin_city_id": "city_world_70_20260506_141957_0000",
+              "destination_city_id": "city_world_70_20260506_141957_0003",
+              "origin_hub_id": "hub_world_70_20260506_141957_0000",
+              "destination_hub_id": "hub_world_70_20260506_141957_0006",
+              "departure_datetime": "2026-05-14T05:00:00",
+              "arrival_datetime": "2026-05-14T08:35:00",
+              "duration_min": 215,
+              "price_per_person": 621.92,
+              "total_price": 621.92,
+              "passengers": 1,
+              "seats_available": 79,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 2360.78,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 5.55899998289533
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T16:42:47.249677+00:00",
+        "perf": {
+          "step_index": 2,
+          "llm_latency_ms": 1941.4279000193346,
+          "prompt_tokens": 3130,
+          "completion_tokens": 105,
+          "context_tokens": 3312,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "I have found several flight options from Aeloria to Duskport. The cheapest flight is with StarFly, flight number ST405, costing $514.65. I will select this flight to confirm the booking.",
+        "action": {
+          "tool_name": "select_flight",
+          "arguments": {
+            "edge_id": "edge_world_70_20260506_141957_0033"
+          },
+          "raw_text": "select_flight({\"edge_id\": \"edge_world_70_20260506_141957_0033\"})"
+        },
+        "observation": {
+          "tool_name": "select_flight",
+          "success": true,
+          "result": {
+            "booking_id": "FLT-4ED48539",
+            "edge_id": "edge_world_70_20260506_141957_0033",
+            "origin_city_name": "city_world_70_20260506_141957_0000",
+            "destination_city_name": "city_world_70_20260506_141957_0003",
+            "departure_datetime": "2026-05-14T15:00:00",
+            "arrival_datetime": "2026-05-14T18:05:00",
+            "total_price": 2367.18,
+            "status": "selected",
+            "confirmation_datetime": "2026-05-07T16:43:19.841694+00:00"
+          },
+          "error_message": null,
+          "latency_ms": 0.04349998198449612
+        },
+        "itinerary_snapshot": {
+          "itinerary_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+          "request_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+          "days": [
+            {
+              "date": "2026-05-14",
+              "city": "city_world_70_20260506_141957_0000",
+              "transport_segments": [
+                {
+                  "mode": "flight",
+                  "from_location": "city_world_70_20260506_141957_0000",
+                  "to_location": "city_world_70_20260506_141957_0003",
+                  "departure_datetime": "2026-05-14T15:00:00",
+                  "arrival_datetime": "2026-05-14T18:05:00",
+                  "cost_usd": 2367.18,
+                  "booking_ref": "FLT-4ED48539"
+                }
+              ],
+              "accommodation": null,
+              "activities": [],
+              "notes": ""
+            }
+          ],
+          "total_cost_usd": 2367.18,
+          "is_complete": false,
+          "version": 0
+        },
+        "timestamp": "2026-05-07T16:43:19.842857+00:00",
+        "perf": {
+          "step_index": 3,
+          "llm_latency_ms": 2291.3181000039913,
+          "prompt_tokens": 5658,
+          "completion_tokens": 76,
+          "context_tokens": 5030,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 4,
+        "thought": "I have successfully booked a flight from Aeloria to Duskport for the specified dates. The total cost of the flight is $2367.18, which exceeds the budget of $1800. I need to find a more affordable flight option.",
+        "action": null,
+        "observation": null,
+        "itinerary_snapshot": {
+          "itinerary_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+          "request_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+          "days": [
+            {
+              "date": "2026-05-14",
+              "city": "city_world_70_20260506_141957_0000",
+              "transport_segments": [
+                {
+                  "mode": "flight",
+                  "from_location": "city_world_70_20260506_141957_0000",
+                  "to_location": "city_world_70_20260506_141957_0003",
+                  "departure_datetime": "2026-05-14T15:00:00",
+                  "arrival_datetime": "2026-05-14T18:05:00",
+                  "cost_usd": 2367.18,
+                  "booking_ref": "FLT-4ED48539"
+                }
+              ],
+              "accommodation": null,
+              "activities": [],
+              "notes": ""
+            }
+          ],
+          "total_cost_usd": 2367.18,
+          "is_complete": false,
+          "version": 0
+        },
+        "timestamp": "2026-05-07T16:43:22.576096+00:00",
+        "perf": {
+          "step_index": 4,
+          "llm_latency_ms": 2719.87880000961,
+          "prompt_tokens": 5992,
+          "completion_tokens": 77,
+          "context_tokens": 5255,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 5
+  },
+  "compressed_states": [],
+  "final_itinerary": {
+    "itinerary_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+    "request_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+    "days": [
+      {
+        "date": "2026-05-14",
+        "city": "city_world_70_20260506_141957_0000",
+        "transport_segments": [
+          {
+            "mode": "flight",
+            "from_location": "city_world_70_20260506_141957_0000",
+            "to_location": "city_world_70_20260506_141957_0003",
+            "departure_datetime": "2026-05-14T15:00:00",
+            "arrival_datetime": "2026-05-14T18:05:00",
+            "cost_usd": 2367.18,
+            "booking_ref": "FLT-4ED48539"
+          }
+        ],
+        "accommodation": null,
+        "activities": [],
+        "notes": ""
+      }
+    ],
+    "total_cost_usd": 2367.18,
+    "is_complete": false,
+    "version": 0
+  },
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.05970001802779734,
+      "avg_latency_ms": 0.05970001802779734,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "search_flights",
+      "call_count": 2,
+      "success_count": 1,
+      "failure_count": 1,
+      "total_latency_ms": 5.55899998289533,
+      "avg_latency_ms": 2.779499991447665,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "select_flight",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.04349998198449612,
+      "avg_latency_ms": 0.04349998198449612,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 5,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 41057.02330000349,
+    "total_llm_latency_ms": 10684.671100054402,
+    "total_tool_latency_ms": 5.662199982907623,
+    "llm_latency_fraction": 0.9994703439243668,
+    "avg_step_llm_latency_ms": 2136.9342200108804,
+    "total_prompt_tokens": 19477,
+    "total_completion_tokens": 419,
+    "total_tokens": 19896,
+    "tokens_per_step": 3979.2,
+    "estimated_cost_usd": 0.00317295,
+    "avg_context_tokens": 3733.0,
+    "max_context_tokens": 5255,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": true,
+  "error": null,
+  "termination_reason": "EXIT_BUDGET_EXCEEDED",
+  "user_request": {
+    "request_id": "ea5a2869-e095-4e87-9ec6-cc3651515c8e",
+    "raw_text": "Solo trip from Aeloria to Duskport — 9 days, $1800. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+    "origin_city": "city_world_70_20260506_141957_0000",
+    "destination_cities": [
+      "city_world_70_20260506_141957_0003"
+    ],
+    "start_date": "2026-05-14",
+    "end_date": "2026-05-23",
+    "budget_usd": 1800.0,
+    "traveler_profile": {
+      "num_adults": 1,
+      "num_children": 0,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-f8689f",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $1800 USD.",
+        "value": 1800.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-c4b69e",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-05-14 and end by 2026-05-23.",
+        "value": "2026-05-14 to 2026-05-23",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-9337fc",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 9 days long.",
+        "value": 9,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-cccd80",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+        "value": 1,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-e88659",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one hiking activity.",
+        "value": "hiking",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-6e8c2b",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+        "value": 1,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-4faa13",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one outdoor or adventure activity per day.",
+        "value": "outdoor",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-d3bc79",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Favour local community experiences over tourist-trap attractions.",
+        "value": "local_authentic",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "hiking",
+      "local cuisine",
+      "cultural sites",
+      "photography",
+      "street art"
+    ],
+    "world_id": "world_70_20260506_141957",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "solo_adventurer",
+      "tone_variant": 0,
+      "origin_name": "Aeloria",
+      "dest_names": [
+        "Duskport"
+      ],
+      "world_id": "world_70_20260506_141957",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 3,
+        "n_destinations": 1,
+        "trip_duration_days": 9,
+        "budget_per_traveler_per_day": 200.0,
+        "constraint_density": 0.889,
+        "geographic_complexity": "single_city",
+        "group_type": "solo",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.1778,
+        "geographic_complexity_score": 0.0,
+        "budget_tightness_score": 0.4,
+        "group_complexity_score": 0.0,
+        "preference_specificity_score": 0.5,
+        "complexity_score": 0.1994,
+        "complexity_tier": "low"
+      }
+    }
+  },
+  "config_hash": "5da78ffc",
+  "created_at": "2026-05-07T16:43:22.577095+00:00"
+}

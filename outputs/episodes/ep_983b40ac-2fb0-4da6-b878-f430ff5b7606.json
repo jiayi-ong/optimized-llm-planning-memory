@@ -1,0 +1,688 @@
+{
+  "episode_id": "983b40ac-2fb0-4da6-b878-f430ff5b7606",
+  "request_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "ea4b5977-a267-4e66-9e33-2344cf62c3f1",
+    "request_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "The last observation showed that I need to discover the available cities for the trip from Caelum to Aeloria and Brindor. I will start by calling the get_available_routes tool to find the city IDs for these destinations.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_59_20260506_141944_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a affluent city in Northern Europe, moderately visited by international visitors. As a adventure destination, it offers a distinctive character shaped by its primary identity. The climate is cold with long winters, making it requiring a degree of caution, especially after dark. The food scene leans toward Mexican and American cuisine, and the city is known for its vibrant sports and festival scene.",
+              "dominant_cuisines": [
+                "Mexican",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "nature_reserve",
+                "park"
+              ],
+              "dominant_event_categories": [
+                "sports",
+                "festival",
+                "music"
+              ]
+            },
+            {
+              "city_id": "city_world_59_20260506_141944_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a emerging city in Northern Europe, highly popular by international visitors. As a nightlife city, it offers a distinctive character shaped by its primary identity. The climate is cold winters and warm summers, making it requiring a degree of caution, especially after dark. The food scene leans toward Mexican and Vietnamese cuisine, and the city is known for its vibrant music and comedy scene.",
+              "dominant_cuisines": [
+                "Mexican",
+                "Vietnamese",
+                "American"
+              ],
+              "dominant_attraction_categories": [
+                "nightlife",
+                "food_market",
+                "shopping"
+              ],
+              "dominant_event_categories": [
+                "music",
+                "comedy"
+              ]
+            },
+            {
+              "city_id": "city_world_59_20260506_141944_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a mid-tier city in Northern Europe, highly popular by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it requiring a degree of caution, especially after dark. The food scene leans toward French and Italian cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "French",
+                "Italian",
+                "Mexican"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_59_20260506_141944_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a budget-conscious city in Northern Europe, moderately visited by international visitors. As a historic city, it offers a distinctive character shaped by its primary identity. The climate is cold winters and warm summers, making it requiring a degree of caution, especially after dark. The food scene leans toward French and Spanish cuisine, and the city is known for its vibrant culture and exhibition scene.",
+              "dominant_cuisines": [
+                "French",
+                "Spanish"
+              ],
+              "dominant_attraction_categories": [
+                "historic_site",
+                "landmark"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "exhibition",
+                "theater"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.04030000127386302
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:51:21.190293+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 3017.279599996982,
+          "prompt_tokens": 2479,
+          "completion_tokens": 54,
+          "context_tokens": 2753,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 1,
+        "thought": "The last observation showed that I have discovered the available cities for the trip from Caelum to Aeloria and Brindor. The cities are confirmed as Aeloria (city_id: city_world_59_20260506_141944_0000) and Brindor (city_id: city_world_59_20260506_141944_0001). I will now proceed to book the outbound flight from Caelum to Aeloria on May 22, 2026.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "from": "city_world_59_20260506_141944_0002",
+            "to": "city_world_59_20260506_141944_0000",
+            "date": "2026-05-22",
+            "passengers": 1
+          },
+          "raw_text": "search_flights({\"from\": \"city_world_59_20260506_141944_0002\", \"to\": \"city_world_59_20260506_141944_0000\", \"date\": \"2026-05-22\", \"passengers\": 1})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": false,
+          "result": null,
+          "error_message": "Tool 'search_flights' rejected invalid arguments: field 'origin_city_id': Field required; field 'destination_city_id': Field required; field 'departure_date': Field required. Expected schema: {'properties': {'origin_city_id': {'description': 'City ID for departure. Obtain from get_available_routes.', 'title': 'Origin City Id', 'type': 'string'}, 'destination_city_id': {'description': 'City ID for arrival. Obtain from get_available_routes.', 'title': 'Destination City Id', 'type': 'string'}, 'departure_date': {'description': 'Travel date in ISO 8601 format (YYYY-MM-DD).', 'title': 'Departure Date', 'type': 'string'}, 'passengers': {'default': 1, 'description': 'Total number of passengers. Always pass this to match your group size.', 'maximum': 20, 'minimum': 1, 'title': 'Passengers', 'type': 'integer'}, 'max_results': {'default': 10, 'description': 'Maximum number of results to return, sorted by total price (cheapest first).', 'maximum': 50, 'minimum': 1, 'title': 'Max Results', 'type': 'integer'}}, 'required': ['origin_city_id', 'destination_city_id', 'departure_date'], 'title': 'SearchFlightsInput', 'type': 'object'}.",
+          "latency_ms": 0.0
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:51:26.710751+00:00",
+        "perf": {
+          "step_index": 1,
+          "llm_latency_ms": 4399.293199996464,
+          "prompt_tokens": 3239,
+          "completion_tokens": 165,
+          "context_tokens": 3570,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 2,
+        "thought": "The last observation showed that I need to provide the correct field names for the flight search. I will now call the search_flights tool again with the correct parameters for the outbound flight from Caelum to Aeloria on May 22, 2026.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "origin_city_id": "city_world_59_20260506_141944_0002",
+            "destination_city_id": "city_world_59_20260506_141944_0000",
+            "departure_date": "2026-05-22",
+            "passengers": 1
+          },
+          "raw_text": "search_flights({\"origin_city_id\": \"city_world_59_20260506_141944_0002\", \"destination_city_id\": \"city_world_59_20260506_141944_0000\", \"departure_date\": \"2026-05-22\", \"passengers\": 1})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": true,
+          "result": [
+            {
+              "edge_id": "edge_world_59_20260506_141944_0070",
+              "airline": "HorizonAir",
+              "flight_number": "HO122",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T09:00:00",
+              "arrival_datetime": "2026-05-22T11:50:00",
+              "duration_min": 170,
+              "price_per_person": 313.68,
+              "total_price": 313.68,
+              "passengers": 1,
+              "seats_available": 17,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 11
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0148",
+              "airline": "ApexFlight",
+              "flight_number": "AP222",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T11:00:00",
+              "arrival_datetime": "2026-05-22T17:39:00",
+              "duration_min": 399,
+              "price_per_person": 328.85,
+              "total_price": 328.85,
+              "passengers": 1,
+              "seats_available": 7,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2883.41,
+              "baggage_included": true,
+              "expected_delay_min": 12
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0072",
+              "airline": "HorizonAir",
+              "flight_number": "HO124",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T13:00:00",
+              "arrival_datetime": "2026-05-22T16:10:00",
+              "duration_min": 190,
+              "price_per_person": 355.14,
+              "total_price": 355.14,
+              "passengers": 1,
+              "seats_available": 17,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0073",
+              "airline": "HorizonAir",
+              "flight_number": "HO125",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T15:00:00",
+              "arrival_datetime": "2026-05-22T17:55:00",
+              "duration_min": 175,
+              "price_per_person": 363.25,
+              "total_price": 363.25,
+              "passengers": 1,
+              "seats_available": 78,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0071",
+              "airline": "HorizonAir",
+              "flight_number": "HO123",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T11:00:00",
+              "arrival_datetime": "2026-05-22T13:55:00",
+              "duration_min": 175,
+              "price_per_person": 369.68,
+              "total_price": 369.68,
+              "passengers": 1,
+              "seats_available": 19,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 28
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0075",
+              "airline": "HorizonAir",
+              "flight_number": "HO127",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T19:00:00",
+              "arrival_datetime": "2026-05-22T21:45:00",
+              "duration_min": 165,
+              "price_per_person": 386.87,
+              "total_price": 386.87,
+              "passengers": 1,
+              "seats_available": 22,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 9
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0076",
+              "airline": "HorizonAir",
+              "flight_number": "HO128",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T21:00:00",
+              "arrival_datetime": "2026-05-22T23:10:00",
+              "duration_min": 130,
+              "price_per_person": 391.7,
+              "total_price": 391.7,
+              "passengers": 1,
+              "seats_available": 36,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0069",
+              "airline": "HorizonAir",
+              "flight_number": "HO121",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T07:00:00",
+              "arrival_datetime": "2026-05-22T10:00:00",
+              "duration_min": 180,
+              "price_per_person": 408.0,
+              "total_price": 408.0,
+              "passengers": 1,
+              "seats_available": 76,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0074",
+              "airline": "HorizonAir",
+              "flight_number": "HO126",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T17:00:00",
+              "arrival_datetime": "2026-05-22T19:10:00",
+              "duration_min": 130,
+              "price_per_person": 418.93,
+              "total_price": 418.93,
+              "passengers": 1,
+              "seats_available": 53,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1625.75,
+              "baggage_included": true,
+              "expected_delay_min": 14
+            },
+            {
+              "edge_id": "edge_world_59_20260506_141944_0146",
+              "airline": "ApexFlight",
+              "flight_number": "AP220",
+              "origin_city_id": "city_world_59_20260506_141944_0002",
+              "destination_city_id": "city_world_59_20260506_141944_0000",
+              "origin_hub_id": "hub_world_59_20260506_141944_0004",
+              "destination_hub_id": "hub_world_59_20260506_141944_0000",
+              "departure_datetime": "2026-05-22T17:00:00",
+              "arrival_datetime": "2026-05-22T23:39:00",
+              "duration_min": 399,
+              "price_per_person": 428.66,
+              "total_price": 428.66,
+              "passengers": 1,
+              "seats_available": 40,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2883.41,
+              "baggage_included": true,
+              "expected_delay_min": 28
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 1.9078000041190535
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:51:30.847262+00:00",
+        "perf": {
+          "step_index": 2,
+          "llm_latency_ms": 4119.820799998706,
+          "prompt_tokens": 3698,
+          "completion_tokens": 121,
+          "context_tokens": 3990,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "The last observation showed that I have successfully retrieved the available flights from Caelum to Aeloria on May 22, 2026. The cheapest option is with HorizonAir, flight number HO122, departing at 09:00 and arriving at 11:50 for a total price of $313.68. I will now select this flight to confirm the booking.",
+        "action": {
+          "tool_name": "select_flight",
+          "arguments": {
+            "edge_id": "edge_world_59_20260506_141944_0070"
+          },
+          "raw_text": "select_flight({\"edge_id\": \"edge_world_59_20260506_141944_0070\"})"
+        },
+        "observation": {
+          "tool_name": "select_flight",
+          "success": true,
+          "result": {
+            "booking_id": "FLT-847B600A",
+            "edge_id": "edge_world_59_20260506_141944_0070",
+            "origin_city_name": "city_world_59_20260506_141944_0002",
+            "destination_city_name": "city_world_59_20260506_141944_0000",
+            "departure_datetime": "2026-05-22T09:00:00",
+            "arrival_datetime": "2026-05-22T11:50:00",
+            "total_price": 1749.2,
+            "status": "selected",
+            "confirmation_datetime": "2026-05-07T00:51:36.698701+00:00"
+          },
+          "error_message": null,
+          "latency_ms": 0.03680000372696668
+        },
+        "itinerary_snapshot": {
+          "itinerary_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+          "request_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+          "days": [
+            {
+              "date": "2026-05-22",
+              "city": "city_world_59_20260506_141944_0002",
+              "transport_segments": [
+                {
+                  "mode": "flight",
+                  "from_location": "city_world_59_20260506_141944_0002",
+                  "to_location": "city_world_59_20260506_141944_0000",
+                  "departure_datetime": "2026-05-22T09:00:00",
+                  "arrival_datetime": "2026-05-22T11:50:00",
+                  "cost_usd": 1749.2,
+                  "booking_ref": "FLT-847B600A"
+                }
+              ],
+              "accommodation": null,
+              "activities": [],
+              "notes": ""
+            }
+          ],
+          "total_cost_usd": 1749.2,
+          "is_complete": false,
+          "version": 0
+        },
+        "timestamp": "2026-05-07T00:51:36.712511+00:00",
+        "perf": {
+          "step_index": 3,
+          "llm_latency_ms": 5755.788599999505,
+          "prompt_tokens": 6256,
+          "completion_tokens": 103,
+          "context_tokens": 5735,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 4
+  },
+  "compressed_states": [],
+  "final_itinerary": {
+    "itinerary_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+    "request_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+    "days": [
+      {
+        "date": "2026-05-22",
+        "city": "city_world_59_20260506_141944_0002",
+        "transport_segments": [
+          {
+            "mode": "flight",
+            "from_location": "city_world_59_20260506_141944_0002",
+            "to_location": "city_world_59_20260506_141944_0000",
+            "departure_datetime": "2026-05-22T09:00:00",
+            "arrival_datetime": "2026-05-22T11:50:00",
+            "cost_usd": 1749.2,
+            "booking_ref": "FLT-847B600A"
+          }
+        ],
+        "accommodation": null,
+        "activities": [],
+        "notes": ""
+      }
+    ],
+    "total_cost_usd": 1749.2,
+    "is_complete": false,
+    "version": 0
+  },
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.04030000127386302,
+      "avg_latency_ms": 0.04030000127386302,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "search_flights",
+      "call_count": 2,
+      "success_count": 1,
+      "failure_count": 1,
+      "total_latency_ms": 1.9078000041190535,
+      "avg_latency_ms": 0.9539000020595267,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "select_flight",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.03680000372696668,
+      "avg_latency_ms": 0.03680000372696668,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 4,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 21657.927299995208,
+    "total_llm_latency_ms": 17292.182199991657,
+    "total_tool_latency_ms": 1.9849000091198832,
+    "llm_latency_fraction": 0.9998852271984165,
+    "avg_step_llm_latency_ms": 4323.045549997914,
+    "total_prompt_tokens": 15672,
+    "total_completion_tokens": 443,
+    "total_tokens": 16115,
+    "tokens_per_step": 4028.75,
+    "estimated_cost_usd": 0.0026165999999999997,
+    "avg_context_tokens": 4012.0,
+    "max_context_tokens": 5735,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 198694, Requested 6012. Please try again in 1.411s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "1b9f2cd3-f5f8-408c-b791-11350cd540b7",
+    "raw_text": "Solo trip from Caelum to Aeloria and Brindor — 9 days, $2500. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+    "origin_city": "city_world_59_20260506_141944_0002",
+    "destination_cities": [
+      "city_world_59_20260506_141944_0000",
+      "city_world_59_20260506_141944_0001"
+    ],
+    "start_date": "2026-05-22",
+    "end_date": "2026-05-31",
+    "budget_usd": 2500.0,
+    "traveler_profile": {
+      "num_adults": 1,
+      "num_children": 0,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-361b23",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $2500 USD.",
+        "value": 2500.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-bfaf30",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-05-22 and end by 2026-05-31.",
+        "value": "2026-05-22 to 2026-05-31",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-82af39",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 9 days long.",
+        "value": 9,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-d71152",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+        "value": 1,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-f40ba1",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one hiking activity.",
+        "value": "hiking",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-b4df93",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+        "value": 1,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-69f82e",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one outdoor or adventure activity per day.",
+        "value": "outdoor",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-607d0c",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Favour local community experiences over tourist-trap attractions.",
+        "value": "local_authentic",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "hiking",
+      "local cuisine",
+      "cultural sites",
+      "photography",
+      "street art"
+    ],
+    "world_id": "world_59_20260506_141944",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "solo_adventurer",
+      "tone_variant": 0,
+      "origin_name": "Caelum",
+      "dest_names": [
+        "Aeloria",
+        "Brindor"
+      ],
+      "world_id": "world_59_20260506_141944",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 3,
+        "n_destinations": 2,
+        "trip_duration_days": 9,
+        "budget_per_traveler_per_day": 277.78,
+        "constraint_density": 0.889,
+        "geographic_complexity": "multi_city",
+        "group_type": "solo",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.1778,
+        "geographic_complexity_score": 0.5,
+        "budget_tightness_score": 0.0889,
+        "group_complexity_score": 0.0,
+        "preference_specificity_score": 0.5,
+        "complexity_score": 0.2622,
+        "complexity_tier": "low"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T00:51:39.786020+00:00"
+}

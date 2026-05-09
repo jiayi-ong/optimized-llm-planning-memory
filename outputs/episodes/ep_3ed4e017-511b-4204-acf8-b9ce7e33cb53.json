@@ -1,0 +1,697 @@
+{
+  "episode_id": "3ed4e017-511b-4204-acf8-b9ce7e33cb53",
+  "request_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "e21ed76b-ac73-45cc-9182-086bd198fd7a",
+    "request_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+    "steps": [
+      {
+        "step_index": 0,
+        "thought": "The last observation showed that I need to discover the available cities in the simulation world to verify the user's requested destinations of Aeloria and Duskport. I will start by calling the get_available_routes tool to find the city IDs for these locations.",
+        "action": {
+          "tool_name": "get_available_routes",
+          "arguments": {},
+          "raw_text": "get_available_routes()"
+        },
+        "observation": {
+          "tool_name": "get_available_routes",
+          "success": true,
+          "result": [
+            {
+              "city_id": "city_world_49_20260506_141933_0000",
+              "city_name": "Aeloria",
+              "description": "Aeloria is a city in the Northern Europe region.",
+              "vibe_summary": "Aeloria is a affluent city in Northern Europe, moderately visited by international visitors. As a beach resort, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it presenting elevated safety concerns — plan carefully. The food scene leans toward American and Mediterranean cuisine, and the city is known for its vibrant festival and music scene.",
+              "dominant_cuisines": [
+                "American",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "beach",
+                "park",
+                "nightlife"
+              ],
+              "dominant_event_categories": [
+                "festival",
+                "music",
+                "sports"
+              ]
+            },
+            {
+              "city_id": "city_world_49_20260506_141933_0001",
+              "city_name": "Brindor",
+              "description": "Brindor is a city in the Northern Europe region.",
+              "vibe_summary": "Brindor is a emerging city in Northern Europe, moderately visited by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is warm and humid year-round, making it generally safe with the usual urban precautions. The food scene leans toward Italian and Mediterranean cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Italian",
+                "Mediterranean"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_49_20260506_141933_0002",
+              "city_name": "Caelum",
+              "description": "Caelum is a city in the Northern Europe region.",
+              "vibe_summary": "Caelum is a mid-tier city in Northern Europe, highly popular by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is four distinct seasons, making it generally safe with the usual urban precautions. The food scene leans toward Mediterranean and French cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Mediterranean",
+                "French"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            },
+            {
+              "city_id": "city_world_49_20260506_141933_0003",
+              "city_name": "Duskport",
+              "description": "Duskport is a city in the Northern Europe region.",
+              "vibe_summary": "Duskport is a affluent city in Northern Europe, off-the-beaten-path by international visitors. As a cultural capital, it offers a distinctive character shaped by its primary identity. The climate is dry and sunny with little rainfall, making it considered very safe for travellers. The food scene leans toward Mediterranean and French cuisine, and the city is known for its vibrant culture and theater scene.",
+              "dominant_cuisines": [
+                "Mediterranean",
+                "French",
+                "Italian"
+              ],
+              "dominant_attraction_categories": [
+                "museum",
+                "gallery",
+                "cultural_site"
+              ],
+              "dominant_event_categories": [
+                "culture",
+                "theater"
+              ]
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 0.04050000279676169
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:52:32.749545+00:00",
+        "perf": {
+          "step_index": 0,
+          "llm_latency_ms": 1716.7563999973936,
+          "prompt_tokens": 2524,
+          "completion_tokens": 58,
+          "context_tokens": 2803,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 1,
+        "thought": "The last observation showed that I have successfully discovered the available cities in the simulation world. The requested destinations, Aeloria and Duskport, both exist with the following city IDs: Aeloria (city_world_49_20260506_141933_0000) and Duskport (city_world_49_20260506_141933_0003). I will now proceed to search for flights from Caelum to Aeloria for the outbound leg of the trip on June 24, 2026.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "from": "city_world_49_20260506_141933_0002",
+            "to": "city_world_49_20260506_141933_0000",
+            "date": "2026-06-24",
+            "passengers": 4
+          },
+          "raw_text": "search_flights({\"from\": \"city_world_49_20260506_141933_0002\", \"to\": \"city_world_49_20260506_141933_0000\", \"date\": \"2026-06-24\", \"passengers\": 4})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": false,
+          "result": null,
+          "error_message": "Tool 'search_flights' rejected invalid arguments: field 'origin_city_id': Field required; field 'destination_city_id': Field required; field 'departure_date': Field required. Expected schema: {'properties': {'origin_city_id': {'description': 'City ID for departure. Obtain from get_available_routes.', 'title': 'Origin City Id', 'type': 'string'}, 'destination_city_id': {'description': 'City ID for arrival. Obtain from get_available_routes.', 'title': 'Destination City Id', 'type': 'string'}, 'departure_date': {'description': 'Travel date in ISO 8601 format (YYYY-MM-DD).', 'title': 'Departure Date', 'type': 'string'}, 'passengers': {'default': 1, 'description': 'Total number of passengers. Always pass this to match your group size.', 'maximum': 20, 'minimum': 1, 'title': 'Passengers', 'type': 'integer'}, 'max_results': {'default': 10, 'description': 'Maximum number of results to return, sorted by total price (cheapest first).', 'maximum': 50, 'minimum': 1, 'title': 'Max Results', 'type': 'integer'}}, 'required': ['origin_city_id', 'destination_city_id', 'departure_date'], 'title': 'SearchFlightsInput', 'type': 'object'}.",
+          "latency_ms": 0.0
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:52:37.725406+00:00",
+        "perf": {
+          "step_index": 1,
+          "llm_latency_ms": 4958.241200001794,
+          "prompt_tokens": 3281,
+          "completion_tokens": 171,
+          "context_tokens": 3626,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 2,
+        "thought": "The last observation showed that I encountered an error while trying to search for flights due to missing required fields. I will correct the arguments and search for flights from Caelum (city_world_49_20260506_141933_0002) to Aeloria (city_world_49_20260506_141933_0000) for the outbound leg of the trip on June 24, 2026, ensuring to include the necessary city IDs.",
+        "action": {
+          "tool_name": "search_flights",
+          "arguments": {
+            "origin_city_id": "city_world_49_20260506_141933_0002",
+            "destination_city_id": "city_world_49_20260506_141933_0000",
+            "departure_date": "2026-06-24",
+            "passengers": 4
+          },
+          "raw_text": "search_flights({\"origin_city_id\": \"city_world_49_20260506_141933_0002\", \"destination_city_id\": \"city_world_49_20260506_141933_0000\", \"departure_date\": \"2026-06-24\", \"passengers\": 4})"
+        },
+        "observation": {
+          "tool_name": "search_flights",
+          "success": true,
+          "result": [
+            {
+              "edge_id": "edge_world_49_20260506_141933_0073",
+              "airline": "ApexFlight",
+              "flight_number": "AP125",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T15:00:00",
+              "arrival_datetime": "2026-06-24T17:35:00",
+              "duration_min": 155,
+              "price_per_person": 250.13,
+              "total_price": 1000.52,
+              "passengers": 4,
+              "seats_available": 92,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 17
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0071",
+              "airline": "ApexFlight",
+              "flight_number": "AP123",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T11:00:00",
+              "arrival_datetime": "2026-06-24T13:30:00",
+              "duration_min": 150,
+              "price_per_person": 316.57,
+              "total_price": 1266.29,
+              "passengers": 4,
+              "seats_available": 54,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 26
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0070",
+              "airline": "ApexFlight",
+              "flight_number": "AP122",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T09:00:00",
+              "arrival_datetime": "2026-06-24T11:40:00",
+              "duration_min": 160,
+              "price_per_person": 317.39,
+              "total_price": 1269.57,
+              "passengers": 4,
+              "seats_available": 80,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 5
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0072",
+              "airline": "ApexFlight",
+              "flight_number": "AP124",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T13:00:00",
+              "arrival_datetime": "2026-06-24T15:30:00",
+              "duration_min": 150,
+              "price_per_person": 343.76,
+              "total_price": 1375.06,
+              "passengers": 4,
+              "seats_available": 6,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 2
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0147",
+              "airline": "GlobalAir",
+              "flight_number": "GL221",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T17:00:00",
+              "arrival_datetime": "2026-06-24T22:57:00",
+              "duration_min": 357,
+              "price_per_person": 347.16,
+              "total_price": 1388.65,
+              "passengers": 4,
+              "seats_available": 99,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2080.62,
+              "baggage_included": true,
+              "expected_delay_min": 37
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0148",
+              "airline": "GlobalAir",
+              "flight_number": "GL222",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T11:00:00",
+              "arrival_datetime": "2026-06-24T16:57:00",
+              "duration_min": 357,
+              "price_per_person": 357.31,
+              "total_price": 1429.26,
+              "passengers": 4,
+              "seats_available": 59,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2080.62,
+              "baggage_included": true,
+              "expected_delay_min": 36
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0074",
+              "airline": "ApexFlight",
+              "flight_number": "AP126",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T17:00:00",
+              "arrival_datetime": "2026-06-24T20:10:00",
+              "duration_min": 190,
+              "price_per_person": 364.64,
+              "total_price": 1458.57,
+              "passengers": 4,
+              "seats_available": 80,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 17
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0076",
+              "airline": "ApexFlight",
+              "flight_number": "AP128",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T21:00:00",
+              "arrival_datetime": "2026-06-24T23:50:00",
+              "duration_min": 170,
+              "price_per_person": 365.39,
+              "total_price": 1461.56,
+              "passengers": 4,
+              "seats_available": 71,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0069",
+              "airline": "ApexFlight",
+              "flight_number": "AP121",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T07:00:00",
+              "arrival_datetime": "2026-06-24T09:55:00",
+              "duration_min": 175,
+              "price_per_person": 369.85,
+              "total_price": 1479.38,
+              "passengers": 4,
+              "seats_available": 10,
+              "cabin_class": "economy",
+              "is_direct": true,
+              "distance_km": 1944.91,
+              "baggage_included": true,
+              "expected_delay_min": 0
+            },
+            {
+              "edge_id": "edge_world_49_20260506_141933_0146",
+              "airline": "GlobalAir",
+              "flight_number": "GL220",
+              "origin_city_id": "city_world_49_20260506_141933_0002",
+              "destination_city_id": "city_world_49_20260506_141933_0000",
+              "origin_hub_id": "hub_world_49_20260506_141933_0004",
+              "destination_hub_id": "hub_world_49_20260506_141933_0000",
+              "departure_datetime": "2026-06-24T13:00:00",
+              "arrival_datetime": "2026-06-24T18:57:00",
+              "duration_min": 357,
+              "price_per_person": 390.42,
+              "total_price": 1561.68,
+              "passengers": 4,
+              "seats_available": 22,
+              "cabin_class": "economy",
+              "is_direct": false,
+              "distance_km": 2080.62,
+              "baggage_included": true,
+              "expected_delay_min": 45
+            }
+          ],
+          "error_message": null,
+          "latency_ms": 3.4411999949952587
+        },
+        "itinerary_snapshot": null,
+        "timestamp": "2026-05-07T00:52:42.509858+00:00",
+        "perf": {
+          "step_index": 2,
+          "llm_latency_ms": 4725.022300001001,
+          "prompt_tokens": 3746,
+          "completion_tokens": 162,
+          "context_tokens": 4061,
+          "parse_retries": 0
+        }
+      },
+      {
+        "step_index": 3,
+        "thought": "The last observation showed that I successfully retrieved available flights from Caelum to Aeloria for the outbound leg of the trip on June 24, 2026. The cheapest direct flight option is with ApexFlight, flight number AP125, departing at 15:00 and arriving at 17:35, with a total price of $1000.52 for 4 passengers. I will proceed to select this flight to confirm the booking.",
+        "action": {
+          "tool_name": "select_flight",
+          "arguments": {
+            "edge_id": "edge_world_49_20260506_141933_0073"
+          },
+          "raw_text": "select_flight({\"edge_id\": \"edge_world_49_20260506_141933_0073\"})"
+        },
+        "observation": {
+          "tool_name": "select_flight",
+          "success": true,
+          "result": {
+            "booking_id": "FLT-CD3A201F",
+            "edge_id": "edge_world_49_20260506_141933_0073",
+            "origin_city_name": "city_world_49_20260506_141933_0002",
+            "destination_city_name": "city_world_49_20260506_141933_0000",
+            "departure_datetime": "2026-06-24T15:00:00",
+            "arrival_datetime": "2026-06-24T17:35:00",
+            "total_price": 5820.88,
+            "status": "selected",
+            "confirmation_datetime": "2026-05-07T00:52:45.201139+00:00"
+          },
+          "error_message": null,
+          "latency_ms": 0.051099996198900044
+        },
+        "itinerary_snapshot": {
+          "itinerary_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+          "request_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+          "days": [
+            {
+              "date": "2026-06-24",
+              "city": "city_world_49_20260506_141933_0002",
+              "transport_segments": [
+                {
+                  "mode": "flight",
+                  "from_location": "city_world_49_20260506_141933_0002",
+                  "to_location": "city_world_49_20260506_141933_0000",
+                  "departure_datetime": "2026-06-24T15:00:00",
+                  "arrival_datetime": "2026-06-24T17:35:00",
+                  "cost_usd": 5820.88,
+                  "booking_ref": "FLT-CD3A201F"
+                }
+              ],
+              "accommodation": null,
+              "activities": [],
+              "notes": ""
+            }
+          ],
+          "total_cost_usd": 5820.88,
+          "is_complete": false,
+          "version": 0
+        },
+        "timestamp": "2026-05-07T00:52:45.205427+00:00",
+        "perf": {
+          "step_index": 3,
+          "llm_latency_ms": 2650.2432999986922,
+          "prompt_tokens": 6352,
+          "completion_tokens": 117,
+          "context_tokens": 5843,
+          "parse_retries": 0
+        }
+      }
+    ],
+    "total_steps": 4
+  },
+  "compressed_states": [],
+  "final_itinerary": {
+    "itinerary_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+    "request_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+    "days": [
+      {
+        "date": "2026-06-24",
+        "city": "city_world_49_20260506_141933_0002",
+        "transport_segments": [
+          {
+            "mode": "flight",
+            "from_location": "city_world_49_20260506_141933_0002",
+            "to_location": "city_world_49_20260506_141933_0000",
+            "departure_datetime": "2026-06-24T15:00:00",
+            "arrival_datetime": "2026-06-24T17:35:00",
+            "cost_usd": 5820.88,
+            "booking_ref": "FLT-CD3A201F"
+          }
+        ],
+        "accommodation": null,
+        "activities": [],
+        "notes": ""
+      }
+    ],
+    "total_cost_usd": 5820.88,
+    "is_complete": false,
+    "version": 0
+  },
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [
+    {
+      "tool_name": "get_available_routes",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.04050000279676169,
+      "avg_latency_ms": 0.04050000279676169,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "search_flights",
+      "call_count": 2,
+      "success_count": 1,
+      "failure_count": 1,
+      "total_latency_ms": 3.4411999949952587,
+      "avg_latency_ms": 1.7205999974976294,
+      "redundant_call_count": 0
+    },
+    {
+      "tool_name": "select_flight",
+      "call_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "total_latency_ms": 0.051099996198900044,
+      "avg_latency_ms": 0.051099996198900044,
+      "redundant_call_count": 0
+    }
+  ],
+  "total_steps": 4,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 17739.32879998756,
+    "total_llm_latency_ms": 14050.26319999888,
+    "total_tool_latency_ms": 3.5327999939909205,
+    "llm_latency_fraction": 0.9997486230770681,
+    "avg_step_llm_latency_ms": 3512.56579999972,
+    "total_prompt_tokens": 15903,
+    "total_completion_tokens": 508,
+    "total_tokens": 16411,
+    "tokens_per_step": 4102.75,
+    "estimated_cost_usd": 0.00269025,
+    "avg_context_tokens": 4083.25,
+    "max_context_tokens": 5843,
+    "booking_revision_count": 0,
+    "booking_revision_rate": 0.0,
+    "total_parse_retries": 0,
+    "parse_retry_rate": 0.0
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 196082, Requested 6136. Please try again in 665ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "4d505633-8060-4fa0-9049-213fcb6b1323",
+    "raw_text": "Family trip: Caelum → Aeloria and Duskport, 9 days, $6000 total for 2 adults and 2 children. We want family-friendly activities and everything child-safe.",
+    "origin_city": "city_world_49_20260506_141933_0002",
+    "destination_cities": [
+      "city_world_49_20260506_141933_0000",
+      "city_world_49_20260506_141933_0003"
+    ],
+    "start_date": "2026-06-24",
+    "end_date": "2026-07-03",
+    "budget_usd": 6000.0,
+    "traveler_profile": {
+      "num_adults": 2,
+      "num_children": 2,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-f15ea6",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $6000 USD.",
+        "value": 6000.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-2b0e52",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-06-24 and end by 2026-07-03.",
+        "value": "2026-06-24 to 2026-07-03",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-d2c0b0",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 9 days long.",
+        "value": 9,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-e0766b",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 4 (2 adult(s), 2 child(ren)); all pricing and reservations must accommodate the full group.",
+        "value": 4,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-c92805",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one park or family-friendly outdoor activity.",
+        "value": "park",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-d41dd5",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Prefer family rooms or suites at 3-star hotels or above.",
+        "value": 3,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-transport-d8fe1e",
+        "constraint_type": "soft",
+        "category": "transport",
+        "description": "Prefer direct flights to minimise travel time with young children.",
+        "value": "direct",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-715672",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one major family attraction (theme park, beach, or zoo) per 3 days.",
+        "value": "family_attraction",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-b4bdd7",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Hotel should have a pool or dedicated play area for children.",
+        "value": "child_amenities",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "family-friendly activities",
+      "theme parks",
+      "kid-friendly dining",
+      "beaches",
+      "safe neighborhoods"
+    ],
+    "world_id": "world_49_20260506_141933",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "family_trip",
+      "tone_variant": 1,
+      "origin_name": "Caelum",
+      "dest_names": [
+        "Aeloria",
+        "Duskport"
+      ],
+      "world_id": "world_49_20260506_141933",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 4,
+        "n_destinations": 2,
+        "trip_duration_days": 9,
+        "budget_per_traveler_per_day": 166.67,
+        "constraint_density": 1.0,
+        "geographic_complexity": "multi_city",
+        "group_type": "family",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.2,
+        "geographic_complexity_score": 0.5,
+        "budget_tightness_score": 0.5333,
+        "group_complexity_score": 0.4,
+        "preference_specificity_score": 0.6667,
+        "complexity_score": 0.4417,
+        "complexity_tier": "medium"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T00:52:48.753630+00:00"
+}

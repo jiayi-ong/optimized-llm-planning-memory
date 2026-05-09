@@ -1,0 +1,191 @@
+{
+  "episode_id": "13b8a699-aa7d-4975-8e16-52c4683e444f",
+  "request_id": "8ef81900-dd14-452a-98a5-507fe272a901",
+  "agent_mode": "raw",
+  "trajectory": {
+    "trajectory_id": "957fb131-5436-42b6-a585-982b3847268b",
+    "request_id": "8ef81900-dd14-452a-98a5-507fe272a901",
+    "steps": [],
+    "total_steps": 0
+  },
+  "compressed_states": [],
+  "final_itinerary": null,
+  "reward_components": {
+    "hard_constraint_score": 0.0,
+    "soft_constraint_score": 0.0,
+    "tool_efficiency_score": 0.0,
+    "tool_failure_penalty": 0.0,
+    "logical_consistency_score": 0.0,
+    "terminal_itinerary_score": null,
+    "total_reward": 0.0
+  },
+  "tool_stats": [],
+  "total_steps": 0,
+  "total_tokens_used": null,
+  "performance_metrics": {
+    "episode_wall_time_ms": 1926.5041000035126,
+    "total_llm_latency_ms": null,
+    "total_tool_latency_ms": null,
+    "llm_latency_fraction": null,
+    "avg_step_llm_latency_ms": null,
+    "total_prompt_tokens": null,
+    "total_completion_tokens": null,
+    "total_tokens": null,
+    "tokens_per_step": null,
+    "estimated_cost_usd": null,
+    "avg_context_tokens": null,
+    "max_context_tokens": null,
+    "booking_revision_count": null,
+    "booking_revision_rate": null,
+    "total_parse_retries": null,
+    "parse_retry_rate": null
+  },
+  "mcts_stats": null,
+  "world_seed": null,
+  "success": false,
+  "error": "Unexpected error: RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-4o-mini in organization org-WqgKKeDIv31d54BTQcS87BHY on tokens per min (TPM): Limit 200000, Used 200000, Requested 2162. Please try again in 648ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+  "termination_reason": "ERROR_RATELIMITERROR",
+  "user_request": {
+    "request_id": "8ef81900-dd14-452a-98a5-507fe272a901",
+    "raw_text": "Solo trip from Brindor to Duskport and Aeloria — 6 days, $1200. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+    "origin_city": "city_world_66_20260506_141952_0001",
+    "destination_cities": [
+      "city_world_66_20260506_141952_0003",
+      "city_world_66_20260506_141952_0000"
+    ],
+    "start_date": "2026-06-01",
+    "end_date": "2026-06-07",
+    "budget_usd": 1200.0,
+    "traveler_profile": {
+      "num_adults": 1,
+      "num_children": 0,
+      "accessibility_needs": [],
+      "dietary_restrictions": []
+    },
+    "hard_constraints": [
+      {
+        "constraint_id": "hc-budget-fab050",
+        "constraint_type": "hard",
+        "category": "budget",
+        "description": "Total trip cost must not exceed $1200 USD.",
+        "value": 1200.0,
+        "unit": "USD",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-dates-105ead",
+        "constraint_type": "hard",
+        "category": "date",
+        "description": "Trip must start on 2026-06-01 and end by 2026-06-07.",
+        "value": "2026-06-01 to 2026-06-07",
+        "unit": "date_range",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-duration-2bdeba",
+        "constraint_type": "hard",
+        "category": "duration",
+        "description": "Trip must be exactly 6 days long.",
+        "value": 6,
+        "unit": "days",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-group-97b035",
+        "constraint_type": "hard",
+        "category": "group",
+        "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+        "value": 1,
+        "unit": "people",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "hc-activity-fb4e70",
+        "constraint_type": "hard",
+        "category": "activity",
+        "description": "Itinerary must include at least one hiking activity.",
+        "value": "hiking",
+        "unit": null,
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "soft_constraints": [
+      {
+        "constraint_id": "sc-accommodation-33abe5",
+        "constraint_type": "soft",
+        "category": "accommodation",
+        "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+        "value": 1,
+        "unit": "min_stars",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-activity-a05b95",
+        "constraint_type": "soft",
+        "category": "activity",
+        "description": "Include at least one outdoor or adventure activity per day.",
+        "value": "outdoor",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      },
+      {
+        "constraint_id": "sc-preference-e9f377",
+        "constraint_type": "soft",
+        "category": "preference",
+        "description": "Favour local community experiences over tourist-trap attractions.",
+        "value": "local_authentic",
+        "unit": "preference",
+        "satisfied": null,
+        "score": null
+      }
+    ],
+    "preferences": [
+      "hiking",
+      "local cuisine",
+      "cultural sites",
+      "photography",
+      "street art"
+    ],
+    "world_id": "world_66_20260506_141952",
+    "metadata": {
+      "generated_by": "generate_user_requests.py",
+      "template_version": "3.0",
+      "archetype": "solo_adventurer",
+      "tone_variant": 0,
+      "origin_name": "Brindor",
+      "dest_names": [
+        "Duskport",
+        "Aeloria"
+      ],
+      "world_id": "world_66_20260506_141952",
+      "complexity_breakdown": {
+        "n_hard_constraints": 5,
+        "n_soft_constraints": 3,
+        "n_destinations": 2,
+        "trip_duration_days": 6,
+        "budget_per_traveler_per_day": 200.0,
+        "constraint_density": 1.333,
+        "geographic_complexity": "multi_city",
+        "group_type": "solo",
+        "has_special_needs": false,
+        "preference_specificity": "medium",
+        "constraint_density_score": 0.2667,
+        "geographic_complexity_score": 0.5,
+        "budget_tightness_score": 0.4,
+        "group_complexity_score": 0.0,
+        "preference_specificity_score": 0.5,
+        "complexity_score": 0.3467,
+        "complexity_tier": "low"
+      }
+    }
+  },
+  "config_hash": "b21b34d8",
+  "created_at": "2026-05-07T01:01:58.512263+00:00"
+}
