@@ -1,0 +1,139 @@
+{
+  "request_id": "7efe90b0-5214-4b09-8afc-36aa6274b9f2",
+  "raw_text": "Solo trip from Brindor to Duskport — 4 days, $1200. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+  "origin_city": "city_world_47_20260506_141930_0001",
+  "destination_cities": [
+    "city_world_47_20260506_141930_0003"
+  ],
+  "start_date": "2026-06-29",
+  "end_date": "2026-07-03",
+  "budget_usd": 1200.0,
+  "traveler_profile": {
+    "num_adults": 1,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-055a2d",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $1200 USD.",
+      "value": 1200.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-490f98",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-29 and end by 2026-07-03.",
+      "value": "2026-06-29 to 2026-07-03",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-4febaa",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 4 days long.",
+      "value": 4,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-faf409",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 1,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-activity-7596b8",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one hiking activity.",
+      "value": "hiking",
+      "unit": null,
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-5eb6d0",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-1efdd8",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one outdoor or adventure activity per day.",
+      "value": "outdoor",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-ce432e",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Favour local community experiences over tourist-trap attractions.",
+      "value": "local_authentic",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "hiking",
+    "local cuisine",
+    "cultural sites",
+    "photography",
+    "street art"
+  ],
+  "world_id": "world_47_20260506_141930",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "solo_adventurer",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
+    "dest_names": [
+      "Duskport"
+    ],
+    "world_id": "world_47_20260506_141930",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 1,
+      "trip_duration_days": 4,
+      "budget_per_traveler_per_day": 300.0,
+      "constraint_density": 2.0,
+      "geographic_complexity": "single_city",
+      "group_type": "solo",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.4,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.0,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.175,
+      "complexity_tier": "low"
+    }
+  }
+}

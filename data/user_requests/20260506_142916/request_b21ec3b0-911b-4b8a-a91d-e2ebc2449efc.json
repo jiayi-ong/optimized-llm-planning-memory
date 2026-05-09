@@ -1,0 +1,139 @@
+{
+  "request_id": "b21ec3b0-911b-4b8a-a91d-e2ebc2449efc",
+  "raw_text": "Solo trip from Duskport to Aeloria — 9 days, $1200. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+  "origin_city": "city_world_63_20260506_141949_0003",
+  "destination_cities": [
+    "city_world_63_20260506_141949_0000"
+  ],
+  "start_date": "2026-06-18",
+  "end_date": "2026-06-27",
+  "budget_usd": 1200.0,
+  "traveler_profile": {
+    "num_adults": 1,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-5bb9ee",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $1200 USD.",
+      "value": 1200.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-55b7f6",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-18 and end by 2026-06-27.",
+      "value": "2026-06-18 to 2026-06-27",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-d95d9f",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 9 days long.",
+      "value": 9,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-3d6b75",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 1,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-activity-bcea96",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one hiking activity.",
+      "value": "hiking",
+      "unit": null,
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-59519d",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-850733",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one outdoor or adventure activity per day.",
+      "value": "outdoor",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-185d1a",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Favour local community experiences over tourist-trap attractions.",
+      "value": "local_authentic",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "hiking",
+    "local cuisine",
+    "cultural sites",
+    "photography",
+    "street art"
+  ],
+  "world_id": "world_63_20260506_141949",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "solo_adventurer",
+    "tone_variant": 0,
+    "origin_name": "Duskport",
+    "dest_names": [
+      "Aeloria"
+    ],
+    "world_id": "world_63_20260506_141949",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 1,
+      "trip_duration_days": 9,
+      "budget_per_traveler_per_day": 133.33,
+      "constraint_density": 0.889,
+      "geographic_complexity": "single_city",
+      "group_type": "solo",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.1778,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.6667,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.2528,
+      "complexity_tier": "low"
+    }
+  }
+}

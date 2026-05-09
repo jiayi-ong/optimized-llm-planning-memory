@@ -1,0 +1,141 @@
+{
+  "request_id": "3f4abf8d-17cd-47e5-9931-eb2ab75d7f25",
+  "raw_text": "Traveling solo from Brindor to Caelum and Duskport for 9 days. Budget: $1200. Main interests: hiking, local cuisine, and cultural sites.",
+  "origin_city": "city_world_42_20260506_141922_0001",
+  "destination_cities": [
+    "city_world_42_20260506_141922_0002",
+    "city_world_42_20260506_141922_0003"
+  ],
+  "start_date": "2026-06-20",
+  "end_date": "2026-06-29",
+  "budget_usd": 1200.0,
+  "traveler_profile": {
+    "num_adults": 1,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-4ebbb0",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $1200 USD.",
+      "value": 1200.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-322c36",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-20 and end by 2026-06-29.",
+      "value": "2026-06-20 to 2026-06-29",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-5b4c53",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 9 days long.",
+      "value": 9,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-c609ae",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 1,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-activity-c9b1ce",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one hiking activity.",
+      "value": "hiking",
+      "unit": null,
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-1af2d2",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-c388fa",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one outdoor or adventure activity per day.",
+      "value": "outdoor",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-6d167a",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Favour local community experiences over tourist-trap attractions.",
+      "value": "local_authentic",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "hiking",
+    "local cuisine",
+    "cultural sites",
+    "photography",
+    "street art"
+  ],
+  "world_id": "world_42_20260506_141922",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "solo_adventurer",
+    "tone_variant": 1,
+    "origin_name": "Brindor",
+    "dest_names": [
+      "Caelum",
+      "Duskport"
+    ],
+    "world_id": "world_42_20260506_141922",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 2,
+      "trip_duration_days": 9,
+      "budget_per_traveler_per_day": 133.33,
+      "constraint_density": 0.889,
+      "geographic_complexity": "multi_city",
+      "group_type": "solo",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.1778,
+      "geographic_complexity_score": 0.5,
+      "budget_tightness_score": 0.6667,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.3778,
+      "complexity_tier": "medium"
+    }
+  }
+}

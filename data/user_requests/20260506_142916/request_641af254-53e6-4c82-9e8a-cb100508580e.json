@@ -1,0 +1,139 @@
+{
+  "request_id": "641af254-53e6-4c82-9e8a-cb100508580e",
+  "raw_text": "Quick 2-day trip from Brindor to Aeloria, very tight $400 total. We want street food and free attractions. As cheap as possible.",
+  "origin_city": "city_world_48_20260506_141932_0001",
+  "destination_cities": [
+    "city_world_48_20260506_141932_0000"
+  ],
+  "start_date": "2026-05-29",
+  "end_date": "2026-05-31",
+  "budget_usd": 400.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-370e14",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $400 USD.",
+      "value": 400.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-8f6c3d",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-05-29 and end by 2026-05-31.",
+      "value": "2026-05-29 to 2026-05-31",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-a63391",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 2 days long.",
+      "value": 2,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-9c8dd9",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-transport-88db07",
+      "constraint_type": "hard",
+      "category": "transport",
+      "description": "Trip must use bus or public transit for at least one journey leg.",
+      "value": "bus",
+      "unit": "mode",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-41bad3",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Budget accommodation only — hostels or 1-2 star hotels.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-32eb25",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Prioritise free or low-cost attractions (under $20 per person per activity).",
+      "value": "free_or_cheap",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-cd86b3",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Maximise the number of distinct locations visited within the time and budget.",
+      "value": "coverage",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "street food",
+    "free attractions",
+    "walking tours",
+    "local markets",
+    "public transit"
+  ],
+  "world_id": "world_48_20260506_141932",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "short_budget_stay",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
+    "dest_names": [
+      "Aeloria"
+    ],
+    "world_id": "world_48_20260506_141932",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 1,
+      "trip_duration_days": 2,
+      "budget_per_traveler_per_day": 100.0,
+      "constraint_density": 4.0,
+      "geographic_complexity": "single_city",
+      "group_type": "couple",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.8,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.8,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.435,
+      "complexity_tier": "medium"
+    }
+  }
+}

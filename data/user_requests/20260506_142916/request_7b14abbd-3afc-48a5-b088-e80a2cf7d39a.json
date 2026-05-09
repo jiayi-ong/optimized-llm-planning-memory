@@ -1,0 +1,139 @@
+{
+  "request_id": "7b14abbd-3afc-48a5-b088-e80a2cf7d39a",
+  "raw_text": "Quick 2-day trip from Brindor to Duskport, very tight $600 total. We want street food and free attractions. As cheap as possible.",
+  "origin_city": "city_world_68_20260506_141955_0001",
+  "destination_cities": [
+    "city_world_68_20260506_141955_0003"
+  ],
+  "start_date": "2026-06-11",
+  "end_date": "2026-06-13",
+  "budget_usd": 600.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-1407b2",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $600 USD.",
+      "value": 600.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-7c8405",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-11 and end by 2026-06-13.",
+      "value": "2026-06-11 to 2026-06-13",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-794db4",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 2 days long.",
+      "value": 2,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-4363f1",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-transport-9ffda9",
+      "constraint_type": "hard",
+      "category": "transport",
+      "description": "Trip must use bus or public transit for at least one journey leg.",
+      "value": "bus",
+      "unit": "mode",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-661eb4",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Budget accommodation only — hostels or 1-2 star hotels.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-b28682",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Prioritise free or low-cost attractions (under $20 per person per activity).",
+      "value": "free_or_cheap",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-b02594",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Maximise the number of distinct locations visited within the time and budget.",
+      "value": "coverage",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "street food",
+    "free attractions",
+    "walking tours",
+    "local markets",
+    "public transit"
+  ],
+  "world_id": "world_68_20260506_141955",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "short_budget_stay",
+    "tone_variant": 0,
+    "origin_name": "Brindor",
+    "dest_names": [
+      "Duskport"
+    ],
+    "world_id": "world_68_20260506_141955",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 1,
+      "trip_duration_days": 2,
+      "budget_per_traveler_per_day": 150.0,
+      "constraint_density": 4.0,
+      "geographic_complexity": "single_city",
+      "group_type": "couple",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.8,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.6,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.395,
+      "complexity_tier": "medium"
+    }
+  }
+}

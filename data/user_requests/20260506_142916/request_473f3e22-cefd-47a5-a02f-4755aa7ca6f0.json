@@ -1,0 +1,149 @@
+{
+  "request_id": "473f3e22-cefd-47a5-a02f-4755aa7ca6f0",
+  "raw_text": "Family of 4 (2 adults, 2 kids under 12) heading from Aeloria to Caelum for 13 days. Budget is $4000. We need family-friendly activities and theme parks.",
+  "origin_city": "city_world_63_20260506_141949_0000",
+  "destination_cities": [
+    "city_world_63_20260506_141949_0002"
+  ],
+  "start_date": "2026-06-23",
+  "end_date": "2026-07-06",
+  "budget_usd": 4000.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 2,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-2cf156",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $4000 USD.",
+      "value": 4000.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-3cb288",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-23 and end by 2026-07-06.",
+      "value": "2026-06-23 to 2026-07-06",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-ea0b6e",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 13 days long.",
+      "value": 13,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-38a69a",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 4 (2 adult(s), 2 child(ren)); all pricing and reservations must accommodate the full group.",
+      "value": 4,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-activity-5ba1ee",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one park or family-friendly outdoor activity.",
+      "value": "park",
+      "unit": null,
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-b45924",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Prefer family rooms or suites at 3-star hotels or above.",
+      "value": 3,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-transport-c1d932",
+      "constraint_type": "soft",
+      "category": "transport",
+      "description": "Prefer direct flights to minimise travel time with young children.",
+      "value": "direct",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-70e24c",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one major family attraction (theme park, beach, or zoo) per 3 days.",
+      "value": "family_attraction",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-7b9ffc",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Hotel should have a pool or dedicated play area for children.",
+      "value": "child_amenities",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "family-friendly activities",
+    "theme parks",
+    "kid-friendly dining",
+    "beaches",
+    "safe neighborhoods"
+  ],
+  "world_id": "world_63_20260506_141949",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "family_trip",
+    "tone_variant": 0,
+    "origin_name": "Aeloria",
+    "dest_names": [
+      "Caelum"
+    ],
+    "world_id": "world_63_20260506_141949",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 4,
+      "n_destinations": 1,
+      "trip_duration_days": 13,
+      "budget_per_traveler_per_day": 76.92,
+      "constraint_density": 0.692,
+      "geographic_complexity": "single_city",
+      "group_type": "family",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.1385,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.8923,
+      "group_complexity_score": 0.4,
+      "preference_specificity_score": 0.6667,
+      "complexity_score": 0.3731,
+      "complexity_tier": "medium"
+    }
+  }
+}

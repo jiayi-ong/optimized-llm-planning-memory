@@ -1,0 +1,139 @@
+{
+  "request_id": "ad80ef36-6edf-4e5c-8a0b-cae0c6afd100",
+  "raw_text": "Quick 2-day trip from Caelum to Duskport, very tight $600 total. We want street food and free attractions. As cheap as possible.",
+  "origin_city": "city_world_69_20260506_141956_0002",
+  "destination_cities": [
+    "city_world_69_20260506_141956_0003"
+  ],
+  "start_date": "2026-06-28",
+  "end_date": "2026-06-30",
+  "budget_usd": 600.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-e44334",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $600 USD.",
+      "value": 600.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-f598d4",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-28 and end by 2026-06-30.",
+      "value": "2026-06-28 to 2026-06-30",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-02f2f6",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 2 days long.",
+      "value": 2,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-343d7a",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 2 (2 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 2,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-transport-9451a8",
+      "constraint_type": "hard",
+      "category": "transport",
+      "description": "Trip must use bus or public transit for at least one journey leg.",
+      "value": "bus",
+      "unit": "mode",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-2e1464",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Budget accommodation only — hostels or 1-2 star hotels.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-4f882f",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Prioritise free or low-cost attractions (under $20 per person per activity).",
+      "value": "free_or_cheap",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-196ece",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Maximise the number of distinct locations visited within the time and budget.",
+      "value": "coverage",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "street food",
+    "free attractions",
+    "walking tours",
+    "local markets",
+    "public transit"
+  ],
+  "world_id": "world_69_20260506_141956",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "short_budget_stay",
+    "tone_variant": 0,
+    "origin_name": "Caelum",
+    "dest_names": [
+      "Duskport"
+    ],
+    "world_id": "world_69_20260506_141956",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 1,
+      "trip_duration_days": 2,
+      "budget_per_traveler_per_day": 150.0,
+      "constraint_density": 4.0,
+      "geographic_complexity": "single_city",
+      "group_type": "couple",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.8,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.6,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.395,
+      "complexity_tier": "medium"
+    }
+  }
+}

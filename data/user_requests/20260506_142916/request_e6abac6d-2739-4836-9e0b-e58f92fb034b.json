@@ -1,0 +1,139 @@
+{
+  "request_id": "e6abac6d-2739-4836-9e0b-e58f92fb034b",
+  "raw_text": "Solo trip from Caelum to Aeloria — 9 days, $2500. I'm big on hiking and local cuisine. Keep it local and adventurous.",
+  "origin_city": "city_world_53_20260506_141937_0002",
+  "destination_cities": [
+    "city_world_53_20260506_141937_0000"
+  ],
+  "start_date": "2026-05-20",
+  "end_date": "2026-05-29",
+  "budget_usd": 2500.0,
+  "traveler_profile": {
+    "num_adults": 1,
+    "num_children": 0,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-e71703",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $2500 USD.",
+      "value": 2500.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-4e5395",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-05-20 and end by 2026-05-29.",
+      "value": "2026-05-20 to 2026-05-29",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-e2bafc",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 9 days long.",
+      "value": 9,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-0d9dbc",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 1 (1 adult(s)); all pricing and reservations must accommodate the full group.",
+      "value": 1,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-activity-3c4123",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one hiking activity.",
+      "value": "hiking",
+      "unit": null,
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-856216",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Hostels or budget hotels (1-2 stars) are acceptable.",
+      "value": 1,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-652984",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one outdoor or adventure activity per day.",
+      "value": "outdoor",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-f746d9",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Favour local community experiences over tourist-trap attractions.",
+      "value": "local_authentic",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "hiking",
+    "local cuisine",
+    "cultural sites",
+    "photography",
+    "street art"
+  ],
+  "world_id": "world_53_20260506_141937",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "solo_adventurer",
+    "tone_variant": 0,
+    "origin_name": "Caelum",
+    "dest_names": [
+      "Aeloria"
+    ],
+    "world_id": "world_53_20260506_141937",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 3,
+      "n_destinations": 1,
+      "trip_duration_days": 9,
+      "budget_per_traveler_per_day": 277.78,
+      "constraint_density": 0.889,
+      "geographic_complexity": "single_city",
+      "group_type": "solo",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.1778,
+      "geographic_complexity_score": 0.0,
+      "budget_tightness_score": 0.0889,
+      "group_complexity_score": 0.0,
+      "preference_specificity_score": 0.5,
+      "complexity_score": 0.1372,
+      "complexity_tier": "low"
+    }
+  }
+}

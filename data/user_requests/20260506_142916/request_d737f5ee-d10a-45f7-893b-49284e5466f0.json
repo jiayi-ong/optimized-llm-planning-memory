@@ -1,0 +1,151 @@
+{
+  "request_id": "d737f5ee-d10a-45f7-893b-49284e5466f0",
+  "raw_text": "Family trip: Caelum → Brindor and Duskport, 13 days, $4000 total for 2 adults and 2 children. We want family-friendly activities and everything child-safe.",
+  "origin_city": "city_world_47_20260506_141930_0002",
+  "destination_cities": [
+    "city_world_47_20260506_141930_0001",
+    "city_world_47_20260506_141930_0003"
+  ],
+  "start_date": "2026-06-16",
+  "end_date": "2026-06-29",
+  "budget_usd": 4000.0,
+  "traveler_profile": {
+    "num_adults": 2,
+    "num_children": 2,
+    "accessibility_needs": [],
+    "dietary_restrictions": []
+  },
+  "hard_constraints": [
+    {
+      "constraint_id": "hc-budget-d0718c",
+      "constraint_type": "hard",
+      "category": "budget",
+      "description": "Total trip cost must not exceed $4000 USD.",
+      "value": 4000.0,
+      "unit": "USD",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-dates-c76152",
+      "constraint_type": "hard",
+      "category": "date",
+      "description": "Trip must start on 2026-06-16 and end by 2026-06-29.",
+      "value": "2026-06-16 to 2026-06-29",
+      "unit": "date_range",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-duration-ac3baf",
+      "constraint_type": "hard",
+      "category": "duration",
+      "description": "Trip must be exactly 13 days long.",
+      "value": 13,
+      "unit": "days",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-group-6d6bce",
+      "constraint_type": "hard",
+      "category": "group",
+      "description": "Party of 4 (2 adult(s), 2 child(ren)); all pricing and reservations must accommodate the full group.",
+      "value": 4,
+      "unit": "people",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "hc-activity-66a460",
+      "constraint_type": "hard",
+      "category": "activity",
+      "description": "Itinerary must include at least one park or family-friendly outdoor activity.",
+      "value": "park",
+      "unit": null,
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "soft_constraints": [
+    {
+      "constraint_id": "sc-accommodation-2a5643",
+      "constraint_type": "soft",
+      "category": "accommodation",
+      "description": "Prefer family rooms or suites at 3-star hotels or above.",
+      "value": 3,
+      "unit": "min_stars",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-transport-f5aa76",
+      "constraint_type": "soft",
+      "category": "transport",
+      "description": "Prefer direct flights to minimise travel time with young children.",
+      "value": "direct",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-activity-645273",
+      "constraint_type": "soft",
+      "category": "activity",
+      "description": "Include at least one major family attraction (theme park, beach, or zoo) per 3 days.",
+      "value": "family_attraction",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    },
+    {
+      "constraint_id": "sc-preference-1106c8",
+      "constraint_type": "soft",
+      "category": "preference",
+      "description": "Hotel should have a pool or dedicated play area for children.",
+      "value": "child_amenities",
+      "unit": "preference",
+      "satisfied": null,
+      "score": null
+    }
+  ],
+  "preferences": [
+    "family-friendly activities",
+    "theme parks",
+    "kid-friendly dining",
+    "beaches",
+    "safe neighborhoods"
+  ],
+  "world_id": "world_47_20260506_141930",
+  "metadata": {
+    "generated_by": "generate_user_requests.py",
+    "template_version": "3.0",
+    "archetype": "family_trip",
+    "tone_variant": 1,
+    "origin_name": "Caelum",
+    "dest_names": [
+      "Brindor",
+      "Duskport"
+    ],
+    "world_id": "world_47_20260506_141930",
+    "complexity_breakdown": {
+      "n_hard_constraints": 5,
+      "n_soft_constraints": 4,
+      "n_destinations": 2,
+      "trip_duration_days": 13,
+      "budget_per_traveler_per_day": 76.92,
+      "constraint_density": 0.692,
+      "geographic_complexity": "multi_city",
+      "group_type": "family",
+      "has_special_needs": false,
+      "preference_specificity": "medium",
+      "constraint_density_score": 0.1385,
+      "geographic_complexity_score": 0.5,
+      "budget_tightness_score": 0.8923,
+      "group_complexity_score": 0.4,
+      "preference_specificity_score": 0.6667,
+      "complexity_score": 0.4981,
+      "complexity_tier": "medium"
+    }
+  }
+}
