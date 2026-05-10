@@ -1,0 +1,19 @@
+Declaration on the Use of Claude Code
+
+Claude Code was used as an engineering assistance tool during this academic project, with the effort setting configured to “high” where applicable. Its use included code execution support, implementation assistance, debugging, and iterative development workflows under continuous human supervision.
+
+For transparency and reproducibility, we include:
+- A reusable CLAUDE.md context file that was provided across sessions to maintain consistent project context and instructions.
+- Full Claude session logs containing user prompts, model reasoning traces, tool calls, and generated outputs.
+
+These records allow reviewers to inspect the exact interactions, workflows, and generated artifacts associated with the project. 
+The exact Claude model used for each subtask can be identified directly from the session logs.
+
+Importantly, Claude Code functioned as an executor and implementation assistant rather than the originator of the research. 
+The core intellectual contributions — including project scope definition, overall experimental design, architectural decisions, hypothesis formation, and novel methodological ideas — were developed by the human authors. 
+All generated artifacts, including source code, tests, analysis notebooks, and related outputs, were thoroughly reviewed, validated, and modified where necessary by the authors before inclusion in the project.
+
+Human involvement and guidance were substantial throughout the project, comprising tens of hours of iterative supervision, refinement, verification, and direction across multiple working sessions.
+
+
+Anthropic. (2026). Claude Code (Claude Sonnet 4.6) [Large language model]. https://www.anthropic.com
