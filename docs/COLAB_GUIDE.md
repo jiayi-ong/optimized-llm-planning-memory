@@ -245,10 +245,10 @@ streamlit run app/main.py
 # Navigate to "Training Dashboard" — the run appears in the run selector
 ```
 
-And the run comparison notebook works too:
+And the overall analysis notebook works too:
 
 ```bash
-uv run jupyter lab notebooks/08_run_comparison.ipynb
+uv run jupyter lab notebooks/11_eval_analysis_overall.ipynb
 ```
 
 ---
@@ -281,8 +281,8 @@ Each team member works in their own Colab notebook (their copy of `notebooks/05_
 **Coordination pattern:**
 1. Each developer trains their assigned configuration.
 2. Bundles are uploaded to the shared Drive folder.
-3. One developer downloads all bundles locally and runs `notebooks/08_run_comparison.ipynb` to produce the comparison table and plots.
-4. The comparison output (`outputs/run_comparison.png`, `outputs/run_comparison_summary.csv`) is committed to the repo as part of the ablation study results.
+3. One developer downloads all bundles locally and runs `notebooks/11_eval_analysis_overall.ipynb` to produce the leaderboard, Pareto frontier, and metric decomposition plots.
+4. The analysis outputs are committed to the repo as part of the ablation study results.
 
 ---
 

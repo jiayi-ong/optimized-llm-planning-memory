@@ -376,7 +376,7 @@ Training produces two complementary log streams:
 | Stream | Location | Best for |
 |---|---|---|
 | TensorBoard events | `outputs/logs/` | Live monitoring in Colab during training (`%tensorboard --logdir outputs/logs`) |
-| JSONL logs | `outputs/training/<run_id>/` | Offline analysis: Streamlit Training Dashboard, `notebooks/08_run_comparison.ipynb`, pandas |
+| JSONL logs | `outputs/training/<run_id>/` | Offline analysis: Streamlit Training Dashboard, `notebooks/11_eval_analysis_overall.ipynb`, pandas |
 
 The JSONL format — two files per run — does not require TensorBoard to read and works identically in Colab and locally:
 
@@ -451,10 +451,11 @@ See [docs/EVALUATION.md — Evaluating from a Training Run ID](EVALUATION.md#eva
 
 ### Run comparison
 
-`notebooks/08_run_comparison.ipynb` loads manifests and JSONL from multiple runs and produces:
-- A ranked summary table (sorted by final hard constraint score).
-- Side-by-side reward curves for all metrics.
-- PPO convergence diagnostics (KL divergence, clip fraction, explained variance).
+`notebooks/11_eval_analysis_overall.ipynb` loads scored evaluation results and produces:
+- A ranked leaderboard table (sorted by overall score, with hard constraint ratio and success rate).
+- Side-by-side metric decomposition heatmap across all runs.
+- Pareto frontier (performance vs. API cost) and statistical significance tests.
+- PPO convergence diagnostics are tracked via `notebooks/03_training_curves.ipynb`.
 - A CSV export of the summary table.
 
 ---

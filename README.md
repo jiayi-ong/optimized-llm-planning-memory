@@ -73,13 +73,13 @@ EpisodeLog ◄──────────────────────
 
 | Module | Purpose | Deep-dive |
 |---|---|---|
-| `core/` | Pydantic v2 data models, constraint engine, config schema, exceptions | — |
+| `core/` | Pydantic v2 data models, constraint engine, config schema, exceptions, prompt+augmentation registry | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/REGISTRY.md](docs/REGISTRY.md) |
 | `simulator/` | `SimulatorProtocol` structural interface + `SimulatorAdapter` + `WorldPool` | — |
 | `tools/` | `BaseTool` ABC, `ToolRegistry`, `ToolCallTracker`, `EventBus`, 13 concrete tools (incl. `cancel_booking`) | [docs/TOOLS.md](docs/TOOLS.md) |
-| `agent/` | `ReActAgent`, `Trajectory`, `ContextBuilder`, `AgentMode`, prompt templates | [docs/AGENT.md](docs/AGENT.md) |
+| `agent/` | `ReActAgent`, `Trajectory`, `ContextBuilder`, `AgentMode`, prompt templates (v1–v5, sweep_A–G) | [docs/AGENT.md](docs/AGENT.md) · [docs/PROMPT_SWEEP.md](docs/PROMPT_SWEEP.md) |
 | `compressor/` | `CompressorBase` + `TrainableCompressorBase` + `MCTSAwareCompressor` ABCs; 8 implementations; `CompressedStateTemplate` | [docs/COMPRESSOR.md](docs/COMPRESSOR.md) |
-| `training/` | `CompressionEnv` (Gymnasium), `CompressorPolicy` (SB3), `RewardFunction`, `RLTrainer`, `RLRunLogger`, `TrainingRunManifest` | [docs/TRAINING.md](docs/TRAINING.md) |
-| `evaluation/` | `DeterministicEvaluator` (15 metrics: 8 v1 + 6 v2 + 1 v3), `LLMJudge`, `AblationRunner` | [docs/EVALUATION.md](docs/EVALUATION.md) |
+| `training/` | `CompressionEnv` (Gymnasium), `CompressorPolicy` (SB3), `RewardFunction`, `RLTrainer`, `RLRunLogger`, `TrainingRunManifest` | [docs/TRAINING.md](docs/TRAINING.md) · [docs/RL_TRAINING_CONFIG.md](docs/RL_TRAINING_CONFIG.md) |
+| `evaluation/` | `DeterministicEvaluator` (15 metrics: 8 v1 + 6 v2 + 1 v3), `LLMJudge`, `AblationRunner`, `EvalStore`, `JobManager` | [docs/EVALUATION.md](docs/EVALUATION.md) · [docs/EVAL_UI.md](docs/EVAL_UI.md) |
 | `mcts/` | Optional MCTS search augmentation (tree, node, controller) | — |
 | `utils/` | structlog config, visualization, seed control, episode I/O, `itinerary_export`, `colab_utils` | — |
 
@@ -91,9 +91,9 @@ EpisodeLog ◄──────────────────────
 optimized-llm-planning-memory/
 ├── configs/                    # Hydra config hierarchy
 │   ├── config.yaml             #   root: defaults list
-│   ├── agent/                  #   react_baseline_raw, react_default, react_mcts
-│   ├── compressor/             #   identity, llm_prompt, transformer, hybrid, llm_mcts
-│   ├── training/               #   ppo_default, ppo_colab, ppo_debug, ppo_sweep
+│   ├── agent/                  #   react_baseline_raw, react_default, react_mcts, react_probe
+│   ├── compressor/             #   identity, llm_prompt, transformer, hybrid, llm_mcts, structured_selective, mcts_gat
+│   ├── training/               #   ppo_default, ppo_colab, ppo_debug, ppo_sweep, ppo_probe, ppo_mcts
 │   ├── reward/                 #   default, coverage_heavy (optional trip-quality signals)
 │   ├── eval/                   #   default (scoring_weights, judge_model)
 │   ├── simulator/              #   default (seed_range, pool_size, world_params)
@@ -125,21 +125,24 @@ optimized-llm-planning-memory/
 │   ├── run_baseline_eval.py    # quick no-LLM baseline
 │   ├── run_eval.py             # standalone eval CLI (re-score saved episodes)
 │   └── generate_user_requests.py
-├── app/                        # Streamlit developer UI (5 pages)
-├── notebooks/                  # 7 interactive development notebooks
+├── app/                        # Streamlit developer UI (11 pages)
+├── notebooks/                  # 10 interactive analysis and training notebooks
 ├── data/
-│   ├── user_requests/          #   train/, val/, test/ + templates/
+│   ├── user_requests/          #   test/ + templates/ committed; train/, val/ local only
+│   │   └── 20260506_142916/    #     90 world-aligned requests used for initial performance evaluation
 │   ├── few_shot_examples/      #   react_tool_use.json
 │   ├── compressor_dev/         #   4 pre-built trajectory contexts for dev
-│   └── rubrics/                #   itinerary_rubric_v1.md
-└── outputs/                    # runtime outputs (gitignored)
-    ├── episodes/               #   saved EpisodeLog JSONs (off during training by default)
-    ├── checkpoints/            #   PPO .zip + compressor/ + reward_predictor/
-    ├── training/               #   per-run JSONL diagnostics + manifest.json
+│   ├── rubrics/                #   itinerary_rubric_v1.md
+│   └── registry/               #   prompts.json (v1–v5, sweep_A–G), augmentations.json (6 entries)
+└── outputs/                    # mostly gitignored; episodes/ and consolidated_episode_evals/ committed
+    ├── episodes/               #   270 scored EpisodeLog JSONs committed to repo
+    ├── consolidated_episode_evals/  # aggregated CSV of all scored episodes (eval_results-001.csv)
+    ├── checkpoints/            #   PPO .zip + compressor/ + reward_predictor/ [local only]
+    ├── training/               #   per-run JSONL diagnostics + manifest.json [local only]
     │   └── <run_id>/          #     episode_metrics.jsonl, ppo_metrics.jsonl, manifest.json
-    ├── bundles/                #   .tar.gz run archives for sharing
-    ├── eval_results/           #   manifest.json + results.jsonl per eval run
-    └── logs/                   #   TensorBoard event files
+    ├── bundles/                #   .tar.gz run archives for sharing [local only]
+    ├── eval_results/           #   manifest.json + results.jsonl per eval run [local only]
+    └── logs/                   #   TensorBoard event files [local only]
 ```
 
 ---
@@ -304,7 +307,7 @@ The `+run_id` flag reads `outputs/training/<run_id>/manifest.json`, infers the c
 
 #### Comparing runs with eval_key
 
-Every `EvalResult` carries an `eval_key` = `{request_id}::{world_seed}::{agent_mode}::{metric_version}`. Two results with the same key are directly comparable. The eval viewer (`app/pages/6_eval_viewer.py`) uses this key for deduplication and cross-mode comparison. See [docs/EVALUATION.md — Eval Key](docs/EVALUATION.md#eval-key-and-uniqueness-contract).
+Every `EvalResult` carries an `eval_key` = `{request_id}::{world_seed}::{agent_mode}::{metric_version}`. Two results with the same key are directly comparable. The Eval Episode Detail page (`app/pages/3_eval_episode_detail.py`) uses this key for deduplication and cross-mode comparison. See [docs/EVALUATION.md — Eval Key](docs/EVALUATION.md#eval-key-and-uniqueness-contract).
 
 ### Interactive notebooks
 
@@ -315,10 +318,16 @@ uv run jupyter lab notebooks/
 
 | Notebook | Purpose |
 |---|---|
-| `05_colab_rl_training.ipynb` | Full PPO training in Google Colab (GPU) — includes Section 12: bundle & share |
+| `01_explore_simulator.ipynb` | Simulator exploration and synthetic world inspection |
+| `03_training_curves.ipynb` | PPO training metric visualization |
+| `05_colab_rl_training.ipynb` | Full PPO training in Google Colab (GPU) — includes bundle & share |
 | `06_evaluation.ipynb` | Interactive evaluation dashboard — compare conditions |
+| `06_evaluation_local.ipynb` | Local variant of the evaluation dashboard |
 | `07_compressor_dev.ipynb` | Step-by-step guide for building a new compressor |
-| `08_run_comparison.ipynb` | Load multiple run bundles and compare side-by-side — reward curves, summary table, PPO diagnostics |
+| `09_local_debug.ipynb` | Local debugging and episode inspection |
+| `10_eval_pipeline.ipynb` | End-to-end 4-stage evaluation pipeline (worlds → requests → episodes → scores) |
+| `11_eval_analysis_overall.ipynb` | Overall performance analysis: leaderboard, Pareto frontier, metric decomposition |
+| `12_episode_sequence_analysis.ipynb` | Sequential behavior analysis: itinerary composition, Markov chains, tool n-grams, error cascades |
 
 ### Developer UI (Streamlit)
 
@@ -326,7 +335,8 @@ uv run jupyter lab notebooks/
 streamlit run app/main.py
 ```
 
-Five pages: Episode Browser · Trajectory Viewer · Compression Viewer · MCTS Viewer · Training Dashboard.
+Eleven pages: Episode Browser · Trajectory Viewer · Compression Viewer · MCTS Viewer · Training Dashboard · Eval Dashboard · Eval Episode Log · Eval Episode Detail · Ablation Comparison · Request Browser · Itinerary Viewer.
+See [docs/EVAL_UI.md](docs/EVAL_UI.md) for the full 11-page guide and experiment workflow.
 
 ---
 
@@ -376,6 +386,7 @@ Quick steps:
 | New agent mode or prompt version | [docs/AGENT.md → Extending the Agent](docs/AGENT.md#extending-the-agent) |
 | New reward component (optional/pluggable) | [docs/TRAINING.md → Optional reward components](docs/TRAINING.md#optional-reward-components) |
 | New reward component (structural) | [docs/TRAINING.md → Reward Shaping](docs/TRAINING.md#reward-shaping) |
+| Register a new prompt or augmentation snapshot | [docs/REGISTRY.md](docs/REGISTRY.md) |
 | Colab team collaboration | [docs/COLAB_GUIDE.md](docs/COLAB_GUIDE.md) |
 
 ---
